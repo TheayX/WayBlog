@@ -1,29 +1,13 @@
-import { auth } from '@/lib/auth';
-import { NextResponse } from 'next/server';
+import NextAuth from 'next-auth';
+import { authConfig } from '@/lib/auth.config';
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-
-  // /admin/login 不需要认证
-  if (pathname === '/admin/login') {
-    // 已登录的用户访问登录页 → 重定向到仪表盘
-    if (req.auth) {
-      return NextResponse.redirect(new URL('/admin/dashboard', req.url));
-    }
-    return NextResponse.next();
-  }
-
-  // /admin/* 下的其他路由需要认证
-  if (pathname.startsWith('/admin')) {
-    if (!req.auth) {
-      return NextResponse.redirect(new URL('/admin/login', req.url));
-    }
-  }
-
-  return NextResponse.next();
-});
+/**
+ * Middleware 运行在 Edge Runtime
+ * 只导入 authConfig（无 Prisma 依赖），避免 Node.js 模块报错
+ * 路由保护逻辑在 authConfig.callbacks.authorized 中实现
+ */
+export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: ['/admin/:path*'],
 };
-
