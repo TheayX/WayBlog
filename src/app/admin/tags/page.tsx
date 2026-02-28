@@ -1,0 +1,150 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import { slugify } from '@/lib/utils';
+
+interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+  postCount: number;
+}
+
+export default function AdminTagsPage() {
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const fetchTags = useCallback(() => {
+    setLoading(true);
+    fetch('/api/tags')
+      .then((r) => r.json())
+      .then((res) => setTags(res.data || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { fetchTags(); }, [fetchTags]);
+
+  function resetForm() {
+    setName('');
+    setSlug('');
+    setEditingId(null);
+  }
+
+  function startEdit(tag: Tag) {
+    setEditingId(tag.id);
+    setName(tag.name);
+    setSlug(tag.slug);
+  }
+
+  async function handleSave() {
+    if (!name.trim() || !slug.trim()) {
+      toast.error('名称和 Slug 不能为空');
+      return;
+    }
+    setSaving(true);
+
+    const body = { name: name.trim(), slug: slug.trim() };
+    const url = editingId ? `/api/tags/${editingId}` : '/api/tags';
+    const method = editingId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    setSaving(false);
+
+    if (!res.ok) {
+      const err = await res.json();
+      toast.error(err.error || '保存失败');
+      return;
+    }
+
+    toast.success(editingId ? '标签已更新' : '标签已创建');
+    resetForm();
+    fetchTags();
+  }
+
+  async function handleDelete(id: string, tagName: string) {
+    if (!confirm(`确定删除标签「${tagName}」？`)) return;
+    const res = await fetch(`/api/tags/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      toast.success('标签已删除');
+      if (editingId === id) resetForm();
+      fetchTags();
+    } else {
+      toast.error('删除失败');
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">标签管理</h1>
+
+      {/* 表单 */}
+      <div className="rounded-lg border border-border p-4 space-y-3">
+        <h2 className="text-sm font-medium">{editingId ? '编辑标签' : '新建标签'}</h2>
+        <div className="grid gap-3 md:grid-cols-2">
+          <input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (!editingId) setSlug(slugify(e.target.value));
+            }}
+            placeholder="标签名称"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder="slug"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {editingId ? '更新' : '创建'}
+          </button>
+          {editingId && (
+            <button onClick={resetForm} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">
+              取消
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 列表 */}
+      {loading ? (
+        <p className="text-muted-foreground">加载中...</p>
+      ) : tags.length === 0 ? (
+        <p className="text-muted-foreground">暂无标签</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <div
+              key={tag.id}
+              className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5"
+            >
+              <span className="text-sm">{tag.name}</span>
+              <span className="text-xs text-muted-foreground">({tag.postCount})</span>
+              <button onClick={() => startEdit(tag)} className="text-xs text-primary hover:underline">编辑</button>
+              <button onClick={() => handleDelete(tag.id, tag.name)} className="text-xs text-destructive hover:underline">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
