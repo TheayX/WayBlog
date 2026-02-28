@@ -50,3 +50,6 @@ next-env.d.ts
 # temp files
 check.txt
 
+# IDE
+.idea/
+
