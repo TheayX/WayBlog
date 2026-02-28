@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wayblog-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: wayblog
+      POSTGRES_USER: wayblog
+      POSTGRES_PASSWORD: wayblog123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+
