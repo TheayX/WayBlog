@@ -52,4 +52,10 @@ check.txt
 
 # IDE
 .idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
 
