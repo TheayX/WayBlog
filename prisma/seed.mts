@@ -72,7 +72,9 @@ async function main() {
   const nextjsTag = await prisma.tag.findUnique({ where: { slug: 'nextjs' } });
   const tsTag = await prisma.tag.findUnique({ where: { slug: 'typescript' } });
 
-  const connectTags = [nextjsTag, tsTag].filter(Boolean).map((t) => ({ id: t.id }));
+  const connectTags = [nextjsTag, tsTag]
+    .filter((t): t is NonNullable<typeof t> => t != null)
+    .map((t) => ({ id: t.id }));
 
   await prisma.post.upsert({
     where: { slug: 'welcome-to-way' },

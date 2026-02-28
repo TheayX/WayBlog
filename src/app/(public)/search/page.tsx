@@ -22,6 +22,13 @@ interface SearchResponse {
   pageSize: number;
 }
 
+/**
+ * 简单 HTML 清理：只保留 <b> 标签（ts_headline 输出），移除其他 HTML 标签
+ */
+function sanitizeHighlight(html: string): string {
+  return html.replace(/<\/?(?!b\b)[^>]*>/gi, '');
+}
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -155,7 +162,7 @@ export default function SearchPage() {
                   {result.highlight && (
                     <p
                       className="mt-2 text-sm text-muted-foreground leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: result.highlight }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHighlight(result.highlight) }}
                     />
                   )}
 
