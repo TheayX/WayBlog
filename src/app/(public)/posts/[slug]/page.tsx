@@ -8,7 +8,8 @@ import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import { TOC } from '@/components/post/TOC';
 import { PostNavigation } from '@/components/post/PostNavigation';
 import { ViewCounter } from '@/components/post/ViewCounter';
-import { formatDate } from '@/lib/utils';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { formatDate, getSiteConfig } from '@/lib/utils';
 
 export const revalidate = 60;
 
@@ -30,15 +31,35 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   const { slug } = await params;
   const post = await prisma.post.findUnique({
     where: { slug },
-    select: { title: true, excerpt: true, coverImage: true },
+    select: {
+      title: true,
+      excerpt: true,
+      coverImage: true,
+      publishedAt: true,
+      author: { select: { name: true } },
+      tags: { select: { name: true } },
+    },
   });
 
   if (!post) return { title: '文章不存在' };
+
+  const site = getSiteConfig();
 
   return {
     title: post.title,
     description: post.excerpt || undefined,
     openGraph: {
+      type: 'article',
+      title: post.title,
+      description: post.excerpt || undefined,
+      images: post.coverImage ? [post.coverImage] : undefined,
+      publishedTime: post.publishedAt?.toISOString(),
+      authors: post.author?.name ? [post.author.name] : undefined,
+      tags: post.tags.map((t) => t.name),
+      url: `${site.url}/posts/${slug}`,
+    },
+    twitter: {
+      card: post.coverImage ? 'summary_large_image' : 'summary',
       title: post.title,
       description: post.excerpt || undefined,
       images: post.coverImage ? [post.coverImage] : undefined,
@@ -60,6 +81,8 @@ export default async function PostPage({ params }: PostPageProps) {
 
   if (!post) notFound();
 
+  const site = getSiteConfig();
+
   // 获取上一篇/下一篇（按发布时间排序）
   const [prevPost, nextPost] = await Promise.all([
     prisma.post.findFirst({
@@ -80,8 +103,30 @@ export default async function PostPage({ params }: PostPageProps) {
     }),
   ]);
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.excerpt || undefined,
+    image: post.coverImage || undefined,
+    datePublished: post.publishedAt?.toISOString(),
+    dateModified: post.updatedAt.toISOString(),
+    author: {
+      '@type': 'Person',
+      name: post.author.name,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: site.name,
+      url: site.url,
+    },
+    url: `${site.url}/posts/${post.slug}`,
+    mainEntityOfPage: `${site.url}/posts/${post.slug}`,
+  };
+
   return (
     <div className="relative">
+      <JsonLd data={jsonLd} />
       {/* 主内容区 + 侧边目录 */}
       <div className="xl:grid xl:grid-cols-[1fr_200px] xl:gap-8">
         {/* 文章主体 */}

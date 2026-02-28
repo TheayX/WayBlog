@@ -9,14 +9,40 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const siteName = process.env.SITE_NAME || "Way";
+const siteDescription = process.env.SITE_DESCRIPTION || "A Journey of Code and Thought";
+const siteUrl = process.env.SITE_URL || "http://localhost:3333";
+
 export const metadata: Metadata = {
   title: {
-    default: `${process.env.SITE_NAME || "Way"} — ${
-      process.env.SITE_DESCRIPTION || "A Journey of Code and Thought"
-    }`,
-    template: `%s — ${process.env.SITE_NAME || "Way"}`,
+    default: `${siteName} — ${siteDescription}`,
+    template: `%s — ${siteName}`,
   },
-  description: process.env.SITE_DESCRIPTION || "A Journey of Code and Thought",
+  description: siteDescription,
+  metadataBase: new URL(siteUrl),
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    siteName,
+    title: {
+      default: `${siteName} — ${siteDescription}`,
+      template: `%s — ${siteName}`,
+    },
+    description: siteDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: {
+      default: `${siteName} — ${siteDescription}`,
+      template: `%s — ${siteName}`,
+    },
+    description: siteDescription,
+  },
+  alternates: {
+    types: {
+      "application/rss+xml": "/feed.xml",
+    },
+  },
 };
 
 export default function RootLayout({

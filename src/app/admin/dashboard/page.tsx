@@ -59,6 +59,50 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* 最近 30 天 PV/UV 趋势 */}
+      {stats.recentViews.length > 0 && (
+        <div>
+          <h2 className="mb-4 text-lg font-semibold">最近 30 天流量趋势</h2>
+          <div className="rounded-lg border border-border p-4">
+            <div className="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-primary" /> PV
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-accent" /> UV
+              </span>
+            </div>
+            <div className="flex items-end gap-1 overflow-x-auto" style={{ height: 160 }}>
+              {stats.recentViews.map((day) => {
+                const maxPv = Math.max(...stats.recentViews.map((d) => d.pv), 1);
+                const pvHeight = Math.max((day.pv / maxPv) * 140, 2);
+                const uvHeight = Math.max((day.uv / maxPv) * 140, 2);
+                return (
+                  <div
+                    key={day.date}
+                    className="group relative flex flex-1 min-w-2 items-end gap-px"
+                    title={`${day.date}\nPV: ${day.pv}  UV: ${day.uv}`}
+                  >
+                    <div
+                      className="flex-1 rounded-t bg-primary/70 transition-colors group-hover:bg-primary"
+                      style={{ height: pvHeight }}
+                    />
+                    <div
+                      className="flex-1 rounded-t bg-accent/70 transition-colors group-hover:bg-accent"
+                      style={{ height: uvHeight }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>{stats.recentViews[0]?.date.slice(5)}</span>
+              <span>{stats.recentViews[stats.recentViews.length - 1]?.date.slice(5)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top 5 文章 */}
       {stats.topPosts.length > 0 && (
         <div>
