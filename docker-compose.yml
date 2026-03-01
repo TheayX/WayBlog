@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: wayblog-postgres
     ports:
-      - "5432:5432"
+      - "6432:5432"
     environment:
       POSTGRES_DB: wayblog
       POSTGRES_USER: wayblog
