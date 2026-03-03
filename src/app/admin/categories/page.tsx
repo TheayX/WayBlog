@@ -30,7 +30,10 @@ export default function AdminCategoriesPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => {
+    const timeout = setTimeout(fetchCategories, 0);
+    return () => clearTimeout(timeout);
+  }, [fetchCategories]);
 
   function resetForm() {
     setName('');

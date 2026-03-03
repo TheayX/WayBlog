@@ -28,7 +28,10 @@ export default function AdminTagsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchTags(); }, [fetchTags]);
+  useEffect(() => {
+    const timeout = setTimeout(fetchTags, 0);
+    return () => clearTimeout(timeout);
+  }, [fetchTags]);
 
   function resetForm() {
     setName('');

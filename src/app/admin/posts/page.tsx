@@ -43,7 +43,8 @@ export default function AdminPostsPage() {
   }, [page, pageSize, statusFilter]);
 
   useEffect(() => {
-    fetchPosts();
+    const timeout = setTimeout(fetchPosts, 0);
+    return () => clearTimeout(timeout);
   }, [fetchPosts]);
 
   async function handleDelete(id: string, title: string) {

@@ -19,7 +19,6 @@ export function PostCard({
   slug,
   excerpt,
   content,
-  coverImage: _coverImage,
   publishedAt,
   viewCount,
   pinned,

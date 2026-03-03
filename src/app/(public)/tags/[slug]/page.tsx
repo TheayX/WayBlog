@@ -5,16 +5,11 @@ import { PostStatus } from '@/generated/prisma';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 interface TagPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ page?: string }>;
-}
-
-export async function generateStaticParams() {
-  const tags = await prisma.tag.findMany({ select: { slug: true } });
-  return tags.map((t) => ({ slug: t.slug }));
 }
 
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {

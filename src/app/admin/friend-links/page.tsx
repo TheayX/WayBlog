@@ -32,7 +32,10 @@ export default function AdminFriendLinksPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchLinks(); }, [fetchLinks]);
+  useEffect(() => {
+    const timeout = setTimeout(fetchLinks, 0);
+    return () => clearTimeout(timeout);
+  }, [fetchLinks]);
 
   function resetForm() {
     setName(''); setUrl(''); setAvatar(''); setDescription(''); setSortOrder(0); setEditingId(null);

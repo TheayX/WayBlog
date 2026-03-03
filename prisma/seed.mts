@@ -5,8 +5,10 @@ import { config } from 'dotenv';
 
 config();
 
+type PrismaClientModule = typeof import('../src/generated/prisma/client');
+
 // tsx loads ESM client.ts as CJS, so named exports are in .default
-const mod = (PrismaModule as any).default ?? PrismaModule;
+const mod = (PrismaModule as PrismaClientModule & { default?: PrismaClientModule }).default ?? PrismaModule;
 const PrismaClient = mod.PrismaClient;
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });

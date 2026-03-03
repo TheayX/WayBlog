@@ -4,7 +4,7 @@ import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { PostStatus } from '@/generated/prisma';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 interface HomePageProps {
   searchParams: Promise<{ page?: string }>;

@@ -11,22 +11,12 @@ import { ViewCounter } from '@/components/post/ViewCounter';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { formatDate, getSiteConfig } from '@/lib/utils';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
 }
 
-// ─── 生成静态路径 ───
-export async function generateStaticParams() {
-  const posts = await prisma.post.findMany({
-    where: { status: PostStatus.PUBLISHED },
-    select: { slug: true },
-  });
-  return posts.map((p) => ({ slug: p.slug }));
-}
-
-// ─── 生成 Metadata ───
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = await prisma.post.findUnique({
@@ -83,7 +73,6 @@ export default async function PostPage({ params }: PostPageProps) {
 
   const site = getSiteConfig();
 
-  // 获取上一篇/下一篇（按发布时间排序）
   const [prevPost, nextPost] = await Promise.all([
     prisma.post.findFirst({
       where: {
@@ -127,11 +116,8 @@ export default async function PostPage({ params }: PostPageProps) {
   return (
     <div className="relative">
       <JsonLd data={jsonLd} />
-      {/* 主内容区 + 侧边目录 */}
       <div className="xl:grid xl:grid-cols-[1fr_200px] xl:gap-8">
-        {/* 文章主体 */}
         <article className="min-w-0">
-          {/* 文章头部 */}
           <header className="mb-8">
             <h1 className="mb-4 text-3xl font-bold leading-tight">{post.title}</h1>
 
@@ -145,7 +131,7 @@ export default async function PostPage({ params }: PostPageProps) {
               {post.category && (
                 <Link
                   href={`/categories/${post.category.slug}`}
-                  className="rounded-full border border-border px-2 py-0.5 hover:border-primary hover:text-primary transition-colors"
+                  className="rounded-full border border-border px-2 py-0.5 transition-colors hover:border-primary hover:text-primary"
                 >
                   {post.category.name}
                 </Link>
@@ -159,7 +145,7 @@ export default async function PostPage({ params }: PostPageProps) {
                   <Link
                     key={tag.slug}
                     href={`/tags/${tag.slug}`}
-                    className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                   >
                     #{tag.name}
                   </Link>
@@ -168,7 +154,6 @@ export default async function PostPage({ params }: PostPageProps) {
             )}
           </header>
 
-          {/* 封面图 */}
           {post.coverImage && (
             <div className="mb-8 overflow-hidden rounded-lg">
               <Image
@@ -182,17 +167,12 @@ export default async function PostPage({ params }: PostPageProps) {
             </div>
           )}
 
-          {/* Markdown 正文 */}
           <MarkdownRenderer content={post.content} />
-
-          {/* 上一篇/下一篇 */}
           <PostNavigation prevPost={prevPost} nextPost={nextPost} />
         </article>
 
-        {/* 右侧目录（桌面端） */}
         <TOC content={post.content} />
       </div>
     </div>
   );
 }
-
