@@ -1,54 +1,63 @@
-# WayBlog — 个人技术博客
+# WayBlog
 
-一个使用 Next.js 构建的现代个人博客系统。
+一个基于 Next.js 16、Prisma 和 PostgreSQL 的个人博客系统，包含公开前台、管理后台和一组内容管理 API。
 
 ## 技术栈
 
-- **框架**: Next.js 16 (App Router, React 19, TypeScript)
-- **样式**: Tailwind CSS 4
-- **数据库**: PostgreSQL 16 + Prisma ORM
-- **认证**: NextAuth.js v5 (Credentials + JWT)
-- **编辑**: Markdown (react-markdown + GFM + 代码高亮)
-- **包管理**: pnpm
+- Next.js 16 + App Router
+- React 19 + TypeScript
+- Prisma 7 + PostgreSQL
+- NextAuth v5（Credentials + JWT）
+- Tailwind CSS 4
+- react-markdown + remark-gfm + rehype-highlight
+- pnpm
 
-## 功能
+## 当前功能
 
-- ✅ 文章管理 (CRUD / Markdown / 分类 / 标签 / 置顶)
-- ✅ 后台管理面板 (仪表盘 / 文章 / 分类 / 标签 / 友链)
-- ✅ 前台展示 (首页 / 详情 / 归档 / 搜索 / 关于 / 友链)
-- ✅ 暗色模式 (next-themes, 无闪烁)
-- ✅ 响应式设计 (移动端 / 平板 / 桌面)
-- ✅ 图片上传 (本地存储)
-- ✅ 浏览量统计 (PV/UV)
-- ✅ 限流保护
+- 文章管理：创建、编辑、删除、发布、置顶
+- 分类管理：增删改查
+- 标签管理：增删改查
+- 友链管理：增删改查
+- 前台页面：首页、文章详情、分类页、标签页、归档、搜索、关于、友链
+- Markdown 渲染：GFM、代码高亮、目录、上一篇/下一篇
+- SEO：Metadata、RSS、sitemap、robots、JSON-LD
+- 鉴权：管理员登录、后台路由保护、受保护 API
+- 浏览统计：文章浏览量、后台统计概览
+- 图片上传：本地存储到 `public/uploads`
+- 主题切换：亮色 / 暗色
 
-## 快速开始
-
-### 前置要求
+## 环境要求
 
 - Node.js 20+
 - pnpm 9+
-- Docker Desktop (用于 PostgreSQL)
+- Docker Desktop
 
-### 1. 克隆并安装
+## 快速开始
+
+### 1. 安装依赖
 
 ```bash
-git clone https://github.com/your-username/WayBlog.git
-cd WayBlog
 pnpm install
 ```
 
-### 2. 启动数据库
+### 2. 启动 PostgreSQL
 
 ```bash
 docker compose up -d postgres
 ```
 
+默认数据库端口映射为 `6432`。
+
 ### 3. 配置环境变量
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入你的配置
+```
+
+如果你在 Windows PowerShell 下执行：
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 ### 4. 初始化数据库
@@ -65,37 +74,83 @@ pnpm db:seed
 pnpm dev
 ```
 
-访问 [http://localhost:3333](http://localhost:3333) 查看前台，访问 [http://localhost:3333/admin](http://localhost:3333/admin) 进入后台。
+访问：
 
-默认管理员账号见 `.env` 中的 `ADMIN_EMAIL` / `ADMIN_PASSWORD`。
+- 前台：`http://localhost:3333`
+- 后台：`http://localhost:3333/admin`
+
+管理员初始账号来自 `.env` 中的以下字段：
+
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+
+## 常用命令
+
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+pnpm db:generate
+pnpm db:migrate
+pnpm db:push
+pnpm db:seed
+pnpm db:studio
+```
 
 ## 项目结构
 
-```
+```text
 src/
-├── app/
-│   ├── (public)/       # 前台页面 (首页/文章/归档/搜索/关于/友链)
-│   ├── admin/          # 后台管理页面
-│   └── api/            # API 路由
-├── components/
-│   ├── admin/          # 后台组件
-│   ├── layout/         # 布局组件 (Header/Footer/Sidebar)
-│   ├── post/           # 文章组件 (PostCard/TOC/MarkdownRenderer)
-│   └── ui/             # 通用 UI 组件
-├── lib/                # 工具函数/认证/数据库
-└── types/              # TypeScript 类型定义
+  app/
+    (public)/          前台页面
+    admin/             后台页面
+    api/               Route Handlers
+    feed.xml/          RSS
+    sitemap.ts         Sitemap
+    robots.ts          Robots
+    layout.tsx         根布局
+    proxy.ts           后台路由保护
+  components/
+    admin/             后台表单与编辑器
+    layout/            头部、侧边栏、主题切换
+    post/              文章相关组件
+    seo/               SEO 组件
+    ui/                通用 UI 组件
+  lib/
+    api.ts             API 响应工具
+    auth.ts            NextAuth 配置
+    auth-guard.ts      API 鉴权
+    prisma.ts          Prisma 单例
+    rate-limit.ts      限流
+    utils.ts           通用工具函数
+    validations.ts     Zod 校验
+prisma/
+  schema.prisma        数据模型
+  migrations/          数据库迁移
+  seed.mts             种子脚本
+docs/
+  requirements.md
+  design.md
+  database.md
+  api.md
+  tasks.md
 ```
+
+## 已知说明
+
+- 运行项目前需要先启动 Docker Desktop，否则 PostgreSQL 容器不会起来。
+- 图片上传当前为本地存储，适合单机部署。
+- Prisma Client 输出到 `src/generated/prisma`，该目录已在 `.gitignore` 中忽略。
 
 ## 文档
 
-详细文档位于 `docs/` 目录：
+- [需求说明](./docs/requirements.md)
+- [系统设计](./docs/design.md)
+- [数据库设计](./docs/database.md)
+- [API 文档](./docs/api.md)
+- [整理清单](./docs/tasks.md)
 
-- [需求文档](docs/requirements.md)
-- [设计文档](docs/design.md)
-- [数据库设计](docs/database.md)
-- [API 文档](docs/api.md)
-- [任务清单](docs/tasks.md)
-
-## 许可证
+## License
 
 MIT
