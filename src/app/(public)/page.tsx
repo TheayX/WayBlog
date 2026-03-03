@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
+import { PostStatus } from '@/generated/prisma';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
-import { PostStatus } from '@/generated/prisma';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +53,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <p className="text-muted-foreground">
             暂无文章。
             <Link href="/admin/login" className="ml-1 text-primary hover:underline">
-              登录后台发布第一篇文章 →
+              登录后台发布第一篇文章
             </Link>
           </p>
         ) : (

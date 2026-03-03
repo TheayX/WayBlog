@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/prisma';
 import { PostStatus } from '@/generated/prisma';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +18,12 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     where: { slug },
     select: { name: true, description: true },
   });
+
   if (!category) return { title: '分类不存在' };
 
   return {
-    title: `${category.name} — 分类`,
-    description: category.description || `${category.name} 分类下的所有文章`,
+    title: `${category.name} - 分类`,
+    description: category.description || `${category.name} 分类下的所有文章。`,
   };
 }
 
@@ -69,7 +70,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   return (
     <div>
       <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">📂 {category.name}</h1>
+        <h1 className="mb-2 text-3xl font-bold">{category.name}</h1>
         {category.description && (
           <p className="text-muted-foreground">{category.description}</p>
         )}
@@ -106,4 +107,3 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     </div>
   );
 }
-

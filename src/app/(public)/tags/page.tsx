@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
 import { PostStatus } from '@/generated/prisma';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '标签',
-  description: '所有标签',
+  description: '所有标签。',
 };
 
 export default async function TagsPage() {
@@ -25,7 +25,7 @@ export default async function TagsPage() {
   return (
     <div>
       <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">🏷️ 标签</h1>
+        <h1 className="mb-2 text-3xl font-bold">标签</h1>
         <p className="text-muted-foreground">共 {tags.length} 个标签</p>
       </header>
 
@@ -50,4 +50,3 @@ export default async function TagsPage() {
     </div>
   );
 }
-

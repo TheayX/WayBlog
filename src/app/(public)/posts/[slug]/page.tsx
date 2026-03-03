@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/prisma';
 import { PostStatus } from '@/generated/prisma';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import { TOC } from '@/components/post/TOC';
@@ -10,6 +9,7 @@ import { PostNavigation } from '@/components/post/PostNavigation';
 import { ViewCounter } from '@/components/post/ViewCounter';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { formatDate, getSiteConfig } from '@/lib/utils';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       images: post.coverImage ? [post.coverImage] : undefined,
       publishedTime: post.publishedAt?.toISOString(),
       authors: post.author?.name ? [post.author.name] : undefined,
-      tags: post.tags.map((t) => t.name),
+      tags: post.tags.map((tag) => tag.name),
       url: `${site.url}/posts/${slug}`,
     },
     twitter: {

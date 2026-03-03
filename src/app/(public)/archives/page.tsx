@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
 import { PostStatus } from '@/generated/prisma';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '归档',
-  description: '按时间线浏览所有文章',
+  description: '按时间线浏览所有文章。',
 };
 
 interface ArchiveGroup {
@@ -33,7 +33,6 @@ export default async function ArchivesPage() {
     orderBy: { publishedAt: 'desc' },
   });
 
-  // 按年/月分组
   const groupMap = new Map<number, Map<number, typeof posts>>();
 
   for (const post of posts) {
@@ -61,7 +60,7 @@ export default async function ArchivesPage() {
   return (
     <div>
       <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">📅 归档</h1>
+        <h1 className="mb-2 text-3xl font-bold">归档</h1>
         <p className="text-muted-foreground">共 {totalPosts} 篇文章</p>
       </header>
 
@@ -83,14 +82,14 @@ export default async function ArchivesPage() {
                         <li key={post.slug} className="flex items-baseline gap-3">
                           <time
                             dateTime={post.publishedAt!.toISOString()}
-                            className="shrink-0 text-sm text-muted-foreground tabular-nums"
+                            className="shrink-0 text-sm tabular-nums text-muted-foreground"
                           >
                             {String(post.publishedAt!.getMonth() + 1).padStart(2, '0')}-
                             {String(post.publishedAt!.getDate()).padStart(2, '0')}
                           </time>
                           <Link
                             href={`/posts/${post.slug}`}
-                            className="text-sm hover:text-primary transition-colors"
+                            className="text-sm transition-colors hover:text-primary"
                           >
                             {post.title}
                           </Link>
@@ -107,5 +106,3 @@ export default async function ArchivesPage() {
     </div>
   );
 }
-
-

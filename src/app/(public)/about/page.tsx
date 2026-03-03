@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/prisma';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '关于',
-  description: '关于我',
+  description: '关于站点与作者。',
 };
 
 export default async function AboutPage() {
@@ -24,10 +24,13 @@ export default async function AboutPage() {
         <MarkdownRenderer content={page.content} />
       ) : (
         <p className="text-muted-foreground">
-          这里还什么都没有写呢…去后台创建一个 slug 为 &quot;about&quot; 的页面吧。
+          这里还没有内容，去后台创建一个 slug 为
+          {' '}
+          <code>about</code>
+          {' '}
+          的页面即可。
         </p>
       )}
     </div>
   );
 }
-

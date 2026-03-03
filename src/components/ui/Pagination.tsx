@@ -16,12 +16,14 @@ export function Pagination({ currentPage, totalPages, basePath }: PaginationProp
       {currentPage > 1 ? (
         <Link
           href={`${basePath}${separator}page=${currentPage - 1}`}
-          className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted transition-colors"
+          className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
         >
-          ← 上一页
+          上一页
         </Link>
       ) : (
-        <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">← 上一页</span>
+        <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">
+          上一页
+        </span>
       )}
 
       <span className="text-sm text-muted-foreground">
@@ -31,14 +33,15 @@ export function Pagination({ currentPage, totalPages, basePath }: PaginationProp
       {currentPage < totalPages ? (
         <Link
           href={`${basePath}${separator}page=${currentPage + 1}`}
-          className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted transition-colors"
+          className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
         >
-          下一页 →
+          下一页
         </Link>
       ) : (
-        <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">下一页 →</span>
+        <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">
+          下一页
+        </span>
       )}
     </div>
   );
 }
-
