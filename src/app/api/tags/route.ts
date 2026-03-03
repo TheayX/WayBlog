@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth-guard';
-import { createTagSchema } from '@/lib/validations';
+import { NextRequest } from 'next/server';
 import { PostStatus } from '@/generated/prisma';
+import { badRequest, conflict, ok, serverError } from '@/lib/api';
+import { requireAuth } from '@/lib/auth-guard';
+import { prisma } from '@/lib/prisma';
+import { createTagSchema } from '@/lib/validations';
 
-// ─── GET /api/tags — 获取标签列表 ───
 export async function GET() {
   try {
     const tags = await prisma.tag.findMany({
@@ -18,22 +18,20 @@ export async function GET() {
       orderBy: { name: 'asc' },
     });
 
-    const data = tags.map((t) => ({
-      id: t.id,
-      name: t.name,
-      slug: t.slug,
-      postCount: t._count.posts,
-      createdAt: t.createdAt,
+    const data = tags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      postCount: tag._count.posts,
+      createdAt: tag.createdAt,
     }));
 
-    return NextResponse.json({ data });
+    return ok(data);
   } catch (error) {
-    console.error('GET /api/tags error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('GET /api/tags', error);
   }
 }
 
-// ─── POST /api/tags — 创建标签 ───
 export async function POST(request: NextRequest) {
   try {
     const authResult = await requireAuth();
@@ -43,25 +41,22 @@ export async function POST(request: NextRequest) {
     const parsed = createTagSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: '参数校验失败', details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
     }
 
     const existing = await prisma.tag.findFirst({
-      where: { OR: [{ name: parsed.data.name }, { slug: parsed.data.slug }] },
+      where: {
+        OR: [{ name: parsed.data.name }, { slug: parsed.data.slug }],
+      },
     });
+
     if (existing) {
-      return NextResponse.json({ error: '标签名称或 Slug 已存在' }, { status: 409 });
+      return conflict('Tag name or slug already exists');
     }
 
     const tag = await prisma.tag.create({ data: parsed.data });
-
-    return NextResponse.json({ data: tag }, { status: 201 });
+    return ok(tag, { status: 201 });
   } catch (error) {
-    console.error('POST /api/tags error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('POST /api/tags', error);
   }
 }
-

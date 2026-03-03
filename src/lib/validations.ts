@@ -3,6 +3,12 @@ import { z } from 'zod';
 // ─── 通用 ───
 
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const booleanQuerySchema = z.preprocess((value) => {
+  if (value === undefined || value === '') return undefined;
+  if (value === true || value === 'true') return true;
+  if (value === false || value === 'false') return false;
+  return value;
+}, z.boolean());
 
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -29,7 +35,7 @@ export const postQuerySchema = paginationSchema.extend({
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
   categoryId: z.string().uuid().optional(),
   tagId: z.string().uuid().optional(),
-  pinned: z.coerce.boolean().optional(),
+  pinned: booleanQuerySchema.optional(),
 });
 
 // ─── 分类 ───

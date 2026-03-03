@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest } from 'next/server';
+import { badRequest, conflict, noContent, notFound, ok, serverError } from '@/lib/api';
 import { requireAuth } from '@/lib/auth-guard';
+import { prisma } from '@/lib/prisma';
 import { updateTagSchema } from '@/lib/validations';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// ─── PUT /api/tags/[id] — 更新标签 ───
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();
@@ -18,19 +18,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const parsed = updateTagSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: '参数校验失败', details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
     }
 
     const existing = await prisma.tag.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: '标签不存在' }, { status: 404 });
+      return notFound('Tag not found');
     }
 
     if (parsed.data.slug || parsed.data.name) {
-      const conflict = await prisma.tag.findFirst({
+      const existingConflict = await prisma.tag.findFirst({
         where: {
           id: { not: id },
           OR: [
@@ -39,39 +36,38 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           ],
         },
       });
-      if (conflict) {
-        return NextResponse.json({ error: '标签名称或 Slug 已存在' }, { status: 409 });
+
+      if (existingConflict) {
+        return conflict('Tag name or slug already exists');
       }
     }
 
-    const tag = await prisma.tag.update({ where: { id }, data: parsed.data });
+    const tag = await prisma.tag.update({
+      where: { id },
+      data: parsed.data,
+    });
 
-    return NextResponse.json({ data: tag });
+    return ok(tag);
   } catch (error) {
-    console.error('PUT /api/tags/[id] error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('PUT /api/tags/[id]', error);
   }
 }
 
-// ─── DELETE /api/tags/[id] — 删除标签 ───
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();
     if (!authResult.authorized) return authResult.response;
 
     const { id } = await params;
-
     const existing = await prisma.tag.findUnique({ where: { id } });
+
     if (!existing) {
-      return NextResponse.json({ error: '标签不存在' }, { status: 404 });
+      return notFound('Tag not found');
     }
 
     await prisma.tag.delete({ where: { id } });
-
-    return new NextResponse(null, { status: 204 });
+    return noContent();
   } catch (error) {
-    console.error('DELETE /api/tags/[id] error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('DELETE /api/tags/[id]', error);
   }
 }
-

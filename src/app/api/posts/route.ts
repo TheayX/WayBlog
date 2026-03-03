@@ -1,29 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth-guard';
-import { createPostSchema, postQuerySchema } from '@/lib/validations';
+import { NextRequest } from 'next/server';
+import type { Prisma } from '@/generated/prisma';
 import { PostStatus } from '@/generated/prisma';
+import { badRequest, conflict, paged, ok, serverError } from '@/lib/api';
+import { requireAuth } from '@/lib/auth-guard';
+import { prisma } from '@/lib/prisma';
+import { createPostSchema, postQuerySchema } from '@/lib/validations';
 
-// ─── GET /api/posts — 获取文章列表 ───
 export async function GET(request: NextRequest) {
   try {
     const searchParams = Object.fromEntries(request.nextUrl.searchParams);
     const parsed = postQuerySchema.safeParse(searchParams);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: '参数错误', details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return badRequest(parsed.error.flatten().fieldErrors, 'Invalid query parameters');
     }
 
     const { page, pageSize, status, categoryId, tagId, pinned } = parsed.data;
-
-    // 未认证用户只能查看已发布文章
     const authResult = await requireAuth();
     const isAdmin = authResult.authorized;
 
-    const where: Record<string, unknown> = {};
+    const where: Prisma.PostWhereInput = {};
 
     if (status && isAdmin) {
       where.status = status;
@@ -60,14 +56,12 @@ export async function GET(request: NextRequest) {
       prisma.post.count({ where }),
     ]);
 
-    return NextResponse.json({ data, total, page, pageSize });
+    return paged(data, { total, page, pageSize });
   } catch (error) {
-    console.error('GET /api/posts error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('GET /api/posts', error);
   }
 }
 
-// ─── POST /api/posts — 创建文章 ───
 export async function POST(request: NextRequest) {
   try {
     const authResult = await requireAuth();
@@ -77,23 +71,17 @@ export async function POST(request: NextRequest) {
     const parsed = createPostSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: '参数校验失败', details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
     }
 
     const { tagIds, ...postData } = parsed.data;
-
-    // 检查 slug 是否重复
     const existing = await prisma.post.findUnique({ where: { slug: postData.slug } });
+
     if (existing) {
-      return NextResponse.json({ error: 'Slug 已存在' }, { status: 409 });
+      return conflict('Post slug already exists');
     }
 
-    // 发布时自动设置 publishedAt
-    const publishedAt =
-      postData.status === 'PUBLISHED' ? new Date() : undefined;
+    const publishedAt = postData.status === 'PUBLISHED' ? new Date() : undefined;
 
     const post = await prisma.post.create({
       data: {
@@ -109,10 +97,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ data: post }, { status: 201 });
+    return ok(post, { status: 201 });
   } catch (error) {
-    console.error('POST /api/posts error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('POST /api/posts', error);
   }
 }
-

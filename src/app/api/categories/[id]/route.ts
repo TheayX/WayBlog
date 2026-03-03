@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest } from 'next/server';
+import { badRequest, conflict, noContent, notFound, ok, serverError } from '@/lib/api';
 import { requireAuth } from '@/lib/auth-guard';
+import { prisma } from '@/lib/prisma';
 import { updateCategorySchema } from '@/lib/validations';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// ─── PUT /api/categories/[id] — 更新分类 ───
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();
@@ -18,20 +18,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const parsed = updateCategorySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: '参数校验失败', details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
     }
 
     const existing = await prisma.category.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: '分类不存在' }, { status: 404 });
+      return notFound('Category not found');
     }
 
-    // slug/name 重复检查（排除自身）
     if (parsed.data.slug || parsed.data.name) {
-      const conflict = await prisma.category.findFirst({
+      const existingConflict = await prisma.category.findFirst({
         where: {
           id: { not: id },
           OR: [
@@ -40,8 +36,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           ],
         },
       });
-      if (conflict) {
-        return NextResponse.json({ error: '分类名称或 Slug 已存在' }, { status: 409 });
+
+      if (existingConflict) {
+        return conflict('Category name or slug already exists');
       }
     }
 
@@ -50,33 +47,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       data: parsed.data,
     });
 
-    return NextResponse.json({ data: category });
+    return ok(category);
   } catch (error) {
-    console.error('PUT /api/categories/[id] error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('PUT /api/categories/[id]', error);
   }
 }
 
-// ─── DELETE /api/categories/[id] — 删除分类 ───
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();
     if (!authResult.authorized) return authResult.response;
 
     const { id } = await params;
-
     const existing = await prisma.category.findUnique({ where: { id } });
+
     if (!existing) {
-      return NextResponse.json({ error: '分类不存在' }, { status: 404 });
+      return notFound('Category not found');
     }
 
-    // 删除分类后，文章的 categoryId 自动设为 null（onDelete: SetNull）
     await prisma.category.delete({ where: { id } });
-
-    return new NextResponse(null, { status: 204 });
+    return noContent();
   } catch (error) {
-    console.error('DELETE /api/categories/[id] error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('DELETE /api/categories/[id]', error);
   }
 }
-

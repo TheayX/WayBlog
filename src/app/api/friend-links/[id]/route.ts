@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest } from 'next/server';
+import { badRequest, noContent, notFound, ok, serverError } from '@/lib/api';
 import { requireAuth } from '@/lib/auth-guard';
+import { prisma } from '@/lib/prisma';
 import { updateFriendLinkSchema } from '@/lib/validations';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// ─── PUT /api/friend-links/[id] — 更新友链 ───
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();
@@ -18,45 +18,40 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const parsed = updateFriendLinkSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: '参数校验失败', details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
     }
 
     const existing = await prisma.friendLink.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: '友链不存在' }, { status: 404 });
+      return notFound('Friend link not found');
     }
 
-    const link = await prisma.friendLink.update({ where: { id }, data: parsed.data });
+    const link = await prisma.friendLink.update({
+      where: { id },
+      data: parsed.data,
+    });
 
-    return NextResponse.json({ data: link });
+    return ok(link);
   } catch (error) {
-    console.error('PUT /api/friend-links/[id] error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('PUT /api/friend-links/[id]', error);
   }
 }
 
-// ─── DELETE /api/friend-links/[id] — 删除友链 ───
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();
     if (!authResult.authorized) return authResult.response;
 
     const { id } = await params;
-
     const existing = await prisma.friendLink.findUnique({ where: { id } });
+
     if (!existing) {
-      return NextResponse.json({ error: '友链不存在' }, { status: 404 });
+      return notFound('Friend link not found');
     }
 
     await prisma.friendLink.delete({ where: { id } });
-
-    return new NextResponse(null, { status: 204 });
+    return noContent();
   } catch (error) {
-    console.error('DELETE /api/friend-links/[id] error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('DELETE /api/friend-links/[id]', error);
   }
 }
-
