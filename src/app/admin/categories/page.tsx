@@ -110,7 +110,14 @@ export default function AdminCategoriesPage() {
           />
           <input
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || /^[a-z0-9-]+$/.test(val)) {
+                setSlug(val);
+              } else {
+                toast.warning('Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)');
+              }
+            }}
             placeholder="slug"
             className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />

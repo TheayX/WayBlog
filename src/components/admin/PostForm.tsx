@@ -171,8 +171,13 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           type="text"
           value={slug}
           onChange={(e) => {
-            setSlug(e.target.value);
-            setSlugManuallyEdited(true);
+            const val = e.target.value;
+            if (val === '' || /^[a-z0-9-]+$/.test(val)) {
+              setSlug(val);
+              setSlugManuallyEdited(true);
+            } else {
+              toast.warning('Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)');
+            }
           }}
           placeholder="article-slug"
           className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
