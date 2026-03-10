@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { PostStatus } from '@/generated/prisma';
-import { badRequest, conflict, ok, serverError } from '@/lib/api';
+import { badRequest, conflict, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
 import { prisma } from '@/lib/prisma';
 import { createTagSchema } from '@/lib/validations';

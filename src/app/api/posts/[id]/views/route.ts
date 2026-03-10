@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { notFound, ok, serverError, tooManyRequests } from '@/lib/api';
+import { notFound, ok, serverError, tooManyRequests } from '@/lib/response';
 import { prisma } from '@/lib/prisma';
 import { getClientIp, viewsLimiter } from '@/lib/rate-limit';
 

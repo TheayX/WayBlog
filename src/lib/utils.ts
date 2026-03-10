@@ -40,12 +40,3 @@ export function truncate(text: string, length: number = 200): string {
   return text.slice(0, length).trim() + '...';
 }
 
-// ─── 站点配置 ───
-export function getSiteConfig() {
-  return {
-    name: process.env.SITE_NAME || 'Way',
-    description: process.env.SITE_DESCRIPTION || 'A Journey of Code and Thought',
-    url: process.env.SITE_URL || 'http://localhost:3333',
-  };
-}
-

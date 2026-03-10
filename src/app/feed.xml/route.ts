@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getSiteConfig } from '@/lib/utils';
+import { getSiteConfig } from '@/lib/site';
 import { PostStatus } from '@/generated/prisma';
 
 export const dynamic = 'force-dynamic';

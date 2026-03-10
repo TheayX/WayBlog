@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import type { Prisma } from '@/generated/prisma';
 import { PostStatus } from '@/generated/prisma';
-import { badRequest, conflict, paged, ok, serverError } from '@/lib/api';
+import { badRequest, conflict, paged, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
 import { prisma } from '@/lib/prisma';
 import { createPostSchema, postQuerySchema } from '@/lib/validations';

@@ -8,7 +8,7 @@ interface TocItem {
   level: number;
 }
 
-interface TOCProps {
+interface TableOfContentsProps {
   content: string;
 }
 
@@ -36,7 +36,7 @@ function extractHeadings(markdown: string): TocItem[] {
   return headings;
 }
 
-export function TOC({ content }: TOCProps) {
+export function TableOfContents({ content }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState('');
   const headings = extractHeadings(content);
 

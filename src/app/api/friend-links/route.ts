@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { badRequest, ok, serverError } from '@/lib/api';
+import { badRequest, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
 import { prisma } from '@/lib/prisma';
 import { createFriendLinkSchema } from '@/lib/validations';

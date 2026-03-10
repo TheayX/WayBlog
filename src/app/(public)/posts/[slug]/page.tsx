@@ -4,11 +4,12 @@ import Image from 'next/image';
 import type { Metadata } from 'next';
 import { PostStatus } from '@/generated/prisma';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
-import { TOC } from '@/components/post/TOC';
+import { TableOfContents } from '@/components/post/TableOfContents';
 import { PostNavigation } from '@/components/post/PostNavigation';
 import { ViewCounter } from '@/components/post/ViewCounter';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { formatDate, getSiteConfig } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
+import { getSiteConfig } from '@/lib/site';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -171,7 +172,7 @@ export default async function PostPage({ params }: PostPageProps) {
           <PostNavigation prevPost={prevPost} nextPost={nextPost} />
         </article>
 
-        <TOC content={post.content} />
+        <TableOfContents content={post.content} />
       </div>
     </div>
   );
