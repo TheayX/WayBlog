@@ -19,7 +19,7 @@ export const paginationSchema = z.object({
 
 export const createPostSchema = z.object({
   title: z.string().min(1, '标题不能为空').max(255),
-  slug: z.string().min(1).max(255).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
+  slug: z.string().min(1).max(255).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)'),
   content: z.string().default(''),
   excerpt: z.string().max(500).nullable().optional(),
   coverImage: z.string().max(500).nullable().optional(),
@@ -42,7 +42,7 @@ export const postQuerySchema = paginationSchema.extend({
 
 export const createCategorySchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
-  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
+  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)'),
   description: z.string().max(500).nullable().optional(),
 });
 
@@ -52,7 +52,7 @@ export const updateCategorySchema = createCategorySchema.partial();
 
 export const createTagSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
-  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
+  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)'),
 });
 
 export const updateTagSchema = createTagSchema.partial();
