@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
+import { AiSuggestionDrawer } from '@/components/admin/AiSuggestionDrawer';
 import type { AiField, AiFieldResult, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
 import { slugify } from '@/lib/utils';
 
@@ -107,9 +108,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     const suggestion = result.categorySuggestion;
     if (!suggestion) return '';
 
-    if (suggestion.id) {
-      return suggestion.id;
-    }
+    if (suggestion.id) return suggestion.id;
 
     const matched = categories.find(
       (item) => item.name.toLowerCase() === suggestion.name.toLowerCase(),
@@ -133,14 +132,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     return Array.from(new Set(ids));
   }
 
-  function getTagGroups(tagSuggestions: AiSuggestionTag[]) {
-    return {
-      existing: tagSuggestions.filter((tag) => !tag.isNew),
-      newTags: tagSuggestions.filter((tag) => tag.isNew),
-    };
-  }
-
-  function applyAiField(
+  function applyFieldSuggestion(
     field: AiField,
     result: Pick<
       AiOptimizeResult,
@@ -189,29 +181,19 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
 
     switch (result.field) {
       case 'title':
-        if (result.value) {
-          setTitle(result.value);
-          toast.success('已应用标题建议');
-        }
+        if (result.value) setTitle(result.value);
         break;
       case 'slug':
         if (result.value) {
           setSlug(result.value);
           setSlugManuallyEdited(true);
-          toast.success('已应用 Slug 建议');
         }
         break;
       case 'content':
-        if (result.value) {
-          setContent(result.value);
-          toast.success('已应用正文建议');
-        }
+        if (result.value) setContent(result.value);
         break;
       case 'excerpt':
-        if (result.value) {
-          setExcerpt(result.value);
-          toast.success('已应用摘要建议');
-        }
+        if (result.value) setExcerpt(result.value);
         break;
       case 'category': {
         const matchedCategoryId = getMatchedCategoryId(result);
@@ -220,7 +202,6 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           return;
         }
         setCategoryId(matchedCategoryId);
-        toast.success('已应用分类建议');
         break;
       }
       case 'tags': {
@@ -230,30 +211,33 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           return;
         }
         setSelectedTagIds(matchedTagIds);
-        toast.success('已应用标签建议');
         break;
       }
     }
+
+    toast.success(`已应用${getFieldLabel(result.field)}建议`);
   }
 
-  function applyAllAi(result: AiOptimizeResult) {
-    setTitle(result.title);
-    setSlug(result.slug);
-    setSlugManuallyEdited(true);
-    setContent(result.content);
-    setExcerpt(result.excerpt);
+  function applyAllAi() {
+    if (!aiResult) return;
 
-    const matchedCategoryId = getMatchedCategoryId(result);
+    setTitle(aiResult.title);
+    setSlug(aiResult.slug);
+    setSlugManuallyEdited(true);
+    setContent(aiResult.content);
+    setExcerpt(aiResult.excerpt);
+
+    const matchedCategoryId = getMatchedCategoryId(aiResult);
     if (matchedCategoryId) {
       setCategoryId(matchedCategoryId);
     }
 
-    const matchedTagIds = getMatchedTagIds(result);
+    const matchedTagIds = getMatchedTagIds(aiResult);
     if (matchedTagIds.length > 0) {
       setSelectedTagIds(matchedTagIds);
     }
 
-    showFieldWarnings(result.warnings);
+    showFieldWarnings(aiResult.warnings);
     toast.success('已应用全部 AI 建议');
   }
 
@@ -298,8 +282,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
         return;
       }
 
-      const result = data.data as AiOptimizeResult;
-      setAiResult(result);
+      setAiResult(data.data as AiOptimizeResult);
       setAiOpen(true);
       toast.success('AI 建议已生成');
     } catch (error) {
@@ -421,7 +404,6 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     router.refresh();
   }
 
-  const tagGroups = aiResult ? getTagGroups(aiResult.tagSuggestions) : { existing: [], newTags: [] };
   const matchedCategoryId = aiResult ? getMatchedCategoryId(aiResult) : '';
 
   return (
@@ -626,154 +608,17 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
         </div>
       </div>
 
-      {aiOpen && aiResult && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
-          <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-background shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold">AI 优化建议</h2>
-                <p className="text-sm text-muted-foreground">
-                  先查看建议内容，再决定是否应用到表单。
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAiOpen(false)}
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                关闭
-              </button>
-            </div>
-
-            <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-              {aiResult.warnings.length > 0 && (
-                <section className="rounded-md border border-amber-500/30 bg-amber-500/10 p-4">
-                  <h3 className="mb-2 text-sm font-medium text-amber-700">提醒</h3>
-                  <ul className="space-y-1 text-sm text-amber-700">
-                    {aiResult.warnings.map((warning) => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              <SuggestionSection
-                title="标题建议"
-                actionLabel="应用标题"
-                onApply={() => applyAiField('title', aiResult)}
-              >
-                <p className="text-sm leading-6">{aiResult.title}</p>
-              </SuggestionSection>
-
-              <SuggestionSection
-                title="Slug 建议"
-                actionLabel="应用 Slug"
-                onApply={() => applyAiField('slug', aiResult)}
-              >
-                <p className="font-mono text-sm leading-6">{aiResult.slug}</p>
-              </SuggestionSection>
-
-              <SuggestionSection
-                title="摘要建议"
-                actionLabel="应用摘要"
-                onApply={() => applyAiField('excerpt', aiResult)}
-              >
-                <p className="text-sm leading-6">{aiResult.excerpt || 'AI 未生成摘要建议'}</p>
-                {aiResult.excerpt && (
-                  <p className="text-xs text-muted-foreground">
-                    当前摘要长度：{aiResult.excerpt.length} 字
-                  </p>
-                )}
-              </SuggestionSection>
-
-              <SuggestionSection
-                title="正文建议"
-                actionLabel="应用正文"
-                onApply={() => applyAiField('content', aiResult)}
-              >
-                <div className="rounded-md border border-border p-4">
-                  <MarkdownRenderer content={aiResult.content} />
-                </div>
-              </SuggestionSection>
-
-              <SuggestionSection
-                title="分类建议"
-                actionLabel="应用分类"
-                onApply={() => applyAiField('category', aiResult)}
-              >
-                {aiResult.categorySuggestion ? (
-                  <div className="space-y-2 text-sm leading-6">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                        {aiResult.categorySuggestion.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {matchedCategoryId ? '已匹配到现有分类' : '未匹配到现有分类'}
-                      </span>
-                    </div>
-                    {aiResult.categorySuggestion.reason && (
-                      <p className="text-muted-foreground">{aiResult.categorySuggestion.reason}</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">AI 暂未给出分类建议</p>
-                )}
-              </SuggestionSection>
-
-              <SuggestionSection
-                title="标签建议"
-                actionLabel="应用标签"
-                onApply={() => applyAiField('tags', aiResult)}
-              >
-                <div className="space-y-4">
-                  <div>
-                    <p className="mb-2 text-sm font-medium">推荐现有标签</p>
-                    <div className="flex flex-wrap gap-2">
-                      {tagGroups.existing.length > 0 ? (
-                        tagGroups.existing.map((tag) => (
-                          <TagSuggestionChip key={`${tag.id || tag.name}-existing`} tag={tag} />
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">AI 暂未匹配到现有标签</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-sm font-medium">建议新增标签</p>
-                    <div className="flex flex-wrap gap-2">
-                      {tagGroups.newTags.length > 0 ? (
-                        tagGroups.newTags.map((tag) => (
-                          <TagSuggestionChip key={`${tag.name}-new`} tag={tag} />
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">当前没有新增标签建议</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </SuggestionSection>
-            </div>
-
-            <div className="flex items-center gap-3 border-t border-border px-6 py-4">
-              <button
-                type="button"
-                onClick={() => applyAllAi(aiResult)}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                全部应用
-              </button>
-              <button
-                type="button"
-                onClick={() => setAiOpen(false)}
-                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
-              >
-                稍后再说
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AiSuggestionDrawer
+        open={aiOpen}
+        result={aiResult}
+        matchedCategoryId={matchedCategoryId}
+        onClose={() => setAiOpen(false)}
+        onApplyField={(field) => {
+          if (!aiResult) return;
+          applyFieldSuggestion(field, aiResult);
+        }}
+        onApplyAll={applyAllAi}
+      />
     </>
   );
 }
@@ -796,52 +641,6 @@ function FieldAiButton({
     >
       {loading ? '处理中...' : `${label} AI`}
     </button>
-  );
-}
-
-function SuggestionSection({
-  title,
-  actionLabel,
-  onApply,
-  children,
-}: {
-  title: string;
-  actionLabel: string;
-  onApply: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-medium">{title}</h3>
-        <button
-          type="button"
-          onClick={onApply}
-          className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
-        >
-          {actionLabel}
-        </button>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function TagSuggestionChip({ tag }: { tag: AiSuggestionTag }) {
-  return (
-    <div
-      className={`rounded-lg border px-3 py-2 text-xs ${
-        tag.isNew
-          ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
-          : 'border-primary/30 bg-primary/10 text-primary'
-      }`}
-    >
-      <div className="font-medium">
-        {tag.name}
-        {tag.isNew ? '（建议新增）' : ''}
-      </div>
-      {tag.reason && <div className="mt-1 text-[11px] opacity-80">{tag.reason}</div>}
-    </div>
   );
 }
 
