@@ -29,9 +29,10 @@ export function PostCard({
 
   return (
     <article className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/50 bg-background/40 p-6 sm:p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:bg-muted/20 hover:shadow-xl hover:shadow-primary/5">
-      <Link href={`/posts/${slug}`} className="absolute inset-0 z-0" aria-label={`阅读 ${title}`} />
+      {/* 整个卡片的点击热区，z-10 覆盖在静态文本上，确保整个卡片大部分可点 */}
+      <Link href={`/posts/${slug}`} className="absolute inset-0 z-10" aria-label={`阅读 ${title}`} />
       
-      <div className="relative z-10 flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground/80 font-medium">
           {pinned && (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
@@ -40,7 +41,7 @@ export function PostCard({
             </span>
           )}
           {category && (
-            <Link href={`/categories/${category.slug}`} className="relative z-10 hover:text-primary transition-colors">
+            <Link href={`/categories/${category.slug}`} className="relative z-20 hover:text-primary transition-colors">
               {category.name}
             </Link>
           )}
@@ -65,12 +66,12 @@ export function PostCard({
       </div>
 
       {tags.length > 0 && (
-        <div className="relative z-10 mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-wrap gap-2">
           {tags.map((tag) => (
             <Link
               key={tag.slug}
               href={`/tags/${tag.slug}`}
-              className="inline-flex items-center rounded-full bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="relative z-20 inline-flex items-center rounded-full bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
             >
               #{tag.name}
             </Link>
