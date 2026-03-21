@@ -91,3 +91,7 @@ export const aiOptimizeSchema = z.object({
   categories: z.array(aiOptionSchema).max(100).default([]),
   tags: z.array(aiOptionSchema).max(200).default([]),
 });
+
+export const aiFieldSchema = aiOptimizeSchema.extend({
+  field: z.enum(['title', 'slug', 'content', 'excerpt', 'category', 'tags']),
+});

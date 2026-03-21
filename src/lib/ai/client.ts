@@ -1,5 +1,12 @@
-import type { AiOptimizeInput, AiOptimizeResult, AiSuggestionCategory, AiSuggestionTag } from '@/lib/ai/types';
-import { AI_SYSTEM_PROMPT, buildAiOptimizePrompt } from '@/lib/ai/prompts';
+import type {
+  AiFieldInput,
+  AiFieldResult,
+  AiOptimizeInput,
+  AiOptimizeResult,
+  AiSuggestionCategory,
+  AiSuggestionTag,
+} from '@/lib/ai/types';
+import { AI_SYSTEM_PROMPT, buildAiFieldPrompt, buildAiOptimizePrompt } from '@/lib/ai/prompts';
 import { slugify } from '@/lib/utils';
 
 interface OllamaGenerateResponse {
@@ -58,19 +65,22 @@ function normalizeTags(value: unknown): AiSuggestionTag[] {
   return normalized.slice(0, 5);
 }
 
-function normalizeWarnings(value: unknown, input: AiOptimizeInput) {
+function normalizeWarnings(value: unknown, content: string) {
   const warnings = Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string').map((item) => item.trim())
     : [];
 
-  if (input.content.trim().length < 120) {
+  if (content.trim().length < 120) {
     warnings.unshift('正文较短，AI 建议可能不稳定。');
   }
 
   return Array.from(new Set(warnings.filter(Boolean))).slice(0, 5);
 }
 
-function normalizeResult(parsed: Record<string, unknown>, input: AiOptimizeInput): AiOptimizeResult {
+function normalizeOptimizeResult(
+  parsed: Record<string, unknown>,
+  input: AiOptimizeInput,
+): AiOptimizeResult {
   const title = getString(parsed.title) || input.title.trim() || '未命名文章';
   const content = getString(parsed.content) || input.content.trim();
   const excerpt = getString(parsed.excerpt) || input.excerpt.trim();
@@ -83,11 +93,25 @@ function normalizeResult(parsed: Record<string, unknown>, input: AiOptimizeInput
     content,
     categorySuggestion: normalizeCategory(parsed.categorySuggestion),
     tagSuggestions: normalizeTags(parsed.tagSuggestions),
-    warnings: normalizeWarnings(parsed.warnings, input),
+    warnings: normalizeWarnings(parsed.warnings, input.content),
   };
 }
 
-export async function optimizePostWithOllama(input: AiOptimizeInput): Promise<AiOptimizeResult> {
+function normalizeFieldResult(parsed: Record<string, unknown>, input: AiFieldInput): AiFieldResult {
+  const value = getString(parsed.value);
+  const normalizedValue =
+    input.field === 'slug' ? slugify(value || input.title || input.slug).slice(0, 255) : value;
+
+  return {
+    field: input.field,
+    value: normalizedValue || undefined,
+    categorySuggestion: normalizeCategory(parsed.categorySuggestion),
+    tagSuggestions: normalizeTags(parsed.tagSuggestions),
+    warnings: normalizeWarnings(parsed.warnings, input.content),
+  };
+}
+
+async function callOllama(prompt: string) {
   const baseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
   const model = process.env.OLLAMA_MODEL || 'qwen2.5:1.5b';
   const timeoutMs = Number(process.env.OLLAMA_TIMEOUT_MS || 60000);
@@ -103,7 +127,7 @@ export async function optimizePostWithOllama(input: AiOptimizeInput): Promise<Ai
         model,
         stream: false,
         system: AI_SYSTEM_PROMPT,
-        prompt: buildAiOptimizePrompt(input),
+        prompt,
         options: {
           temperature: 0.2,
         },
@@ -123,9 +147,18 @@ export async function optimizePostWithOllama(input: AiOptimizeInput): Promise<Ai
       throw new Error('Ollama returned empty response');
     }
 
-    const parsed = JSON.parse(extractJsonObject(raw)) as Record<string, unknown>;
-    return normalizeResult(parsed, input);
+    return JSON.parse(extractJsonObject(raw)) as Record<string, unknown>;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function optimizePostWithOllama(input: AiOptimizeInput): Promise<AiOptimizeResult> {
+  const parsed = await callOllama(buildAiOptimizePrompt(input));
+  return normalizeOptimizeResult(parsed, input);
+}
+
+export async function optimizeFieldWithOllama(input: AiFieldInput): Promise<AiFieldResult> {
+  const parsed = await callOllama(buildAiFieldPrompt(input));
+  return normalizeFieldResult(parsed, input);
 }

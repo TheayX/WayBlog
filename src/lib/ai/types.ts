@@ -14,6 +14,12 @@ export interface AiOptimizeInput {
   tags: AiOption[];
 }
 
+export type AiField = 'title' | 'slug' | 'content' | 'excerpt' | 'category' | 'tags';
+
+export interface AiFieldInput extends AiOptimizeInput {
+  field: AiField;
+}
+
 export interface AiSuggestionCategory {
   id?: string;
   name: string;
@@ -34,5 +40,13 @@ export interface AiOptimizeResult {
   content: string;
   categorySuggestion: AiSuggestionCategory | null;
   tagSuggestions: AiSuggestionTag[];
+  warnings: string[];
+}
+
+export interface AiFieldResult {
+  field: AiField;
+  value?: string;
+  categorySuggestion?: AiSuggestionCategory | null;
+  tagSuggestions?: AiSuggestionTag[];
   warnings: string[];
 }

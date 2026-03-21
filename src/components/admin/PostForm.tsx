@@ -1,11 +1,11 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { slugify } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
-import type { AiOptimizeResult } from '@/lib/ai/types';
+import type { AiField, AiFieldResult, AiOptimizeResult } from '@/lib/ai/types';
+import { slugify } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -36,8 +36,6 @@ interface PostFormProps {
   initialData?: PostData;
   isEdit?: boolean;
 }
-
-type AiField = 'title' | 'slug' | 'content' | 'excerpt' | 'category' | 'tags';
 
 export function PostForm({ initialData, isEdit = false }: PostFormProps) {
   const router = useRouter();
@@ -73,6 +71,19 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     fetchMetadata();
   }, [fetchMetadata]);
 
+  function buildAiPayload() {
+    return {
+      title: title.trim(),
+      slug: slug.trim(),
+      content,
+      excerpt: excerpt.trim(),
+      categoryId: categoryId || null,
+      tagIds: selectedTagIds,
+      categories: categories.map((item) => ({ id: item.id, name: item.name })),
+      tags: tags.map((item) => ({ id: item.id, name: item.name })),
+    };
+  }
+
   function handleTitleChange(newTitle: string) {
     setTitle(newTitle);
     if (!slugManuallyEdited && !isEdit) {
@@ -86,22 +97,31 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     );
   }
 
-  function getMatchedCategoryId(result: AiOptimizeResult) {
-    if (!result.categorySuggestion) return '';
+  function showFieldWarnings(warnings: string[]) {
+    if (warnings.length > 0) {
+      toast.warning(warnings[0]);
+    }
+  }
 
-    if (result.categorySuggestion.id) {
-      return result.categorySuggestion.id;
+  function getMatchedCategoryId(result: { categorySuggestion?: AiOptimizeResult['categorySuggestion'] }) {
+    const suggestion = result.categorySuggestion;
+    if (!suggestion) return '';
+
+    if (suggestion.id) {
+      return suggestion.id;
     }
 
     const matched = categories.find(
-      (item) => item.name.toLowerCase() === result.categorySuggestion?.name.toLowerCase(),
+      (item) => item.name.toLowerCase() === suggestion.name.toLowerCase(),
     );
 
     return matched?.id || '';
   }
 
-  function getMatchedTagIds(result: AiOptimizeResult) {
-    const ids = result.tagSuggestions
+  function getMatchedTagIds(result: { tagSuggestions?: AiOptimizeResult['tagSuggestions'] }) {
+    const suggestions = result.tagSuggestions || [];
+
+    const ids = suggestions
       .filter((item) => !item.isNew)
       .map((item) => {
         if (item.id) return item.id;
@@ -113,7 +133,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     return Array.from(new Set(ids));
   }
 
-  function applyAiField(field: AiField, result: AiOptimizeResult) {
+  function applyAiField(field: AiField, result: Pick<AiOptimizeResult, 'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'>) {
     switch (field) {
       case 'title':
         setTitle(result.title);
@@ -151,6 +171,58 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     toast.success(`已应用${getFieldLabel(field)}建议`);
   }
 
+  function applyFieldResult(result: AiFieldResult) {
+    showFieldWarnings(result.warnings);
+
+    switch (result.field) {
+      case 'title':
+        if (result.value) {
+          setTitle(result.value);
+          toast.success('已应用标题建议');
+        }
+        break;
+      case 'slug':
+        if (result.value) {
+          setSlug(result.value);
+          setSlugManuallyEdited(true);
+          toast.success('已应用 Slug 建议');
+        }
+        break;
+      case 'content':
+        if (result.value) {
+          setContent(result.value);
+          toast.success('已应用正文建议');
+        }
+        break;
+      case 'excerpt':
+        if (result.value) {
+          setExcerpt(result.value);
+          toast.success('已应用摘要建议');
+        }
+        break;
+      case 'category': {
+        const matchedCategoryId = getMatchedCategoryId(result);
+        if (!matchedCategoryId) {
+          toast.warning('AI 暂未匹配到现有分类，请手动确认。');
+          return;
+        }
+        setCategoryId(matchedCategoryId);
+        toast.success('已应用分类建议');
+        break;
+      }
+      case 'tags': {
+        const matchedTagIds = getMatchedTagIds(result);
+        if (matchedTagIds.length === 0) {
+          toast.warning('AI 暂未匹配到现有标签，请手动确认。');
+          return;
+        }
+        setSelectedTagIds(matchedTagIds);
+        toast.success('已应用标签建议');
+        break;
+      }
+    }
+  }
+
   function applyAllAi(result: AiOptimizeResult) {
     setTitle(result.title);
     setSlug(result.slug);
@@ -168,12 +240,33 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
       setSelectedTagIds(matchedTagIds);
     }
 
+    showFieldWarnings(result.warnings);
     toast.success('已应用全部 AI 建议');
   }
 
-  async function requestAiSuggestions(targetField?: AiField) {
+  function canRunFieldAi(field: AiField) {
+    switch (field) {
+      case 'title':
+        if (title.trim() || content.trim()) return true;
+        toast.warning('请先填写标题或正文，再优化标题。');
+        return false;
+      case 'slug':
+        if (title.trim() || content.trim()) return true;
+        toast.warning('请先填写标题或正文，再生成 Slug。');
+        return false;
+      case 'content':
+      case 'excerpt':
+      case 'category':
+      case 'tags':
+        if (content.trim()) return true;
+        toast.warning('请先填写正文后再使用这个 AI 功能。');
+        return false;
+    }
+  }
+
+  async function requestAiSuggestions() {
     if (!content.trim()) {
-      toast.warning('请先填写正文后再使用 AI 功能');
+      toast.warning('请先填写正文后再使用 AI 优化。');
       return;
     }
 
@@ -183,20 +276,10 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
       const res = await fetch('/api/ai/optimize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          slug: slug.trim(),
-          content,
-          excerpt: excerpt.trim(),
-          categoryId: categoryId || null,
-          tagIds: selectedTagIds,
-          categories: categories.map((item) => ({ id: item.id, name: item.name })),
-          tags: tags.map((item) => ({ id: item.id, name: item.name })),
-        }),
+        body: JSON.stringify(buildAiPayload()),
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         toast.error(data.error || 'AI 优化失败');
         return;
@@ -204,17 +287,41 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
 
       const result = data.data as AiOptimizeResult;
       setAiResult(result);
-
-      if (targetField) {
-        applyAiField(targetField, result);
-        return;
-      }
-
       setAiOpen(true);
       toast.success('AI 建议已生成');
     } catch (error) {
       console.error(error);
-      toast.error('AI 服务调用失败，请检查 Ollama 是否已启动');
+      toast.error('AI 服务调用失败，请检查 Ollama 是否已启动。');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  async function requestFieldAi(field: AiField) {
+    if (!canRunFieldAi(field)) return;
+
+    setAiLoading(true);
+
+    try {
+      const res = await fetch('/api/ai/field', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          field,
+          ...buildAiPayload(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'AI 处理失败');
+        return;
+      }
+
+      applyFieldResult(data.data as AiFieldResult);
+    } catch (error) {
+      console.error(error);
+      toast.error('AI 服务调用失败，请检查 Ollama 是否已启动。');
     } finally {
       setAiLoading(false);
     }
@@ -314,7 +421,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           />
           <button
             type="button"
-            onClick={() => requestAiSuggestions()}
+            onClick={requestAiSuggestions}
             disabled={aiLoading}
             className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
@@ -339,16 +446,8 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
             placeholder="article-slug"
             className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
           />
-          <FieldAiButton
-            label="标题"
-            loading={aiLoading}
-            onClick={() => requestAiSuggestions('title')}
-          />
-          <FieldAiButton
-            label="Slug"
-            loading={aiLoading}
-            onClick={() => requestAiSuggestions('slug')}
-          />
+          <FieldAiButton label="标题" loading={aiLoading} onClick={() => requestFieldAi('title')} />
+          <FieldAiButton label="Slug" loading={aiLoading} onClick={() => requestFieldAi('slug')} />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
@@ -359,7 +458,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
                 <FieldAiButton
                   label="正文"
                   loading={aiLoading}
-                  onClick={() => requestAiSuggestions('content')}
+                  onClick={() => requestFieldAi('content')}
                 />
               </div>
               <button
@@ -397,7 +496,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
               <FieldAiButton
                 label="摘要"
                 loading={aiLoading}
-                onClick={() => requestAiSuggestions('excerpt')}
+                onClick={() => requestFieldAi('excerpt')}
               />
             </div>
             <textarea
@@ -427,7 +526,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
               <FieldAiButton
                 label="分类"
                 loading={aiLoading}
-                onClick={() => requestAiSuggestions('category')}
+                onClick={() => requestFieldAi('category')}
               />
             </div>
             <select
@@ -463,7 +562,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
             <FieldAiButton
               label="标签"
               loading={aiLoading}
-              onClick={() => requestAiSuggestions('tags')}
+              onClick={() => requestFieldAi('tags')}
             />
           </div>
           <div className="flex flex-wrap gap-2">
