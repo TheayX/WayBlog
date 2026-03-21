@@ -119,34 +119,45 @@ export default async function PostPage({ params }: PostPageProps) {
       <JsonLd data={jsonLd} />
       <div className="xl:grid xl:grid-cols-[1fr_200px] xl:gap-8">
         <article className="min-w-0">
-          <header className="mb-8">
-            <h1 className="mb-4 text-3xl font-bold leading-tight">{post.title}</h1>
+          <header className="mb-10 lg:mb-14">
+            <h1 className="mb-6 text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-foreground">{post.title}</h1>
 
-            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              {post.author.name && <span>{post.author.name}</span>}
+            <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground/80">
+              {post.author.name && (
+                <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
+                    {post.author.name.charAt(0).toUpperCase()}
+                  </span>
+                  {post.author.name}
+                </span>
+              )}
               {post.publishedAt && (
-                <time dateTime={post.publishedAt.toISOString()}>
+                <time dateTime={post.publishedAt.toISOString()} className="flex items-center gap-1.5">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   {formatDate(post.publishedAt)}
                 </time>
               )}
               {post.category && (
                 <Link
                   href={`/categories/${post.category.slug}`}
-                  className="rounded-full border border-border px-2 py-0.5 transition-colors hover:border-primary hover:text-primary"
+                  className="flex items-center gap-1.5 transition-colors hover:text-primary"
                 >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
                   {post.category.name}
                 </Link>
               )}
-              <ViewCounter postId={post.id} initialCount={post.viewCount} />
+              <div className="flex items-center gap-1.5">
+                <ViewCounter postId={post.id} initialCount={post.viewCount} />
+              </div>
             </div>
 
             {post.tags.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
+              <div className="mt-6 flex flex-wrap gap-2">
                 {post.tags.map((tag) => (
                   <Link
                     key={tag.slug}
                     href={`/tags/${tag.slug}`}
-                    className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                    className="inline-flex items-center rounded-full bg-muted/50 px-3 py-1 text-xs font-semibold text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-105 active:scale-95"
                   >
                     #{tag.name}
                   </Link>
