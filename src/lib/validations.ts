@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
-// ─── 通用 ───
-
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 const booleanQuerySchema = z.preprocess((value) => {
   if (value === undefined || value === '') return undefined;
   if (value === true || value === 'true') return true;
@@ -10,16 +9,23 @@ const booleanQuerySchema = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+const aiOptionSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(100),
+});
+
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
 });
 
-// ─── 文章 ───
-
 export const createPostSchema = z.object({
   title: z.string().min(1, '标题不能为空').max(255),
-  slug: z.string().min(1).max(255).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)'),
+  slug: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
   content: z.string().default(''),
   excerpt: z.string().max(500).nullable().optional(),
   coverImage: z.string().max(500).nullable().optional(),
@@ -38,26 +44,28 @@ export const postQuerySchema = paginationSchema.extend({
   pinned: booleanQuerySchema.optional(),
 });
 
-// ─── 分类 ───
-
 export const createCategorySchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
-  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)'),
+  slug: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
   description: z.string().max(500).nullable().optional(),
 });
 
 export const updateCategorySchema = createCategorySchema.partial();
 
-// ─── 标签 ───
-
 export const createTagSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
-  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)'),
+  slug: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
 });
 
 export const updateTagSchema = createTagSchema.partial();
-
-// ─── 友链 ───
 
 export const createFriendLinkSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
@@ -69,9 +77,17 @@ export const createFriendLinkSchema = z.object({
 
 export const updateFriendLinkSchema = createFriendLinkSchema.partial();
 
-// ─── 搜索 ───
-
 export const searchSchema = paginationSchema.extend({
   q: z.string().min(1, '搜索关键词不能为空').max(100),
 });
 
+export const aiOptimizeSchema = z.object({
+  title: z.string().max(255).default(''),
+  slug: z.string().max(255).default(''),
+  content: z.string().min(1, '请先输入正文内容').max(30000),
+  excerpt: z.string().max(500).default(''),
+  categoryId: z.string().nullable().optional(),
+  tagIds: z.array(z.string()).max(20).default([]),
+  categories: z.array(aiOptionSchema).max(100).default([]),
+  tags: z.array(aiOptionSchema).max(200).default([]),
+});

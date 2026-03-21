@@ -9,10 +9,15 @@ const ensureDatabase = async () => {
   } catch (err) {
     console.log('⏳ Docker 尚未运行，正在尝试为您唤起 Docker Desktop...');
     try {
-      // 尝试在 Windows 默认路径启动 Docker Desktop
-      execSync('start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"');
+      // 尝试启动 Docker Desktop
+      execSync('start "" "E:\\DockerDesktop\\Docker Desktop.exe"');
     } catch (e) {
-      console.log('⚠️ 无法自动打开 Docker Desktop，请确保它安装在默认路径，或者请手动将其打开。');
+        try {
+          // 尝试另一个常见路径
+          execSync('start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"');
+        } catch (e2) {
+          console.log('⚠️ 无法自动打开 Docker Desktop，请确保它安装在默认路径，或者请手动将其打开。');
+        }
     }
     
     // 每两秒检测一次，等待 Docker 引擎就绪，最多等待约 60 秒
