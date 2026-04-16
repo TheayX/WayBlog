@@ -63,4 +63,6 @@ Thumbs.db
 *_temp/
 
 # aiassistant
-/.aiassistant
+.aiassistant/
+.claude/
+.worktrees/
