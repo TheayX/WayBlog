@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
   images: {
     remotePatterns: [
@@ -11,6 +10,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ["@prisma/adapter-pg"],
 };
 
 export default nextConfig;
