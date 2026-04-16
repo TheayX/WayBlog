@@ -247,7 +247,7 @@ export function usePostAiAssistant({
 
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || 'AI 优化失败');
+        toast.error('AI 优化暂时不可用，请稍后重试。');
         return;
       }
 
@@ -279,7 +279,7 @@ export function usePostAiAssistant({
 
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || 'AI 处理失败');
+        toast.error('AI 处理暂时不可用，请稍后重试。');
         return;
       }
 
