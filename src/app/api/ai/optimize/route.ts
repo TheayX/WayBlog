@@ -2,7 +2,7 @@ import { badRequest, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
 import { aiOptimizeSchema } from '@/lib/validations';
 import { getAiConfig, getAiProviderLabel } from '@/lib/ai/config';
-import { optimizePostWithAi } from '@/lib/ai';
+import { optimizePostWithAi } from '@/lib/ai/service';
 
 export async function POST(request: Request) {
   try {

@@ -221,33 +221,35 @@ WayBlog/
 | `SITE_URL` | 站点公开 URL | `http://localhost:3333` |
 | `ADMIN_EMAIL` | 管理员邮箱（seed 用） | — |
 | `ADMIN_PASSWORD` | 管理员密码（seed 用） | — |
-| `AI_PROVIDER` | 当前 AI 提供方，支持 `aliyun-bailian` / `ollama` | `aliyun-bailian` |
+| `UPLOAD_MAX_SIZE` | 上传文件大小限制（bytes） | `5242880` (5MB) |
+| `UPLOAD_DIR` | 上传目录 | `public/uploads` |
+| `AI_PROVIDER` | AI 服务提供商，可选 `aliyun-bailian` / `ollama` | `aliyun-bailian` |
 | `AI_TIMEOUT_MS` | AI 请求超时时间（毫秒） | `120000` |
 | `DASHSCOPE_API_KEY` | 阿里百炼 API Key | — |
-| `DASHSCOPE_BASE_URL` | 阿里百炼兼容模式 Base URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `DASHSCOPE_BASE_URL` | 阿里百炼兼容接口地址 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `DASHSCOPE_MODEL` | 阿里百炼模型名 | `qwen3.6-plus` |
 | `OLLAMA_BASE_URL` | Ollama 服务地址 | `http://127.0.0.1:11434` |
 | `OLLAMA_MODEL` | Ollama 模型名 | `qwen2.5:1.5b` |
-| `UPLOAD_MAX_SIZE` | 上传文件大小限制（bytes） | `5242880` (5MB) |
-| `UPLOAD_DIR` | 上传目录 | `public/uploads` |
 
 完整配置见 [.env.example](./.env.example)。
 
-## AI 配置说明
+## AI 模块结构
 
-项目的 AI 能力统一通过服务层选择 provider，接口层不直接依赖具体模型实现。
+AI 写作能力已经拆分为清晰的服务分层：
 
-- 推荐方案：阿里百炼 `qwen3.6-plus`，适合当前在线调用场景
-- 本地方案：Ollama，适合离线调试或本地自托管
-- 切换方式：只改 `.env` 中的 `AI_PROVIDER`，不需要再改业务代码
-- 互斥方式：当前使用哪一套，就保留对应配置；另一套配置可以直接注释掉
+- `src/lib/ai/service.ts`：AI 业务统一入口，负责串联提示词、provider 与结果归一化
+- `src/lib/ai/prompts/*`：按任务组织提示词构建，例如全文优化与单字段优化
+- `src/lib/ai/providers/*`：百炼与 Ollama 的 provider 适配层
+- `src/lib/ai/normalizers/*`：模型输出清洗、JSON 提取与结果归一化
+- `src/app/api/ai/optimize`、`src/app/api/ai/field`：保持轻量的 AI Route Handler
 
-当前 AI 功能覆盖：
+默认 provider 由 `.env` 中的 `AI_PROVIDER` 控制：
 
-- 文章整体优化
-- 标题、Slug、摘要、正文单字段优化
-- 分类推荐
-- 标签推荐
+- 使用阿里百炼时，配置 `DASHSCOPE_API_KEY`，并可通过 `DASHSCOPE_MODEL` 切换模型
+- 使用 Ollama 时，配置 `OLLAMA_BASE_URL` 与 `OLLAMA_MODEL`
+- 两种 provider 共用 `AI_TIMEOUT_MS` 超时设置
+
+管理后台文章编辑页仍使用同一套 AI 能力，但底层已改为通过 service 层调用 provider，无需在前端绑定某个特定模型实现。
 
 ## 已知说明
 

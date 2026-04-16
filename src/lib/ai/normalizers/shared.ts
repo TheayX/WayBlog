@@ -1,30 +1,38 @@
 import type {
   AiFieldInput,
-  AiFieldResult,
   AiOptimizeInput,
-  AiOptimizeResult,
   AiSuggestionCategory,
   AiSuggestionTag,
 } from '@/lib/ai/types';
-import { slugify } from '@/lib/utils';
 
-function getString(value: unknown, fallback = '') {
+export function getString(value: unknown, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
 }
 
-function stripOuterCodeFence(text: string) {
+export function extractJsonObject(raw: string) {
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error('Model did not return a JSON object');
+  }
+
+  return raw.slice(start, end + 1);
+}
+
+export function stripOuterCodeFence(text: string) {
   return text
     .replace(/^```(?:markdown|md|json|text)?\s*/i, '')
     .replace(/\s*```$/, '')
     .trim();
 }
 
-function normalizeMarkdown(value: string, fallback: string) {
+export function normalizeMarkdown(value: string, fallback: string) {
   const normalized = stripOuterCodeFence(value).replace(/\r\n/g, '\n').trim();
   return normalized || fallback.trim();
 }
 
-function clampExcerpt(value: string, fallback: string) {
+export function clampExcerpt(value: string, fallback: string) {
   const source = stripOuterCodeFence(value || fallback)
     .replace(/\s+/g, ' ')
     .trim();
@@ -38,7 +46,7 @@ function clampExcerpt(value: string, fallback: string) {
   return `${source.slice(0, 137).trim()}...`;
 }
 
-function normalizeCategory(
+export function normalizeCategory(
   value: unknown,
   input: AiOptimizeInput | AiFieldInput,
 ): AiSuggestionCategory | null {
@@ -57,10 +65,7 @@ function normalizeCategory(
   };
 }
 
-function normalizeTags(
-  value: unknown,
-  input: AiOptimizeInput | AiFieldInput,
-): AiSuggestionTag[] {
+export function normalizeTags(value: unknown, input: AiOptimizeInput | AiFieldInput): AiSuggestionTag[] {
   if (!Array.isArray(value)) return [];
 
   const seen = new Set<string>();
@@ -91,7 +96,7 @@ function normalizeTags(
   return normalized.slice(0, 5);
 }
 
-function normalizeWarnings(value: unknown, content: string) {
+export function normalizeWarnings(value: unknown, content: string) {
   const warnings = Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string').map((item) => item.trim())
     : [];
@@ -101,52 +106,4 @@ function normalizeWarnings(value: unknown, content: string) {
   }
 
   return Array.from(new Set(warnings.filter(Boolean))).slice(0, 5);
-}
-
-// provider 返回的结构不完全可信，这里统一收口成前端稳定消费的数据格式。
-export function normalizeOptimizeResult(
-  parsed: Record<string, unknown>,
-  input: AiOptimizeInput,
-): AiOptimizeResult {
-  const title = getString(parsed.title) || input.title.trim() || '未命名文章';
-  const content = normalizeMarkdown(getString(parsed.content), input.content);
-  const excerpt = clampExcerpt(getString(parsed.excerpt), input.excerpt || content);
-  const rawSlug = getString(parsed.slug) || title;
-
-  return {
-    title,
-    slug: slugify(rawSlug).slice(0, 255),
-    excerpt: excerpt.slice(0, 500),
-    content,
-    categorySuggestion: normalizeCategory(parsed.categorySuggestion, input),
-    tagSuggestions: normalizeTags(parsed.tagSuggestions, input),
-    warnings: normalizeWarnings(parsed.warnings, input.content),
-  };
-}
-
-// 单字段优化和整篇优化共用同一套清洗规则，避免不同 provider 产生行为漂移。
-export function normalizeFieldResult(
-  parsed: Record<string, unknown>,
-  input: AiFieldInput,
-): AiFieldResult {
-  const rawValue = getString(parsed.value);
-
-  let value = rawValue;
-  if (input.field === 'slug') {
-    value = slugify(rawValue || input.title || input.slug).slice(0, 255);
-  }
-  if (input.field === 'content') {
-    value = normalizeMarkdown(rawValue, input.content);
-  }
-  if (input.field === 'excerpt') {
-    value = clampExcerpt(rawValue, input.excerpt || input.content);
-  }
-
-  return {
-    field: input.field,
-    value: value || undefined,
-    categorySuggestion: normalizeCategory(parsed.categorySuggestion, input),
-    tagSuggestions: normalizeTags(parsed.tagSuggestions, input),
-    warnings: normalizeWarnings(parsed.warnings, input.content),
-  };
 }

@@ -1,5 +1,10 @@
-import { AI_SYSTEM_PROMPT } from '@/lib/ai/prompts';
-import { getAiConfig } from '@/lib/ai/config';
+import type { AiProviderClient, AiProviderRequest } from '@/lib/ai/providers/types';
+
+interface BailianProviderConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
 
 interface BailianChatCompletionResponse {
   choices?: Array<{
@@ -9,82 +14,61 @@ interface BailianChatCompletionResponse {
   }>;
 }
 
-function getString(value: unknown, fallback = '') {
-  return typeof value === 'string' ? value.trim() : fallback;
-}
-
 function truncateText(value: string, maxLength = 300) {
   const normalized = value.replace(/\s+/g, ' ').trim();
   if (normalized.length <= maxLength) return normalized;
   return `${normalized.slice(0, maxLength - 3)}...`;
 }
 
-function extractJsonObject(raw: string) {
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
+export function createAliyunBailianProvider(config: BailianProviderConfig): AiProviderClient {
+  return {
+    name: 'aliyun-bailian',
+    async generate({ systemPrompt, userPrompt, timeoutMs }: AiProviderRequest) {
+      if (!config.apiKey) {
+        throw new Error('Missing DASHSCOPE_API_KEY');
+      }
 
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error('Model did not return a JSON object');
-  }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  return raw.slice(start, end + 1);
-}
-
-// 百炼兼容 OpenAI Chat Completions，这里只保留项目当前需要的最小字段。
-export async function callAliyunBailian(prompt: string): Promise<Record<string, unknown>> {
-  const config = getAiConfig();
-
-  if (!config.aliyunBailian.apiKey) {
-    throw new Error('Missing DASHSCOPE_API_KEY');
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
-
-  try {
-    const response = await fetch(`${config.aliyunBailian.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.aliyunBailian.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: config.aliyunBailian.model,
-        temperature: 0.2,
-        enable_thinking: false,
-        messages: [
-          {
-            role: 'system',
-            content: AI_SYSTEM_PROMPT,
+      try {
+        const response = await fetch(`${config.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${config.apiKey}`,
           },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
-      signal: controller.signal,
-      cache: 'no-store',
-    });
+          body: JSON.stringify({
+            model: config.model,
+            temperature: 0.2,
+            enable_thinking: false,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+          }),
+          signal: controller.signal,
+          cache: 'no-store',
+        });
 
-    if (!response.ok) {
-      const errorText = truncateText(await response.text());
-      throw new Error(
-        `Aliyun Bailian request failed with status ${response.status}${
-          errorText ? `: ${errorText}` : ''
-        }`,
-      );
-    }
+        if (!response.ok) {
+          const errorText = truncateText(await response.text());
+          throw new Error(
+            `Aliyun Bailian request failed with status ${response.status}${errorText ? `: ${errorText}` : ''}`,
+          );
+        }
 
-    const data = (await response.json()) as BailianChatCompletionResponse;
-    const raw = getString(data.choices?.[0]?.message?.content);
+        const data = (await response.json()) as BailianChatCompletionResponse;
+        const content = data.choices?.[0]?.message?.content?.trim();
 
-    if (!raw) {
-      throw new Error('Aliyun Bailian returned empty response');
-    }
+        if (!content) {
+          throw new Error('Aliyun Bailian returned empty response');
+        }
 
-    return JSON.parse(extractJsonObject(raw)) as Record<string, unknown>;
-  } finally {
-    clearTimeout(timeout);
-  }
+        return content;
+      } finally {
+        clearTimeout(timeout);
+      }
+    },
+  };
 }

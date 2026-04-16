@@ -1,8 +1,8 @@
-import { getAiConfig, getAiProviderLabel } from '@/lib/ai/config';
-import { optimizeFieldWithAi } from '@/lib/ai';
 import { requireAuth } from '@/lib/auth-guard';
 import { badRequest, ok, serverError } from '@/lib/response';
 import { aiFieldSchema } from '@/lib/validations';
+import { getAiConfig, getAiProviderLabel } from '@/lib/ai/config';
+import { optimizeFieldWithAi } from '@/lib/ai/service';
 
 export async function POST(request: Request) {
   try {
