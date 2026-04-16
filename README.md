@@ -37,6 +37,7 @@
 
 - 🔐 鉴权 — 管理员登录、Middleware 路由保护、API 认证守卫
 - 📊 统计 — 文章浏览量（PV/UV）、后台仪表盘概览
+- 🤖 AI 辅助写作 — 支持文章润色、字段优化、分类和标签建议，可切换阿里百炼或 Ollama
 - 🖼️ 图片上传 — 本地存储到 `public/uploads`
 - 🌓 主题切换 — 亮色 / 暗色 / 跟随系统
 - 🛡️ 限流 — 基于内存的滑动窗口 Rate Limiter
@@ -77,6 +78,25 @@ Copy-Item .env.example .env   # Windows PowerShell
 ```
 
 打开 `.env`，按需修改数据库密码、`NEXTAUTH_SECRET`、管理员账号等。
+
+如果需要启用 AI 写作功能，推荐先配置阿里百炼：
+
+```env
+AI_PROVIDER="aliyun-bailian"
+AI_TIMEOUT_MS=60000
+DASHSCOPE_API_KEY="your-dashscope-api-key"
+DASHSCOPE_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+DASHSCOPE_MODEL="qwen3.6-plus"
+```
+
+如果想切回本地 Ollama，将 `AI_PROVIDER` 改为 `ollama`，并启用对应配置：
+
+```env
+AI_PROVIDER="ollama"
+AI_TIMEOUT_MS=60000
+OLLAMA_BASE_URL="http://127.0.0.1:11434"
+OLLAMA_MODEL="qwen2.5:1.5b"
+```
 
 ### 4. 初始化数据库
 
@@ -201,10 +221,33 @@ WayBlog/
 | `SITE_URL` | 站点公开 URL | `http://localhost:3333` |
 | `ADMIN_EMAIL` | 管理员邮箱（seed 用） | — |
 | `ADMIN_PASSWORD` | 管理员密码（seed 用） | — |
+| `AI_PROVIDER` | 当前 AI 提供方，支持 `aliyun-bailian` / `ollama` | `aliyun-bailian` |
+| `AI_TIMEOUT_MS` | AI 请求超时时间（毫秒） | `60000` |
+| `DASHSCOPE_API_KEY` | 阿里百炼 API Key | — |
+| `DASHSCOPE_BASE_URL` | 阿里百炼兼容模式 Base URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `DASHSCOPE_MODEL` | 阿里百炼模型名 | `qwen3.6-plus` |
+| `OLLAMA_BASE_URL` | Ollama 服务地址 | `http://127.0.0.1:11434` |
+| `OLLAMA_MODEL` | Ollama 模型名 | `qwen2.5:1.5b` |
 | `UPLOAD_MAX_SIZE` | 上传文件大小限制（bytes） | `5242880` (5MB) |
 | `UPLOAD_DIR` | 上传目录 | `public/uploads` |
 
 完整配置见 [.env.example](./.env.example)。
+
+## AI 配置说明
+
+项目的 AI 能力统一通过服务层选择 provider，接口层不直接依赖具体模型实现。
+
+- 推荐方案：阿里百炼 `qwen3.6-plus`，适合当前在线调用场景
+- 本地方案：Ollama，适合离线调试或本地自托管
+- 切换方式：只改 `.env` 中的 `AI_PROVIDER`，不需要再改业务代码
+- 互斥方式：当前使用哪一套，就保留对应配置；另一套配置可以直接注释掉
+
+当前 AI 功能覆盖：
+
+- 文章整体优化
+- 标题、Slug、摘要、正文单字段优化
+- 分类推荐
+- 标签推荐
 
 ## 已知说明
 

@@ -6,26 +6,10 @@ import type {
   AiSuggestionCategory,
   AiSuggestionTag,
 } from '@/lib/ai/types';
-import { AI_SYSTEM_PROMPT, buildAiFieldPrompt, buildAiOptimizePrompt } from '@/lib/ai/prompts';
 import { slugify } from '@/lib/utils';
-
-interface OllamaGenerateResponse {
-  response?: string;
-}
 
 function getString(value: unknown, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
-}
-
-function extractJsonObject(raw: string) {
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error('Model did not return a JSON object');
-  }
-
-  return raw.slice(start, end + 1);
 }
 
 function stripOuterCodeFence(text: string) {
@@ -119,7 +103,8 @@ function normalizeWarnings(value: unknown, content: string) {
   return Array.from(new Set(warnings.filter(Boolean))).slice(0, 5);
 }
 
-function normalizeOptimizeResult(
+// provider 返回的结构不完全可信，这里统一收口成前端稳定消费的数据格式。
+export function normalizeOptimizeResult(
   parsed: Record<string, unknown>,
   input: AiOptimizeInput,
 ): AiOptimizeResult {
@@ -139,7 +124,11 @@ function normalizeOptimizeResult(
   };
 }
 
-function normalizeFieldResult(parsed: Record<string, unknown>, input: AiFieldInput): AiFieldResult {
+// 单字段优化和整篇优化共用同一套清洗规则，避免不同 provider 产生行为漂移。
+export function normalizeFieldResult(
+  parsed: Record<string, unknown>,
+  input: AiFieldInput,
+): AiFieldResult {
   const rawValue = getString(parsed.value);
 
   let value = rawValue;
@@ -160,56 +149,4 @@ function normalizeFieldResult(parsed: Record<string, unknown>, input: AiFieldInp
     tagSuggestions: normalizeTags(parsed.tagSuggestions, input),
     warnings: normalizeWarnings(parsed.warnings, input.content),
   };
-}
-
-async function callOllama(prompt: string) {
-  const baseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
-  const model = process.env.OLLAMA_MODEL || 'qwen2.5:1.5b';
-  const timeoutMs = Number(process.env.OLLAMA_TIMEOUT_MS || 60000);
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(`${baseUrl}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        stream: false,
-        system: AI_SYSTEM_PROMPT,
-        prompt,
-        options: {
-          temperature: 0.2,
-        },
-      }),
-      signal: controller.signal,
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Ollama request failed with status ${response.status}`);
-    }
-
-    const data = (await response.json()) as OllamaGenerateResponse;
-    const raw = getString(data.response);
-
-    if (!raw) {
-      throw new Error('Ollama returned empty response');
-    }
-
-    return JSON.parse(extractJsonObject(raw)) as Record<string, unknown>;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-export async function optimizePostWithOllama(input: AiOptimizeInput): Promise<AiOptimizeResult> {
-  const parsed = await callOllama(buildAiOptimizePrompt(input));
-  return normalizeOptimizeResult(parsed, input);
-}
-
-export async function optimizeFieldWithOllama(input: AiFieldInput): Promise<AiFieldResult> {
-  const parsed = await callOllama(buildAiFieldPrompt(input));
-  return normalizeFieldResult(parsed, input);
 }

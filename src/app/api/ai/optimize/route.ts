@@ -1,7 +1,8 @@
 import { badRequest, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
 import { aiOptimizeSchema } from '@/lib/validations';
-import { optimizePostWithOllama } from '@/lib/ai/client';
+import { getAiConfig, getAiProviderLabel } from '@/lib/ai/config';
+import { optimizePostWithAi } from '@/lib/ai';
 
 export async function POST(request: Request) {
   try {
@@ -15,11 +16,12 @@ export async function POST(request: Request) {
       return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
     }
 
-    const result = await optimizePostWithOllama(parsed.data);
+    const result = await optimizePostWithAi(parsed.data);
     return ok(result);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return serverError('POST /api/ai/optimize', new Error('Ollama request timed out'));
+      const providerLabel = getAiProviderLabel(getAiConfig().provider);
+      return serverError('POST /api/ai/optimize', new Error(`${providerLabel} request timed out`));
     }
 
     return serverError('POST /api/ai/optimize', error);
