@@ -13,6 +13,12 @@ function getString(value: unknown, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
 }
 
+function truncateText(value: string, maxLength = 300) {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 3)}...`;
+}
+
 function extractJsonObject(raw: string) {
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
@@ -45,6 +51,7 @@ export async function callAliyunBailian(prompt: string): Promise<Record<string, 
       body: JSON.stringify({
         model: config.aliyunBailian.model,
         temperature: 0.2,
+        enable_thinking: false,
         messages: [
           {
             role: 'system',
@@ -61,7 +68,12 @@ export async function callAliyunBailian(prompt: string): Promise<Record<string, 
     });
 
     if (!response.ok) {
-      throw new Error(`Aliyun Bailian request failed with status ${response.status}`);
+      const errorText = truncateText(await response.text());
+      throw new Error(
+        `Aliyun Bailian request failed with status ${response.status}${
+          errorText ? `: ${errorText}` : ''
+        }`,
+      );
     }
 
     const data = (await response.json()) as BailianChatCompletionResponse;

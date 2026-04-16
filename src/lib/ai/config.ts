@@ -15,7 +15,7 @@ export function getAiConfig() {
 
   return {
     provider: provider === 'aliyun-bailian' ? provider : 'ollama',
-    timeoutMs: getNumber(process.env.AI_TIMEOUT_MS, 60000),
+    timeoutMs: getNumber(process.env.AI_TIMEOUT_MS, 120000),
     ollama: {
       baseUrl: getString(process.env.OLLAMA_BASE_URL, 'http://127.0.0.1:11434'),
       model: getString(process.env.OLLAMA_MODEL, 'qwen2.5:1.5b'),

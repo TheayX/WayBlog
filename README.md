@@ -83,7 +83,7 @@ Copy-Item .env.example .env   # Windows PowerShell
 
 ```env
 AI_PROVIDER="aliyun-bailian"
-AI_TIMEOUT_MS=60000
+AI_TIMEOUT_MS=120000
 DASHSCOPE_API_KEY="your-dashscope-api-key"
 DASHSCOPE_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
 DASHSCOPE_MODEL="qwen3.6-plus"
@@ -93,7 +93,7 @@ DASHSCOPE_MODEL="qwen3.6-plus"
 
 ```env
 AI_PROVIDER="ollama"
-AI_TIMEOUT_MS=60000
+AI_TIMEOUT_MS=120000
 OLLAMA_BASE_URL="http://127.0.0.1:11434"
 OLLAMA_MODEL="qwen2.5:1.5b"
 ```
@@ -222,7 +222,7 @@ WayBlog/
 | `ADMIN_EMAIL` | 管理员邮箱（seed 用） | — |
 | `ADMIN_PASSWORD` | 管理员密码（seed 用） | — |
 | `AI_PROVIDER` | 当前 AI 提供方，支持 `aliyun-bailian` / `ollama` | `aliyun-bailian` |
-| `AI_TIMEOUT_MS` | AI 请求超时时间（毫秒） | `60000` |
+| `AI_TIMEOUT_MS` | AI 请求超时时间（毫秒） | `120000` |
 | `DASHSCOPE_API_KEY` | 阿里百炼 API Key | — |
 | `DASHSCOPE_BASE_URL` | 阿里百炼兼容模式 Base URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `DASHSCOPE_MODEL` | 阿里百炼模型名 | `qwen3.6-plus` |
