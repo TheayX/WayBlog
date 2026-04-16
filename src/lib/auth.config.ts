@@ -1,3 +1,9 @@
+/**
+ * NextAuth 的共享基础配置。
+ *
+ * 这里刻意不依赖 Prisma 等 Node.js 专属能力，便于在 middleware 等 Edge 运行时复用，
+ * 统一管理会话策略、登录页与路由级鉴权规则。
+ */
 import type { NextAuthConfig } from 'next-auth';
 
 /**
@@ -13,24 +19,33 @@ export const authConfig: NextAuthConfig = {
     signIn: '/admin/login',
   },
   callbacks: {
+    /**
+     * 将数据库中的用户主键透传到 JWT，供后续会话归一化使用。
+     */
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
+    /**
+     * 将 JWT 中的扩展字段映射回会话对象，保证服务端与前端读取到一致的 `session.user.id`。
+     */
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
       }
       return session;
     },
-    // middleware 中用于路由保护的逻辑
+    /**
+     * middleware 中用于管理后台路由保护的统一入口。
+     * 约束：只拦截 `/admin` 相关路径，公开页/前台页面保持可匿名访问。
+     */
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
 
-      // /admin/login 不需要认证
+      // 登录页允许匿名访问；已登录用户再次访问时直接送回后台首页，减少重复登录操作。
       if (pathname === '/admin/login') {
         if (isLoggedIn) {
           return Response.redirect(new URL('/admin/dashboard', nextUrl));
@@ -38,11 +53,12 @@ export const authConfig: NextAuthConfig = {
         return true;
       }
 
-      // /admin/* 下的其他路由需要认证
+      // 管理后台其余页面必须具备会话；返回 false 时由 NextAuth 自动跳转到 signIn 页面。
       if (pathname.startsWith('/admin')) {
-        return isLoggedIn; // false 会自动重定向到 signIn 页面
+        return isLoggedIn;
       }
 
+      // 非后台路径一律放行，避免影响公开页/前台页面和其他路由处理器。
       return true;
     },
   },

@@ -1,5 +1,6 @@
 import type { AiProviderClient, AiProviderRequest } from '@/lib/ai/providers/types';
 
+/** 阿里云百炼 provider 的配置结构。 */
 interface BailianProviderConfig {
   apiKey: string;
   baseUrl: string;
@@ -20,10 +21,15 @@ function truncateText(value: string, maxLength = 300) {
   return `${normalized.slice(0, maxLength - 3)}...`;
 }
 
+/**
+ * 创建阿里云百炼 provider。
+ * 负责把统一的请求结构转换为百炼兼容接口所需的 chat completions 请求体。
+ */
 export function createAliyunBailianProvider(config: BailianProviderConfig): AiProviderClient {
   return {
     name: 'aliyun-bailian',
     async generate({ systemPrompt, userPrompt, timeoutMs }: AiProviderRequest) {
+      // 百炼 provider 依赖服务端密钥，缺失时直接失败，避免发起无效请求。
       if (!config.apiKey) {
         throw new Error('Missing DASHSCOPE_API_KEY');
       }

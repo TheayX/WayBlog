@@ -1,6 +1,8 @@
 /**
- * 基于内存的滑动窗口 Rate Limiter
- * MVP 阶段足够，不引入 Redis
+ * 基于内存的轻量限流器。
+ *
+ * 适用于当前单机场景下的登录、搜索、浏览量记录等接口保护。
+ * 由于状态保存在进程内内存中，因此不适合多实例部署或需要跨节点共享限流状态的场景。
  */
 
 interface RateLimitEntry {
@@ -10,7 +12,7 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>();
 
-// 定期清理过期条目（每 5 分钟）
+// 通过定时清理过期窗口，避免长期运行时无效 key 一直滞留在内存中。
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of store) {
@@ -21,26 +23,30 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 interface RateLimitOptions {
-  /** 时间窗口内最大请求数 */
+  /** 单个时间窗口内允许通过的最大请求数。 */
   max: number;
-  /** 时间窗口（毫秒） */
+  /** 时间窗口长度，单位为毫秒。 */
   windowMs: number;
 }
 
+/**
+ * 创建一个按 key 计数的限流器。
+ * key 通常由客户端 IP 或 "IP + 路由" 组合而成，用来区分不同访问方和接口。
+ */
 export function rateLimit(options: RateLimitOptions) {
   const { max, windowMs } = options;
 
   return {
     /**
-     * 检查是否超出限流
-     * @param key 唯一标识（通常是 IP 或 IP + 端点）
-     * @returns true = 允许通过, false = 超出限制
+     * 检查给定 key 是否还能在当前窗口内继续请求。
+     * 返回 `true` 表示放行，返回 `false` 表示命中限流。
      */
     check(key: string): boolean {
       const now = Date.now();
       const entry = store.get(key);
 
       if (!entry || now > entry.resetTime) {
+        // 首次访问或窗口已过期时，重新开始计数。
         store.set(key, { count: 1, resetTime: now + windowMs });
         return true;
       }
@@ -70,7 +76,8 @@ export const searchLimiter = rateLimit({ max: 30, windowMs: 60 * 1000 });
 export const apiLimiter = rateLimit({ max: 60, windowMs: 60 * 1000 });
 
 /**
- * 从请求头中提取客户端 IP
+ * 从请求头中提取客户端 IP。
+ * 优先读取反向代理常用头；本地开发或无法识别来源时回退到本机地址。
  */
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');

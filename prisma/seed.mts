@@ -3,17 +3,27 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from 'bcryptjs';
 import { config } from 'dotenv';
 
+/**
+ * 开发环境种子脚本。
+ *
+ * 用于初始化管理员账号、基础分类标签、欢迎文章、友链与 about 页面，
+ * 让本地启动后立即具备可登录、可浏览、可演示的最小博客数据集。
+ */
 config();
 
 type PrismaClientModule = typeof import('../src/generated/prisma/client');
 
-// tsx loads ESM client.ts as CJS, so named exports are in .default
+// 兼容 tsx 以 CJS 方式加载生成客户端时的 default 包装差异。
 const mod = (PrismaModule as PrismaClientModule & { default?: PrismaClientModule }).default ?? PrismaModule;
 const PrismaClient = mod.PrismaClient;
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
+/**
+ * 执行种子填充。
+ * 采用 upsert/存在性检查保证多次运行脚本时不会不断制造重复基础数据。
+ */
 async function main() {
   console.log('🌱 开始填充种子数据...');
 

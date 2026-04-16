@@ -3,7 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { searchSchema } from '@/lib/validations';
 import { searchLimiter, getClientIp } from '@/lib/rate-limit';
 
-// ─── GET /api/search — 搜索文章 ───
+/**
+ * 前台页面搜索路由处理器。
+ *
+ * 该接口面向公开页搜索场景，不要求登录，但必须在入口处做限流与参数校验：
+ * - 限流用于抑制高频爬取和无意义的全文检索压力，保护数据库全文索引；
+ * - 校验用于归一化分页与关键词参数，避免把脏输入继续传入 SQL；
+ * - 返回结果只包含已发布文章，确保草稿和管理后台内容不会泄露到公开页。
+ */
 export async function GET(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -24,8 +31,14 @@ export async function GET(request: NextRequest) {
     const { q, page, pageSize } = parsed.data;
     const offset = (page - 1) * pageSize;
 
-    // 将搜索词转为 tsquery 格式
-    // 只保留字母、数字、中文，用 & 连接每个词
+    /**
+     * 将用户输入归一化为 PostgreSQL tsquery 词项。
+     *
+     * 这里只保留字母、数字和中文，再以 & 拼接为“全部词项都命中”的查询条件，原因是：
+     * - 避免把标点或特殊字符直接拼入 to_tsquery，降低语法报错和注入面的复杂度；
+     * - 统一空白分词策略，让前台页面输入与数据库全文检索行为保持稳定；
+     * - 空词项会被过滤，最终没有有效关键词时直接返回空结果，而不是执行一次全表搜索。
+     */
     const sanitizedTerms = q
       .trim()
       .split(/\s+/)
@@ -36,10 +49,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: [], total: 0, page, pageSize });
     }
 
-    // 使用 & 连接词项作为 tsquery 输入
+    // 使用 AND 语义拼接词项，优先保证搜索结果相关性，而不是放宽为任一词命中。
     const tsQuery = sanitizedTerms.join(' & ');
 
-    // 搜索已发布文章
+    /**
+     * 搜索范围限定为已发布文章。
+     *
+     * 这里同时返回高亮摘要，便于前台页面直接展示命中上下文；摘要来自数据库全文检索函数，
+     * 可减少应用层二次裁剪文本的重复成本。
+     */
     const results: Array<{
       id: string;
       title: string;
@@ -72,7 +90,12 @@ export async function GET(request: NextRequest) {
 
     const total = Number(countResult[0]?.count || 0);
 
-    // 获取关联的分类和标签
+    /**
+     * 搜索主查询只取列表必要字段，分类和标签补充查询留给 ORM 处理。
+     *
+     * 这样做的原因是全文检索 SQL 已经足够专注于排序和高亮，关系数据改由 Prisma 归一化组装，
+     * 可读性更好，也能避免在原始 SQL 中继续堆叠多表 join。
+     */
     const postIds = results.map((r) => r.id);
     const postsWithRelations = postIds.length > 0
       ? await prisma.post.findMany({

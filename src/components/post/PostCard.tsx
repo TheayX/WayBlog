@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { formatDate, truncate } from '@/lib/utils';
 
+/**
+ * 文章列表卡片。
+ *
+ * 用于首页、分类页、标签页等列表场景，统一承载标题、摘要、分类、标签、浏览量与置顶态展示。
+ * `excerpt` 优先作为摘要来源，缺失时才回退到 `content` 截断，避免前台页面列表把正文原样暴露得过长。
+ */
 interface PostCardProps {
   title: string;
   slug: string;

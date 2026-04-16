@@ -1,5 +1,12 @@
 import Link from 'next/link';
 
+/**
+ * 文章详情页上下篇导航。
+ *
+ * 负责在前台页面详情底部串联相邻文章，
+ * 同时兼容只有上一篇或下一篇存在的边界场景。
+ * 当其中一侧为空时保留占位宽度，是为了让双栏布局在桌面端保持稳定对齐。
+ */
 interface PostNavigationProps {
   prevPost: { slug: string; title: string } | null;
   nextPost: { slug: string; title: string } | null;

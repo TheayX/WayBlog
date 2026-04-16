@@ -1,9 +1,15 @@
 import { prisma } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/site';
-import { PostStatus } from '@/generated/prisma';
+import { PostStatus } from '@/generated/prisma/client';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * feed.xml 元数据路由。
+ *
+ * 该前台元数据路由为 RSS 订阅提供 XML 输出，数据源为数据库中的已发布文章。
+ * 这里不会包含草稿，也不会暴露管理后台信息；返回结果可被订阅器和聚合器直接消费。
+ */
 export async function GET() {
   const site = getSiteConfig();
 
@@ -22,6 +28,7 @@ export async function GET() {
     take: 20,
   });
 
+  // 手写 XML 时必须转义特殊字符，避免 Markdown 或摘要内容破坏文档结构。
   const escapeXml = (str: string) =>
     str
       .replace(/&/g, '&amp;')
@@ -65,6 +72,7 @@ ${items}
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/rss+xml; charset=utf-8',
+      // 订阅内容允许短时间缓存，减少重复生成开销。
       'Cache-Control': 'public, max-age=3600, s-maxage=3600',
     },
   });

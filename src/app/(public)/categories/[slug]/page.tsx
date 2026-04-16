@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { PostStatus } from '@/generated/prisma';
+import { PostStatus } from '@/generated/prisma/client';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { prisma } from '@/lib/prisma';
@@ -12,6 +12,11 @@ interface CategoryPageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
+/**
+ * 分类页元数据。
+ *
+ * 根据分类 slug 生成公开页标题与描述，方便搜索引擎理解当前聚合页语义。
+ */
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
   const category = await prisma.category.findUnique({
@@ -27,6 +32,12 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   };
 }
 
+/**
+ * 前台分类聚合页。
+ *
+ * 负责分页展示某个分类下的已发布文章，并在分类不存在时回落到 404，
+ * 草稿不会通过这个公开入口暴露。
+ */
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { slug } = await params;
   const { page: pageStr } = await searchParams;

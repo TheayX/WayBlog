@@ -1,3 +1,9 @@
+/**
+ * AI 提示词共享规则与构造工具。
+ *
+ * 这里集中维护系统提示词、字段级/全文级共用约束和 JSON 输出模板拼装函数，
+ * 避免不同提示词文件之间出现要求漂移。
+ */
 const JSON_ONLY_RULE = '输出必须是合法 JSON，不要使用 Markdown 代码围栏';
 const BRIEF_WARNING_RULE = 'warnings 仅用于输出简短提醒，没有则返回空数组';
 
@@ -15,6 +21,7 @@ const POST_RULES = [
   '标签优先从候选标签中选择 2 到 5 个；确实没有合适标签时最多新增 2 个',
 ] as const;
 
+/** 不同字段的专属优化约束，供字段级提示词按目标字段动态拼装。 */
 export const FIELD_RULES = {
   title: ['保留原意', '标题更自然、更准确，适合技术博客', '不夸张，不标题党'],
   slug: ['基于标题和正文核心含义生成', '只允许小写字母、数字、连字符', '尽量短且清晰'],
@@ -46,10 +53,15 @@ export const AI_SYSTEM_PROMPT = `
 ${formatRuleList([...COMMON_PROMPT_RULES, ...POST_RULES])}
 `.trim();
 
+/** 将规则数组格式化为多行列表，便于直接嵌入提示词正文。 */
 export function formatRuleList(rules: readonly string[]) {
   return rules.map((rule) => `- ${rule}`).join('\n');
 }
 
+/**
+ * 构造“只返回 JSON”格式的最终提示词。
+ * 统一把输入、规则与期望输出样例组合起来，降低各个具体提示词文件的重复代码。
+ */
 export function buildJsonOnlyPrompt(
   instruction: string,
   input: unknown,

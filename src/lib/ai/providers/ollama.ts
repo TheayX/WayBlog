@@ -1,6 +1,7 @@
 import { getString } from '@/lib/ai/normalizers/shared';
 import type { AiProviderClient, AiProviderRequest } from '@/lib/ai/providers/types';
 
+/** Ollama provider 的连接配置。 */
 interface OllamaProviderConfig {
   baseUrl: string;
   model: string;
@@ -16,6 +17,10 @@ function truncateText(value: string, maxLength = 300) {
   return `${normalized.slice(0, maxLength - 3)}...`;
 }
 
+/**
+ * 创建 Ollama provider。
+ * 负责把统一请求结构映射为本地 Ollama `/api/generate` 接口需要的载荷。
+ */
 export function createOllamaProvider(config: OllamaProviderConfig): AiProviderClient {
   return {
     name: 'ollama',

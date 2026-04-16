@@ -5,6 +5,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { formatDateShort } from '@/lib/utils';
 
+/**
+ * 管理后台文章列表页。
+ *
+ * 负责分页拉取文章、按状态筛选，并提供跳转编辑与删除入口；
+ * 真正的数据约束和鉴权仍由 `/api/posts` 路由处理器负责。
+ */
 interface PostItem {
   id: string;
   title: string;

@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
+/**
+ * 站内 slug 的统一格式约束。
+ * 仅允许小写字母、数字和单个连字符分段，避免生成不稳定的公开路径。
+ */
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/**
+ * 将查询字符串中的布尔值标准化为真正的 boolean。
+ * 主要用于路由处理器读取 search params 时兼容 `"true"` / `"false"` 文本。
+ */
 const booleanQuerySchema = z.preprocess((value) => {
   if (value === undefined || value === '') return undefined;
   if (value === true || value === 'true') return true;
@@ -9,16 +17,28 @@ const booleanQuerySchema = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+/**
+ * AI 优化接口里供模型参考的分类/标签选项结构。
+ * 这里只保留最小可读字段，避免把无关数据暴露给提示词构造逻辑。
+ */
 const aiOptionSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(100),
 });
 
+/**
+ * 通用分页参数。
+ * 供公开页列表、管理后台表格与搜索接口共享，统一限制页码和单页大小。
+ */
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
 });
 
+/**
+ * 文章创建接口的输入约束。
+ * 这里校验的是服务端真正接受的载荷，而不是表单交互过程中的临时状态。
+ */
 export const createPostSchema = z.object({
   title: z.string().min(1, '标题不能为空').max(255),
   slug: z
@@ -35,8 +55,16 @@ export const createPostSchema = z.object({
   tagIds: z.array(z.string().uuid()).default([]),
 });
 
+/**
+ * 文章更新接口约束。
+ * 更新场景允许只提交发生变化的字段，因此直接复用创建 schema 的 partial 版本。
+ */
 export const updatePostSchema = createPostSchema.partial();
 
+/**
+ * 文章列表查询参数。
+ * 同时服务公开页和管理后台，因此筛选条件既包含分页，也包含状态、分类、标签和置顶标记。
+ */
 export const postQuerySchema = paginationSchema.extend({
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
   categoryId: z.string().uuid().optional(),
@@ -44,6 +72,7 @@ export const postQuerySchema = paginationSchema.extend({
   pinned: booleanQuerySchema.optional(),
 });
 
+/** 后台分类创建接口约束。 */
 export const createCategorySchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
   slug: z
@@ -54,8 +83,10 @@ export const createCategorySchema = z.object({
   description: z.string().max(500).nullable().optional(),
 });
 
+/** 分类更新允许按字段局部提交。 */
 export const updateCategorySchema = createCategorySchema.partial();
 
+/** 后台标签创建接口约束。 */
 export const createTagSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
   slug: z
@@ -65,8 +96,10 @@ export const createTagSchema = z.object({
     .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
 });
 
+/** 标签更新允许局部字段变更。 */
 export const updateTagSchema = createTagSchema.partial();
 
+/** 后台友链创建接口约束。 */
 export const createFriendLinkSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
   url: z.string().url('请输入合法 URL'),
@@ -75,12 +108,18 @@ export const createFriendLinkSchema = z.object({
   sortOrder: z.number().int().default(0),
 });
 
+/** 友链更新允许只提交调整过的字段。 */
 export const updateFriendLinkSchema = createFriendLinkSchema.partial();
 
+/** 搜索接口查询参数。 */
 export const searchSchema = paginationSchema.extend({
   q: z.string().min(1, '搜索关键词不能为空').max(100),
 });
 
+/**
+ * AI 全文优化接口输入。
+ * 包含正文、摘要、分类、标签及供提示词参考的候选项列表。
+ */
 export const aiOptimizeSchema = z.object({
   title: z.string().max(255).default(''),
   slug: z.string().max(255).default(''),
@@ -92,6 +131,10 @@ export const aiOptimizeSchema = z.object({
   tags: z.array(aiOptionSchema).max(200).default([]),
 });
 
+/**
+ * AI 单字段优化接口输入。
+ * 在全文优化载荷基础上追加目标字段名，供路由处理器决定生成哪类提示词。
+ */
 export const aiFieldSchema = aiOptimizeSchema.extend({
   field: z.enum(['title', 'slug', 'content', 'excerpt', 'category', 'tags']),
 });

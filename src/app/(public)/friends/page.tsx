@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   description: '友情链接。',
 };
 
+/**
+ * 前台友链页。
+ *
+ * 展示后台维护的友情链接列表，并按排序权重与创建时间输出稳定顺序。
+ */
 export default async function FriendsPage() {
   const links = await prisma.friendLink.findMany({
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],

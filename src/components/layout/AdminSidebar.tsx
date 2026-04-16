@@ -4,6 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
+/**
+ * 管理后台侧边导航。
+ *
+ * 通过 pathname 高亮当前模块，并集中维护后台主要入口，
+ * 让文章、分类、标签和友链管理在同一套导航语义下切换。
+ * sidebarItems 是后台信息架构的唯一来源，新增管理模块时应优先在这里补入口。
+ */
 const sidebarItems = [
   { href: '/admin/dashboard', label: '仪表盘', icon: '📊' },
   { href: '/admin/posts', label: '文章管理', icon: '📝' },
@@ -17,14 +24,12 @@ export function AdminSidebar() {
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-border bg-muted/30">
-      {/* Logo */}
       <div className="flex h-16 items-center border-b border-border px-6">
         <Link href="/admin/dashboard" className="text-lg font-bold text-primary">
           Way Admin
         </Link>
       </div>
 
-      {/* 导航 */}
       <nav className="flex-1 space-y-1 p-3">
         {sidebarItems.map((item) => (
           <Link
@@ -43,7 +48,6 @@ export function AdminSidebar() {
         ))}
       </nav>
 
-      {/* 底部 */}
       <div className="border-t border-border p-3">
         <Link
           href="/"

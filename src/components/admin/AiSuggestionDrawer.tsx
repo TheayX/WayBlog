@@ -3,6 +3,13 @@
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import type { AiField, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
 
+/**
+ * AI 建议侧边抽屉。
+ *
+ * 负责把全文优化结果拆成可逐项审阅、逐项应用的界面结构，
+ * 让管理后台在“整包接受”和“人工挑选”之间保留控制权。
+ * `matchedCategoryId` 用来提示分类建议是否已经命中现有分类，避免编辑器把“推荐值”和“可直接应用值”混为一谈。
+ */
 interface AiSuggestionDrawerProps {
   open: boolean;
   result: AiOptimizeResult | null;

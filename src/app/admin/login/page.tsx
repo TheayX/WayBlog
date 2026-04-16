@@ -4,6 +4,12 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+/**
+ * 管理后台登录页。
+ *
+ * 负责接收管理员邮箱与密码，并通过 NextAuth credentials 流程建立后台会话；
+ * 页面本身不处理权限分级，只关注登录成功与失败反馈。
+ */
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');

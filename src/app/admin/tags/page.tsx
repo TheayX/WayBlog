@@ -4,6 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { slugify } from '@/lib/utils';
 
+/**
+ * 管理后台标签管理页。
+ *
+ * 提供标签的 CRUD 表单与列表视图，并在新建场景下根据名称自动生成 slug；
+ * 页面侧只做轻量输入约束，最终校验仍以标签 API 为准。
+ */
 interface Tag {
   id: string;
   name: string;

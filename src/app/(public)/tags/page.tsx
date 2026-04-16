@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { PostStatus } from '@/generated/prisma';
+import { PostStatus } from '@/generated/prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   description: '所有标签。',
 };
 
+/**
+ * 前台标签总览页。
+ *
+ * 展示所有标签及其已发布文章数量，作为公开页按主题浏览内容的入口。
+ */
 export default async function TagsPage() {
   const tags = await prisma.tag.findMany({
     include: {

@@ -3,6 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
+/**
+ * 管理后台友链管理页。
+ *
+ * 负责友链资料的录入、排序和删除交互；
+ * 页面层主要维护表单状态和列表刷新，数据合法性依旧交给友链 API 约束。
+ */
 interface FriendLink {
   id: string;
   name: string;

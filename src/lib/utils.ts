@@ -1,28 +1,39 @@
 import { clsx, type ClassValue } from 'clsx';
 import { pinyin } from 'pinyin-pro';
 
-// ─── className 合并工具 ───
-// 简化版：不引入 tailwind-merge，直接用 clsx
+/**
+ * 合并条件 className。
+ *
+ * 当前项目未引入 `tailwind-merge`，这里只负责根据条件拼接类名，
+ * 不处理 Tailwind 冲突类的覆盖关系。
+ */
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
-// ─── Slug 生成 ───
+/**
+ * 将标题或自由文本转换为适合用作文章路径片段的 slug。
+ *
+ * 中文会先被转成不带音调的拼音，随后再统一清洗空格、下划线和非法字符。
+ * 这里只保证格式稳定，不负责唯一性校验；唯一性由路由处理器层保证。
+ */
 export function slugify(text: string): string {
-  // 1. 将中文转换为无音调拼音，非中文字符保持连续
+  // 先把中文转换为连续拼音，尽量保留可读性，再统一进入 slug 清洗流程。
   const py = pinyin(text, { toneType: 'none', nonZh: 'consecutive' });
-  
-  // 2. 将结果转换格式
+
   return py
     .toLowerCase()
     .trim()
-    .replace(/[\s_]+/g, '-')     // 将空格、下划线转为连字符
-    .replace(/[^\w-]+/g, '')     // 仅保留字母、数字和连字符
-    .replace(/--+/g, '-')        // 多个连续连字符合并为一
-    .replace(/^-+|-+$/g, '');    // 去除首尾连字符
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
-// ─── 日期格式化 ───
+/**
+ * 按中文完整日期格式展示日期。
+ * 适合文章详情、归档等面向阅读的场景。
+ */
 export function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -31,6 +42,10 @@ export function formatDate(date: string | Date): string {
   });
 }
 
+/**
+ * 按简短数字格式展示日期。
+ * 适合列表、后台表格等对紧凑性要求更高的场景。
+ */
 export function formatDateShort(date: string | Date): string {
   return new Date(date).toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -39,7 +54,9 @@ export function formatDateShort(date: string | Date): string {
   });
 }
 
-// ─── 截取摘要 ───
+/**
+ * 按指定长度截断文本，常用于列表摘要或搜索预览。
+ */
 export function truncate(text: string, length: number = 200): string {
   if (text.length <= length) return text;
   return text.slice(0, length).trim() + '...';

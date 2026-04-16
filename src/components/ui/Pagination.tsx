@@ -1,5 +1,13 @@
 import Link from 'next/link';
 
+/**
+ * 通用分页组件。
+ *
+ * basePath 可能已经包含查询参数，因此通过 separator 兼容两种 URL 形态，
+ * 避免在归档、标签等前台页面重复处理分页链接拼接细节。
+ * 当总页数小于等于 1 时直接不渲染，避免无意义分页控件干扰阅读流。
+ * 组件只负责上一页/下一页与当前页展示，不内置复杂页码矩阵，目的是保持前台页面分页交互轻量一致。
+ */
 interface PaginationProps {
   currentPage: number;
   totalPages: number;

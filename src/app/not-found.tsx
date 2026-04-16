@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
+/**
+ * 全局 404 页面。
+ *
+ * 当公开页或管理后台命中未匹配路由时，都会回落到这里；
+ * 页面仅负责兜底提示与返回前台首页，不参与任何数据读取。
+ */
 export const metadata: Metadata = {
   title: '页面不存在',
 };

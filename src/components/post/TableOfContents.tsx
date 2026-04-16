@@ -13,7 +13,11 @@ interface TableOfContentsProps {
 }
 
 /**
- * 从 Markdown 内容中提取 h2–h4 标题，生成目录
+ * 文章目录组件。
+ *
+ * 根据 Markdown 原文提取 h2-h4 标题，并结合可见区域高亮当前阅读位置，
+ * 让长文在前台页面中保持更好的可跳转性。
+ * 这里只展示 h2-h4，目的是在信息密度和可读性之间取平衡，避免目录因层级过深而失去可扫读性。
  */
 function extractHeadings(markdown: string): TocItem[] {
   const headings: TocItem[] = [];
@@ -24,7 +28,7 @@ function extractHeadings(markdown: string): TocItem[] {
     if (match) {
       const level = match[1].length;
       const text = match[2].replace(/[`*_~[\]()]/g, '').trim();
-      // rehype-slug 生成的 id 规则：小写、空格替换为连字符、移除特殊字符
+      // 这里使用一套与页面标题锚点接近的本地 slug 规则，确保目录链接在常见中文/英文标题下可稳定跳转。
       const id = text
         .toLowerCase()
         .replace(/\s+/g, '-')

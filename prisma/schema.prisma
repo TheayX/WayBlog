@@ -13,15 +13,15 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── 枚举 ───
-
+/// 文章发布状态。
+/// 草稿不会出现在公开页/前台页面，已发布内容才会进入列表、详情与聚合页。
 enum PostStatus {
   DRAFT
   PUBLISHED
 }
 
-// ─── 模型 ───
-
+/// 管理员用户。
+/// 当前项目采用单管理员模型，因此用户表主要服务后台登录与文章作者关联。
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -34,6 +34,8 @@ model User {
   posts Post[]
 }
 
+/// 博客文章。
+/// 存储正文、摘要、封面、发布状态、分类与标签关系，是公开页与管理后台的核心内容实体。
 model Post {
   id          String     @id @default(uuid())
   title       String
@@ -63,6 +65,8 @@ model Post {
   @@index([authorId])
 }
 
+/// 分类。
+/// 用于公开聚合页与后台筛选，name 与 slug 都保持唯一。
 model Category {
   id          String   @id @default(uuid())
   name        String   @unique

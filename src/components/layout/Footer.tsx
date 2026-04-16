@@ -1,5 +1,13 @@
 import Link from 'next/link';
 
+/**
+ * 站点页脚。
+ *
+ * 负责集中展示版权信息、RSS 与外部仓库入口，
+ * 让前台页面底部保留稳定的站点身份和分发能力。
+ * 这里的链接都属于全站级公共出口，因此适合保持轻量、稳定，不与具体页面业务耦合。
+ * `year` 在渲染时动态计算，避免为这种全局静态信息额外维护配置项。
+ */
 export function Footer() {
   const year = new Date().getFullYear();
 

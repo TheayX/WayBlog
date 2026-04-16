@@ -3,6 +3,12 @@
 import { useEffect, useState } from 'react';
 import type { DashboardStats } from '@/types';
 
+/**
+ * 管理后台仪表盘页面。
+ *
+ * 负责消费 `/api/stats` 的聚合结果，并把文章总量、趋势图和热门内容以卡片方式展示；
+ * 页面自身不重复实现统计逻辑，只负责状态展示与可视化编排。
+ */
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);

@@ -1,6 +1,12 @@
 import { Suspense } from 'react';
 import { SearchPageClient } from './SearchPageClient';
 
+/**
+ * 搜索页的服务端外壳。
+ *
+ * 只负责为客户端搜索组件提供 Suspense 边界和首屏骨架，
+ * 真正的搜索交互、查询参数同步和分页状态都交给客户端组件处理。
+ */
 function SearchPageFallback() {
   return (
     <div>
@@ -13,6 +19,7 @@ function SearchPageFallback() {
   );
 }
 
+/** 前台搜索页入口。 */
 export default function SearchPage() {
   return (
     <Suspense fallback={<SearchPageFallback />}>

@@ -1,11 +1,24 @@
+/**
+ * 帖子集合路由处理器。
+ *
+ * - GET 同时服务公开页/前台页面与管理后台列表；是否放宽到草稿等状态由鉴权结果决定。
+ * - POST 仅允许管理后台在完成鉴权后创建内容，统一走 schema 校验与 slug 唯一性约束。
+ * - 返回列表时直接附带分页元数据，避免调用方再额外推导总数与页码语义。
+ */
 import { NextRequest } from 'next/server';
-import type { Prisma } from '@/generated/prisma';
-import { PostStatus } from '@/generated/prisma';
+import type { Prisma } from '@/generated/prisma/client';
+import { PostStatus } from '@/generated/prisma/client';
 import { badRequest, conflict, paged, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
 import { prisma } from '@/lib/prisma';
 import { createPostSchema, postQuerySchema } from '@/lib/validations';
 
+/**
+ * 按查询参数返回帖子分页结果。
+ *
+ * 公开访问时只暴露已发布内容；管理后台在鉴权通过后才允许按 status 查看草稿或其他状态，
+ * 这样可以复用同一路由处理器，同时避免前台页面通过构造查询参数读取未发布数据。
+ */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = Object.fromEntries(request.nextUrl.searchParams);
@@ -21,6 +34,7 @@ export async function GET(request: NextRequest) {
 
     const where: Prisma.PostWhereInput = {};
 
+    // 仅管理后台允许显式筛选草稿等状态；公开页/前台页面始终锁定为已发布内容。
     if (status && isAdmin) {
       where.status = status;
     } else if (!isAdmin) {
@@ -62,6 +76,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * 创建帖子。
+ *
+ * 该入口仅面向管理后台：先鉴权，再校验请求体，最后检查 slug 唯一性。
+ * 对已发布内容在创建时立即写入 publishedAt，保证前台页面排序与发布时间语义一致。
+ */
 export async function POST(request: NextRequest) {
   try {
     const authResult = await requireAuth();
@@ -77,6 +97,7 @@ export async function POST(request: NextRequest) {
     const { tagIds, ...postData } = parsed.data;
     const existing = await prisma.post.findUnique({ where: { slug: postData.slug } });
 
+    // slug 是前台页面路由与管理后台编辑入口共享的稳定标识，冲突时必须提前返回 409。
     if (existing) {
       return conflict('Post slug already exists');
     }

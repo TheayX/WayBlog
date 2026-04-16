@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { PostStatus } from '@/generated/prisma';
+import { PostStatus } from '@/generated/prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +22,11 @@ interface ArchiveGroup {
   }[];
 }
 
+/**
+ * 前台归档页。
+ *
+ * 把所有已发布文章按年/月分组展示，方便读者按时间线回看内容演进。
+ */
 export default async function ArchivesPage() {
   const posts = await prisma.post.findMany({
     where: { status: PostStatus.PUBLISHED },

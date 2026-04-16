@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { PostStatus } from '@/generated/prisma';
+import { PostStatus } from '@/generated/prisma/client';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import { TableOfContents } from '@/components/post/TableOfContents';
 import { PostNavigation } from '@/components/post/PostNavigation';
@@ -18,6 +18,12 @@ interface PostPageProps {
   params: Promise<{ slug: string }>;
 }
 
+/**
+ * 前台文章详情页元数据。
+ *
+ * 根据 slug 读取文章基础信息生成 SEO 所需标题、摘要、封面与 Open Graph 数据；
+ * 如果文章不存在，则返回“文章不存在”的兜底元数据。
+ */
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = await prisma.post.findUnique({
@@ -58,6 +64,12 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   };
 }
 
+/**
+ * 前台文章详情页。
+ *
+ * 只读取已发布文章，负责组装正文、目录、上下篇、浏览量与结构化数据，
+ * 让公开页在一次服务端渲染中拿到完整阅读体验所需的数据。
+ */
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
 

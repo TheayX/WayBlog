@@ -6,6 +6,13 @@ import { useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '@/lib/utils';
 
+/**
+ * 前台页面顶部导航。
+ *
+ * 同时承担桌面端导航、移动端折叠菜单、搜索入口与主题切换，
+ * 让公开页在不同屏幕尺寸下保持一致的信息架构。
+ * `menuOpen` 只服务移动端交互，桌面端始终展示完整导航，避免两套状态来源互相干扰。
+ */
 const navItems = [
   { href: '/', label: '首页' },
   { href: '/archives', label: '归档' },
@@ -21,7 +28,6 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/70 backdrop-blur-md shadow-sm transition-all duration-300">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-        {/* Logo */}
         <Link href="/" className="group flex items-center gap-2 text-xl font-bold tracking-tight text-primary transition-transform hover:scale-105 active:scale-95">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-md">
             W
@@ -29,7 +35,6 @@ export function Header() {
           <span>Way.</span>
         </Link>
 
-        {/* 桌面端导航 */}
         <nav className="hidden items-center gap-2 md:flex">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -64,7 +69,6 @@ export function Header() {
           </div>
         </nav>
 
-        {/* 移动端汉堡菜单 */}
         <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle />
           <button
@@ -83,7 +87,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* 移动端展开菜单 */}
       {menuOpen && (
         <nav className="absolute left-0 top-16 w-full animate-in slide-in-from-top-2 border-b border-border bg-background shadow-lg md:hidden">
           <div className="flex flex-col space-y-1 p-4">

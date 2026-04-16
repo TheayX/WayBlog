@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   description: '关于站点与作者。',
 };
 
+/**
+ * 前台关于页。
+ *
+ * 通过 slug 为 `about` 的单页内容承载站点介绍；
+ * 如果后台尚未创建该页面，则展示创建提示而不是 404。
+ */
 export default async function AboutPage() {
   const page = await prisma.page.findUnique({
     where: { slug: 'about' },

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PostStatus } from '@/generated/prisma';
+import { PostStatus } from '@/generated/prisma/client';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { prisma } from '@/lib/prisma';
@@ -10,6 +10,12 @@ interface HomePageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
+/**
+ * 前台首页。
+ *
+ * 负责展示公开站点的文章列表入口，数据源来自数据库中的已发布文章；
+ * 采用动态渲染以保证分页与最新发布内容实时可见，草稿不会出现在这里。
+ */
 export default async function HomePage({ searchParams }: HomePageProps) {
   const { page: pageStr } = await searchParams;
   const page = Math.max(1, parseInt(pageStr || '1', 10));
@@ -31,6 +37,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         category: { select: { name: true, slug: true } },
         tags: { select: { name: true, slug: true } },
       },
+      // 首页与分类页保持一致，优先展示置顶内容，其次按发布时间倒序。
       orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
       skip: (page - 1) * pageSize,
       take: pageSize,

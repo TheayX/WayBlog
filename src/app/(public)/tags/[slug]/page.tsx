@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { PostStatus } from '@/generated/prisma';
+import { PostStatus } from '@/generated/prisma/client';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { prisma } from '@/lib/prisma';
@@ -12,6 +12,11 @@ interface TagPageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
+/**
+ * 标签页元数据。
+ *
+ * 根据标签 slug 生成公开聚合页标题与描述，便于 SEO 与分享场景复用。
+ */
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
   const { slug } = await params;
   const tag = await prisma.tag.findUnique({
@@ -27,6 +32,12 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
   };
 }
 
+/**
+ * 前台标签聚合页。
+ *
+ * 分页展示某个标签下的已发布文章，并复用与首页一致的文章卡片展示方式，
+ * 保持公开页列表体验统一。
+ */
 export default async function TagPage({ params, searchParams }: TagPageProps) {
   const { slug } = await params;
   const { page: pageStr } = await searchParams;

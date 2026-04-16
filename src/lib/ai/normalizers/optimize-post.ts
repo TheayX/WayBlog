@@ -9,6 +9,10 @@ import {
 } from '@/lib/ai/normalizers/shared';
 import { slugify } from '@/lib/utils';
 
+/**
+ * 归一化全文优化结果。
+ * 把模型输出整理成后台编辑器可直接应用的稳定结构，并在 slug、摘要长度等位置补齐项目约束。
+ */
 export function normalizeOptimizePostResult(
   parsed: Record<string, unknown>,
   input: AiOptimizeInput,

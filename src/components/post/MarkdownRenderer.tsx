@@ -4,6 +4,13 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeSlug from 'rehype-slug';
 
+/**
+ * 通用 Markdown 渲染器。
+ *
+ * 同时服务管理后台预览与前台页面展示，因此默认开启 GFM、标题锚点与代码高亮；
+ * sanitizeSchema 只额外放行高亮所需 className，避免为视觉效果牺牲基础安全边界。
+ */
+
 // 允许 code 和 span 上保留 class 属性（供代码高亮使用）
 const sanitizeSchema = {
   ...defaultSchema,

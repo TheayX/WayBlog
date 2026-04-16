@@ -1,3 +1,9 @@
+/**
+ * 单篇帖子路由处理器。
+ *
+ * - GET 返回完整关联数据，主要服务管理后台编辑回填；它本身不做鉴权，也不构成公开页的安全读取边界。
+ * - PUT / DELETE 仅允许管理后台操作，且在真正写入前完成鉴权、请求校验、存在性判断与唯一性约束检查。
+ */
 import { NextRequest } from 'next/server';
 import { badRequest, conflict, noContent, notFound, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
@@ -8,6 +14,15 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * 获取单篇帖子详情。
+ *
+ * 该路由处理器返回完整帖子及作者、分类、标签关联数据，主要供管理后台编辑页回填使用。
+ * 它本身不做鉴权，也不按“已发布 / 草稿”状态过滤，因此不应被视为公开页的受控读取边界。
+ * 如果需要面向前台页面安全暴露帖子详情，应由上层受控入口或专用公开查询链路额外限制只读取已发布内容。
+ * 这里没有额外请求体验证，是因为输入只来自路径参数；路由处理器本身仅负责在记录不存在时返回 404，
+ * 并把已命中的详情数据完整返回给调用方。
+ */
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
@@ -30,6 +45,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   }
 }
 
+/**
+ * 更新帖子。
+ *
+ * 该入口面向管理后台：校验通过后允许部分字段更新，并支持一次性重置标签集合。
+ * 如果草稿首次切换为已发布，会补写 publishedAt，保证已发布内容在前台页面中的时间排序稳定。
+ */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();
@@ -55,6 +76,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         where: { id: { not: id }, slug: postData.slug },
       });
 
+      // slug 在帖子体系中必须全局唯一，否则公开页路由与后台编辑入口都会出现歧义。
       if (slugExists) {
         return conflict('Post slug already exists');
       }
@@ -68,6 +90,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       data: {
         ...postData,
         ...(publishedAt ? { publishedAt } : {}),
+        // tagIds 传入时使用 set 语义整体替换；未传入则保持现有关联不变，避免管理后台局部更新误清空标签。
         ...(tagIds !== undefined ? { tags: { set: tagIds.map((tagId) => ({ id: tagId })) } } : {}),
       },
       include: {
@@ -83,6 +106,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
+/**
+ * 删除帖子。
+ *
+ * 仅管理后台允许执行，并在删除前显式检查存在性，确保调用方能区分“无权限”和“目标不存在”。
+ * 删除成功返回 204 空响应，调用方应直接移除本地记录，而不是期待接口返回新的帖子实体。
+ */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const authResult = await requireAuth();

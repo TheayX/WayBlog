@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { PostForm } from '@/components/admin/PostForm';
 
+/**
+ * 管理后台文章编辑页。
+ *
+ * 先按 id 拉取现有文章详情，再把数据回填到统一表单中；
+ * 如果文章不存在，则在页面层直接给出错误提示而不是进入空白编辑状态。
+ */
 export default function EditPostPage() {
   const params = useParams();
   const id = params.id as string;

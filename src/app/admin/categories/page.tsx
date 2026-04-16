@@ -4,6 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { slugify } from '@/lib/utils';
 
+/**
+ * 管理后台分类管理页。
+ *
+ * 负责分类的创建、编辑与删除表单交互；
+ * 页面只维护输入状态，真正的唯一性校验与持久化仍交给分类 API 处理。
+ */
 interface Category {
   id: string;
   name: string;

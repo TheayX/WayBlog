@@ -9,6 +9,10 @@ import {
 } from '@/lib/ai/normalizers/shared';
 import { slugify } from '@/lib/utils';
 
+/**
+ * 归一化字段级 AI 优化结果。
+ * 会根据字段类型决定是直接返回文本，还是先执行 slug、Markdown、摘要等特定清洗逻辑。
+ */
 export function normalizeOptimizeFieldResult(
   parsed: Record<string, unknown>,
   input: AiFieldInput,
@@ -24,6 +28,7 @@ export function normalizeOptimizeFieldResult(
   };
 }
 
+/** 根据目标字段类型执行对应的值清洗策略。 */
 function normalizeFieldValue(parsed: Record<string, unknown>, input: AiFieldInput) {
   const rawValue = getString(parsed.value);
 

@@ -3,6 +3,12 @@
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
+/**
+ * 主题切换按钮。
+ *
+ * 为避免服务端渲染与客户端主题状态不一致，组件会等待挂载完成后再展示真实图标。
+ * mounted 为 false 时只渲染占位按钮，目的是消除 hydration mismatch 带来的闪烁和警告。
+ */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);

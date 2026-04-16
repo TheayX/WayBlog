@@ -8,6 +8,13 @@ import { usePostAiAssistant } from '@/components/admin/use-post-ai-assistant';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import { slugify } from '@/lib/utils';
 
+/**
+ * 管理后台文章编辑表单。
+ *
+ * 负责聚合文章基础字段编辑、Markdown 预览、图片插入和 AI 建议应用流程。
+ * 这里刻意将保存逻辑、Slug 生成约束与 AI 辅助状态收敛在同一处，避免管理后台
+ * 在“人工编辑 / AI 覆盖 / 草稿发布”三条路径之间出现状态分叉。
+ */
 interface Category {
   id: string;
   name: string;
@@ -169,6 +176,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
       tagIds: selectedTagIds,
     };
 
+    // 提交前统一做最小归一化，避免把空字符串写入后端，减少 Prisma 层判空分支。
     const url = isEdit ? `/api/posts/${initialData?.id}` : '/api/posts';
     const method = isEdit ? 'PUT' : 'POST';
 

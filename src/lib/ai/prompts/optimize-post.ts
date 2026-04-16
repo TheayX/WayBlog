@@ -1,6 +1,10 @@
 import type { AiOptimizeInput } from '@/lib/ai/types';
 import { buildJsonOnlyPrompt } from '@/lib/ai/prompts/shared';
 
+/**
+ * 生成文章整体优化提示词。
+ * 该模块只负责组织输入、规则与输出样例，不直接触发模型调用。
+ */
 export function buildOptimizePostPrompt(input: AiOptimizeInput) {
   return buildJsonOnlyPrompt(
     '请基于下面的输入，生成完整的文章优化结果。',

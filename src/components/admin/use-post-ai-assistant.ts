@@ -5,6 +5,12 @@ import { toast } from 'sonner';
 import type { Dispatch, SetStateAction } from 'react';
 import type { AiField, AiFieldResult, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
 
+/**
+ * 管理后台文章 AI 助手 Hook。
+ *
+ * 负责封装 AI 请求、字段级应用、分类/标签归一化匹配与交互提示，
+ * 让 PostForm 只关心界面编排，不直接承载 AI 返回结构的解释细节。
+ */
 interface CategoryOption {
   id: string;
   name: string;
@@ -55,6 +61,7 @@ export function usePostAiAssistant({
   const [aiResult, setAiResult] = useState<AiOptimizeResult | null>(null);
 
   function buildAiPayload() {
+    // 统一在 Hook 内收敛请求体形状，避免表单与不同 AI 入口各自拼装导致字段漂移。
     return {
       title: title.trim(),
       slug: slug.trim(),
@@ -90,6 +97,7 @@ export function usePostAiAssistant({
     const suggestions = result.tagSuggestions || [];
 
     const ids = suggestions
+      // 仅回填已存在标签；标记为 isNew 的建议保留给人工判断，避免前端伪造不存在的关联 id。
       .filter((item) => !item.isNew)
       .map((item) => {
         if (item.id) return item.id;
@@ -190,6 +198,7 @@ export function usePostAiAssistant({
   function applyAllAi() {
     if (!aiResult) return;
 
+    // 全量应用会覆盖当前表单内容，因此只在用户显式确认后从抽屉触发。
     setTitle(aiResult.title);
     setSlug(aiResult.slug);
     setSlugManuallyEdited(true);
@@ -224,6 +233,7 @@ export function usePostAiAssistant({
       case 'excerpt':
       case 'category':
       case 'tags':
+        // 正文是这些能力的主要语义来源，前置拦截可以减少无意义调用与误导性建议。
         if (content.trim()) return true;
         toast.warning('请先填写正文后再使用这个 AI 功能。');
         return false;
