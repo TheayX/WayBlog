@@ -2,15 +2,18 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { PostStatus } from '@/generated/prisma/client';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import { TableOfContents } from '@/components/post/TableOfContents';
 import { PostNavigation } from '@/components/post/PostNavigation';
 import { ViewCounter } from '@/components/post/ViewCounter';
 import { JsonLd } from '@/components/seo/JsonLd';
+import {
+  getPublishedPostDetail,
+  getPublishedPostMetadata,
+  getPublishedPostNavigation,
+} from '@/lib/posts/queries';
 import { formatDate } from '@/lib/utils';
 import { getSiteConfig } from '@/lib/site';
-import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,17 +29,7 @@ interface PostPageProps {
  */
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await prisma.post.findUnique({
-    where: { slug },
-    select: {
-      title: true,
-      excerpt: true,
-      coverImage: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-      tags: { select: { name: true } },
-    },
-  });
+  const post = await getPublishedPostMetadata(slug);
 
   if (!post) return { title: '文章不存在' };
 
@@ -73,37 +66,14 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
 
-  const post = await prisma.post.findUnique({
-    where: { slug, status: PostStatus.PUBLISHED },
-    include: {
-      author: { select: { name: true, avatar: true } },
-      category: { select: { name: true, slug: true } },
-      tags: { select: { name: true, slug: true } },
-    },
-  });
+  const post = await getPublishedPostDetail(slug);
 
   if (!post) notFound();
 
   const site = getSiteConfig();
-
-  const [prevPost, nextPost] = await Promise.all([
-    prisma.post.findFirst({
-      where: {
-        status: PostStatus.PUBLISHED,
-        publishedAt: { gt: post.publishedAt! },
-      },
-      orderBy: { publishedAt: 'asc' },
-      select: { slug: true, title: true },
-    }),
-    prisma.post.findFirst({
-      where: {
-        status: PostStatus.PUBLISHED,
-        publishedAt: { lt: post.publishedAt! },
-      },
-      orderBy: { publishedAt: 'desc' },
-      select: { slug: true, title: true },
-    }),
-  ]);
+  const { prevPost, nextPost } = post.publishedAt
+    ? await getPublishedPostNavigation(post.publishedAt)
+    : { prevPost: null, nextPost: null };
 
   const jsonLd = {
     '@context': 'https://schema.org',

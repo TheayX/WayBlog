@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { PostStatus } from '@/generated/prisma/client';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
-import { prisma } from '@/lib/prisma';
+import { getPublishedPostsPage } from '@/lib/posts/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,29 +20,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const page = Math.max(1, parseInt(pageStr || '1', 10));
   const pageSize = 10;
 
-  const [posts, total] = await Promise.all([
-    prisma.post.findMany({
-      where: { status: PostStatus.PUBLISHED },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        content: true,
-        coverImage: true,
-        publishedAt: true,
-        viewCount: true,
-        pinned: true,
-        category: { select: { name: true, slug: true } },
-        tags: { select: { name: true, slug: true } },
-      },
-      // 首页与分类页保持一致，优先展示置顶内容，其次按发布时间倒序。
-      orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.post.count({ where: { status: PostStatus.PUBLISHED } }),
-  ]);
+  const { data: posts, total } = await getPublishedPostsPage(page, pageSize);
 
   const totalPages = Math.ceil(total / pageSize);
 

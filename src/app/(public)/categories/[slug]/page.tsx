@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { PostStatus } from '@/generated/prisma/client';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
-import { prisma } from '@/lib/prisma';
+import { getPublishedPostsPageByCategory } from '@/lib/posts/queries';
+import { getPublicCategoryBySlug } from '@/lib/taxonomies/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +19,7 @@ interface CategoryPageProps {
  */
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const category = await prisma.category.findUnique({
-    where: { slug },
-    select: { name: true, description: true },
-  });
+  const category = await getPublicCategoryBySlug(slug);
 
   if (!category) return { title: '分类不存在' };
 
@@ -44,37 +41,15 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const page = Math.max(1, parseInt(pageStr || '1', 10));
   const pageSize = 10;
 
-  const category = await prisma.category.findUnique({
-    where: { slug },
-    select: { id: true, name: true, slug: true, description: true },
-  });
+  const category = await getPublicCategoryBySlug(slug);
 
   if (!category) notFound();
 
-  const [posts, total] = await Promise.all([
-    prisma.post.findMany({
-      where: { status: PostStatus.PUBLISHED, categoryId: category.id },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        content: true,
-        coverImage: true,
-        publishedAt: true,
-        viewCount: true,
-        pinned: true,
-        category: { select: { name: true, slug: true } },
-        tags: { select: { name: true, slug: true } },
-      },
-      orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.post.count({
-      where: { status: PostStatus.PUBLISHED, categoryId: category.id },
-    }),
-  ]);
+  const { data: posts, total } = await getPublishedPostsPageByCategory(
+    category.id,
+    page,
+    pageSize,
+  );
 
   const totalPages = Math.ceil(total / pageSize);
 
