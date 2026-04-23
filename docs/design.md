@@ -165,7 +165,7 @@ API Route Handler 保持轻量，主要负责：
 - 每次文章详情页访问会调用 `/api/posts/[id]/views`
 - 使用 `PageView` 记录按日聚合的 PV/UV
 - `Post.viewCount` 保存总浏览量
-- UV 去重当前采用内存缓存，适合单机部署
+- UV 去重采用 Redis Set 按天记录，同一访客在多实例部署下也只计一次 UV
 
 ## 上传方案
 
@@ -184,6 +184,6 @@ API Route Handler 保持轻量，主要负责：
 ## 当前设计边界
 
 - 适合单机部署
-- 不适合多实例共享 UV 内存缓存
+- 多实例部署需要共享 PostgreSQL 与 Redis，并通过 `REDIS_KEY_PREFIX` 隔离不同环境的运行期 key
 - 不适合大规模图片存储
 - 搜索精度受 PostgreSQL 当前配置限制

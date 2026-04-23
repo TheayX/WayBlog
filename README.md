@@ -270,7 +270,7 @@ AI 写作能力已经拆分为清晰的服务分层：
 - 运行项目前需要先启动 Docker Desktop，否则 PostgreSQL 容器不会起来。
 - 图片上传当前为本地存储，适合单机部署；后续可切换至 MinIO / OSS。
 - Prisma Client 输出到仓库根部 `generated/prisma`，该目录已在 `.gitignore` 中忽略，首次克隆需执行 `pnpm db:generate`。
-- Rate Limiter 基于内存实现，进程重启后计数器重置，适合单实例部署。
+- Rate Limiter 与浏览量 UV 去重依赖 Redis；部署时必须配置可用的 `REDIS_URL`，多实例可共享同一 Redis key 空间。
 
 ## 文档
 

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { badRequest, ok, payloadTooLarge, serverError } from '@/lib/response';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
@@ -49,23 +50,17 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: '请选择要上传的文件' }, { status: 400 });
+      return badRequest(undefined, '请选择要上传的文件');
     }
 
     // 上传入口尽早校验类型，避免无效文件继续占用内存与磁盘写入流程。
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: '不支持的文件格式，仅支持 jpg/png/gif/webp' },
-        { status: 400 },
-      );
+      return badRequest(undefined, '不支持的文件格式，仅支持 jpg/png/gif/webp');
     }
 
     // 以服务端统一上限拦截超大文件，保持错误语义稳定，不依赖前端自行限制。
     if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { error: `文件过大，最大允许 ${MAX_SIZE / 1024 / 1024}MB` },
-        { status: 413 },
-      );
+      return payloadTooLarge(`文件过大，最大允许 ${MAX_SIZE / 1024 / 1024}MB`);
     }
 
     /**
@@ -87,13 +82,9 @@ export async function POST(request: NextRequest) {
 
     const url = `/${PUBLIC_UPLOAD_PREFIX}/${yearMonth}/${filename}`;
 
-    return NextResponse.json(
-      { data: { url, filename, size: file.size } },
-      { status: 201 },
-    );
+    return ok({ url, filename, size: file.size }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/upload error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('POST /api/upload', error);
   }
 }
 

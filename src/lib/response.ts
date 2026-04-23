@@ -31,6 +31,11 @@ export function badRequest(details?: unknown, error: string = 'Invalid request')
   return NextResponse.json({ error, ...(details ? { details } : {}) }, { status: 400 });
 }
 
+/** 生成 401 响应，适用于登录会话缺失或失效场景。 */
+export function unauthorized(error: string = 'Unauthorized') {
+  return NextResponse.json({ error }, { status: 401 });
+}
+
 /** 生成 404 响应，适用于资源不存在场景。 */
 export function notFound(error: string = 'Resource not found') {
   return NextResponse.json({ error }, { status: 404 });
@@ -39,6 +44,11 @@ export function notFound(error: string = 'Resource not found') {
 /** 生成 409 响应，适用于唯一约束或状态冲突场景。 */
 export function conflict(error: string = 'Resource already exists') {
   return NextResponse.json({ error }, { status: 409 });
+}
+
+/** 生成 413 响应，适用于上传文件超出服务端限制的场景。 */
+export function payloadTooLarge(error: string = 'Payload too large') {
+  return NextResponse.json({ error }, { status: 413 });
 }
 
 /** 生成 429 响应，通常与限流模块配合使用。 */

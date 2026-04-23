@@ -5,7 +5,7 @@
  * 这样可以让前端在调用受保护的路由处理器时获得稳定的 401 响应结构。
  */
 import { auth } from '@/lib/auth';
-import { NextResponse } from 'next/server';
+import { unauthorized } from '@/lib/response';
 
 /**
  * 检查当前请求是否已建立有效会话。
@@ -21,7 +21,7 @@ export async function requireAuth() {
   if (!session?.user) {
     return {
       authorized: false as const,
-      response: NextResponse.json({ error: '未认证，请先登录' }, { status: 401 }),
+      response: unauthorized('未认证，请先登录'),
     };
   }
 
