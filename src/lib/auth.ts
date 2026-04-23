@@ -9,7 +9,10 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { auditFailedLogin } from '@/lib/auth/audit';
 import { authConfig } from '@/lib/auth.config';
+import { normalizeLoginCredentials } from '@/lib/auth/credentials';
+import { getClientIp, loginLimiter } from '@/lib/rate-limit';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -24,14 +27,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
        * 管理后台登录使用邮箱 + 密码进行鉴权。
        * 返回 `null` 表示认证失败，NextAuth 会据此拒绝建立会话。
        */
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        const ip = getClientIp(request);
+        const normalized = normalizeLoginCredentials(credentials);
+
         // 缺少必填凭据时直接失败，避免继续访问数据库。
-        if (!credentials?.email || !credentials?.password) {
+        if (!normalized) {
+          auditFailedLogin({ ip, reason: 'missing-credentials' });
           return null;
         }
 
-        const email = credentials.email as string;
-        const password = credentials.password as string;
+        const { email, password } = normalized;
+
+        if (!loginLimiter.check(`login:${ip}`)) {
+          auditFailedLogin({ email, ip, reason: 'rate-limited' });
+          return null;
+        }
 
         const user = await prisma.user.findUnique({
           where: { email },
@@ -39,12 +50,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // 用户不存在与密码错误都返回 null，避免向外暴露账户存在性。
         if (!user) {
+          auditFailedLogin({ email, ip, reason: 'user-not-found' });
           return null;
         }
 
         const isPasswordValid = await compare(password, user.passwordHash);
 
         if (!isPasswordValid) {
+          auditFailedLogin({ email, ip, reason: 'invalid-password' });
           return null;
         }
 
