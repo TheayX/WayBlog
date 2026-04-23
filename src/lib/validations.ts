@@ -118,6 +118,22 @@ export const createFriendLinkSchema = z.object({
 /** 友链更新允许只提交调整过的字段。 */
 export const updateFriendLinkSchema = createFriendLinkSchema.partial();
 
+/** 管理员账号资料更新接口约束。 */
+export const updateAccountProfileSchema = z.object({
+  email: z.string().email('请输入合法邮箱').max(255),
+  name: z.string().min(1, '昵称不能为空').max(100),
+  avatar: z.string().url('请输入合法头像 URL').nullable().optional(),
+});
+
+/**
+ * 管理员密码更新接口约束。
+ * 新密码要求至少 8 位，避免把本地演示阶段的弱口令习惯带到后续部署中。
+ */
+export const updateAccountPasswordSchema = z.object({
+  currentPassword: z.string().min(1, '请输入当前密码'),
+  newPassword: z.string().min(8, '新密码至少 8 位').max(128),
+});
+
 /** 搜索接口查询参数。 */
 export const searchSchema = paginationSchema.extend({
   q: z.string().min(1, '搜索关键词不能为空').max(100),

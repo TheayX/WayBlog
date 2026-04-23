@@ -65,7 +65,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              placeholder="way20031208@gmail.com"
+              placeholder="admin@wayblog.local"
             />
           </div>
 

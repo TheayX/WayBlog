@@ -1,0 +1,215 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
+import { AdminFormPanel } from '@/components/admin/AdminCrudLayout';
+
+interface AccountProfile {
+  id: string;
+  email: string;
+  name: string;
+  avatar: string | null;
+}
+
+/**
+ * 管理后台账号设置页。
+ *
+ * 当前项目采用单管理员模型，因此页面只提供当前账号的资料维护和密码修改；
+ * 密码表单提交后立即清空输入，避免明文长期停留在页面状态中。
+ */
+export default function AdminSettingsPage() {
+  const { update } = useSession();
+  const [loading, setLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    fetch('/api/admin/account')
+      .then((response) => response.json())
+      .then((result: { data?: AccountProfile }) => {
+        const data = result.data;
+        if (!data) return;
+
+        setEmail(data.email);
+        setName(data.name);
+        setAvatar(data.avatar || '');
+      })
+      .catch(() => toast.error('账号资料加载失败'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleProfileSave() {
+    if (!email.trim() || !name.trim()) {
+      toast.error('邮箱和昵称不能为空');
+      return;
+    }
+
+    setProfileSaving(true);
+
+    const response = await fetch('/api/admin/account', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email.trim(),
+        name: name.trim(),
+        avatar: avatar.trim() || null,
+      }),
+    });
+    const result = await response.json().catch(() => null);
+
+    setProfileSaving(false);
+
+    if (!response.ok) {
+      toast.error(result?.error || '账号资料保存失败');
+      return;
+    }
+
+    const updated = result.data as AccountProfile;
+    await update({
+      user: {
+        email: updated.email,
+        name: updated.name,
+        image: updated.avatar,
+      },
+    });
+    toast.success('账号资料已更新');
+  }
+
+  async function handlePasswordSave() {
+    if (!currentPassword || !newPassword) {
+      toast.error('请填写当前密码和新密码');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('两次输入的新密码不一致');
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    const response = await fetch('/api/admin/account', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const result = await response.json().catch(() => null);
+
+    setPasswordSaving(false);
+
+    if (!response.ok) {
+      toast.error(result?.error || '密码修改失败');
+      return;
+    }
+
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    toast.success('密码已更新');
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">账号设置</h1>
+        <p className="text-muted-foreground">加载中...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">账号设置</h1>
+
+      <AdminFormPanel title="基础资料">
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-sm font-medium">邮箱</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium">昵称</span>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-sm font-medium">头像 URL</span>
+            <input
+              value={avatar}
+              onChange={(event) => setAvatar(event.target.value)}
+              placeholder="https://..."
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={handleProfileSave}
+            disabled={profileSaving}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {profileSaving ? '保存中...' : '保存资料'}
+          </button>
+        </div>
+      </AdminFormPanel>
+
+      <AdminFormPanel title="修改密码">
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="space-y-1">
+            <span className="text-sm font-medium">当前密码</span>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium">新密码</span>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium">确认新密码</span>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={handlePasswordSave}
+            disabled={passwordSaving}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {passwordSaving ? '更新中...' : '更新密码'}
+          </button>
+        </div>
+      </AdminFormPanel>
+    </div>
+  );
+}

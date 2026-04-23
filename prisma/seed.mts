@@ -20,6 +20,20 @@ const PrismaClient = mod.PrismaClient;
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
+function maskEmail(email?: string | null) {
+  if (!email) return 'unknown';
+
+  const [localPart, domain] = email.toLowerCase().split('@');
+  if (!domain) return '***';
+
+  const visiblePrefix = localPart.slice(0, 2);
+  return `${visiblePrefix}${'*'.repeat(Math.max(localPart.length - 2, 3))}@${domain}`;
+}
+
+function maskSecret(value?: string | null) {
+  return value ? '********' : 'not-set';
+}
+
 /**
  * 执行种子填充。
  * 采用 upsert/存在性检查保证多次运行脚本时不会不断制造重复基础数据。
@@ -189,8 +203,8 @@ async function main() {
   console.log('✅ About 页面创建成功');
 
   console.log('\n🎉 种子数据填充完成！');
-  console.log(`📧 管理员邮箱: ${email}`);
-  console.log('🔑 管理员密码: 请查看当前 .env 中的 ADMIN_PASSWORD');
+  console.log(`📧 管理员邮箱: ${maskEmail(email)}`);
+  console.log(`🔑 管理员密码: ${maskSecret(password)}（明文仅保存在本地 .env 中）`);
 }
 
 main()

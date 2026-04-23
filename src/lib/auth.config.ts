@@ -22,10 +22,18 @@ export const authConfig: NextAuthConfig = {
     /**
      * 将数据库中的用户主键透传到 JWT，供后续会话归一化使用。
      */
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
       }
+
+      // 账号设置页更新资料后同步刷新 JWT，避免顶部栏继续展示旧昵称。
+      if (trigger === 'update' && session?.user) {
+        token.name = session.user.name;
+        token.email = session.user.email;
+        token.picture = session.user.image;
+      }
+
       return token;
     },
     /**
