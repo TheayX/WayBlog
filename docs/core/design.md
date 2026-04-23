@@ -132,7 +132,7 @@ API Route Handler 保持轻量，主要负责：
 
 当前主要服务层：
 
-- `src/lib/posts/admin-service.ts`：文章后台列表、创建、更新、删除、slug 冲突检查
+- `src/lib/posts/admin-service.ts`：文章后台列表、创建、更新、删除、slug 冲突检查，供 `/api/admin/posts*` 调用
 - `src/lib/posts/views-service.ts`：文章浏览量、PV/UV 聚合
 - `src/lib/taxonomies/admin-service.ts`：分类/标签后台 CRUD 和冲突检查
 - `src/lib/friend-links/admin-service.ts`：友链后台 CRUD
