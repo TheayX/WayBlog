@@ -6,8 +6,8 @@
  * 当前不存在名称或 URL 的唯一性约束，因此更新时不会额外执行冲突检查。
  */
 import { NextRequest } from 'next/server';
-import { badRequest, noContent, notFound, ok, serverError } from '@/lib/response';
-import { requireAuth } from '@/lib/auth-guard';
+import { noContent, notFound, ok, serverError } from '@/lib/response';
+import { parseJsonBody, requireAdminAccess, resolveRouteId } from '@/lib/api/admin';
 import { prisma } from '@/lib/prisma';
 import { updateFriendLinkSchema } from '@/lib/validations';
 
@@ -24,16 +24,12 @@ interface RouteParams {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
-    const body = await request.json();
-    const parsed = updateFriendLinkSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
-    }
+    const id = await resolveRouteId(params);
+    const parsed = await parseJsonBody(request, updateFriendLinkSchema);
+    if (!parsed.success) return parsed.response;
 
     const existing = await prisma.friendLink.findUnique({ where: { id } });
     if (!existing) {
@@ -59,10 +55,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
+    const id = await resolveRouteId(params);
     const existing = await prisma.friendLink.findUnique({ where: { id } });
 
     if (!existing) {

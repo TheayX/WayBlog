@@ -1,0 +1,60 @@
+/**
+ * 获取后台列表接口的 JSON 结果。
+ *
+ * 后台列表页大多约定返回 `{ data, ...meta }` 结构，
+ * 这里统一收敛基础读取和 JSON 解析，避免每个页面都重复写同样的 fetch 模板。
+ */
+export async function fetchAdminCollection<TResult>(endpoint: string) {
+  const response = await fetch(endpoint);
+  const result = (await response.json()) as TResult;
+  return result;
+}
+
+/**
+ * 后台资源写操作的客户端辅助函数。
+ *
+ * 这里只封装“根据是否编辑态自动选择 POST/PUT”和“统一解析错误响应”这类重复模板，
+ * 页面自身仍然负责字段校验、成功提示和编辑态切换。
+ */
+export async function saveAdminResource<TPayload>({
+  endpoint,
+  editingId,
+  body,
+}: {
+  endpoint: string;
+  editingId: string | null;
+  body: TPayload;
+}) {
+  const url = editingId ? `${endpoint}/${editingId}` : endpoint;
+  const method = editingId ? 'PUT' : 'POST';
+
+  const response = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (response.ok) {
+    return {
+      ok: true as const,
+      data: await response.json().catch(() => null),
+    };
+  }
+
+  const error = await response.json().catch(() => null);
+
+  return {
+    ok: false as const,
+    error: error?.error || '保存失败',
+  };
+}
+
+/**
+ * 后台资源删除的客户端辅助函数。
+ *
+ * 删除接口普遍返回 204，因此这里只关心是否成功，不要求页面再重复拼接删除 URL。
+ */
+export async function deleteAdminResource(endpoint: string, id: string) {
+  const response = await fetch(`${endpoint}/${id}`, { method: 'DELETE' });
+  return response.ok;
+}

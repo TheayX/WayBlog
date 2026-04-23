@@ -5,8 +5,8 @@
  * 并在写入前明确处理“目标不存在”和“名称/slug 冲突”两类业务分支。
  */
 import { NextRequest } from 'next/server';
-import { badRequest, conflict, noContent, notFound, ok, serverError } from '@/lib/response';
-import { requireAuth } from '@/lib/auth-guard';
+import { conflict, noContent, notFound, ok, serverError } from '@/lib/response';
+import { parseJsonBody, requireAdminAccess, resolveRouteId } from '@/lib/api/admin';
 import { prisma } from '@/lib/prisma';
 import { updateCategorySchema } from '@/lib/validations';
 
@@ -23,16 +23,12 @@ interface RouteParams {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
-    const body = await request.json();
-    const parsed = updateCategorySchema.safeParse(body);
-
-    if (!parsed.success) {
-      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
-    }
+    const id = await resolveRouteId(params);
+    const parsed = await parseJsonBody(request, updateCategorySchema);
+    if (!parsed.success) return parsed.response;
 
     const existing = await prisma.category.findUnique({ where: { id } });
     if (!existing) {
@@ -75,10 +71,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
+    const id = await resolveRouteId(params);
     const existing = await prisma.category.findUnique({ where: { id } });
 
     if (!existing) {

@@ -6,8 +6,8 @@
  * - 友情链接当前没有名称或 URL 的唯一性约束；该路由只负责结构校验与持久化。
  */
 import { NextRequest } from 'next/server';
-import { badRequest, ok, serverError } from '@/lib/response';
-import { requireAuth } from '@/lib/auth-guard';
+import { ok, serverError } from '@/lib/response';
+import { parseJsonBody, requireAdminAccess } from '@/lib/api/admin';
 import { prisma } from '@/lib/prisma';
 import { createFriendLinkSchema } from '@/lib/validations';
 
@@ -38,15 +38,11 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const body = await request.json();
-    const parsed = createFriendLinkSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
-    }
+    const parsed = await parseJsonBody(request, createFriendLinkSchema);
+    if (!parsed.success) return parsed.response;
 
     const link = await prisma.friendLink.create({ data: parsed.data });
     return ok(link, { status: 201 });

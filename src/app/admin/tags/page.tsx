@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
+import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
 
 /**
@@ -18,26 +20,15 @@ interface Tag {
 }
 
 export default function AdminTagsPage() {
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    items: tags,
+    loading,
+    refresh: fetchTags,
+  } = useAdminResourceList<Tag>('/api/tags');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const fetchTags = useCallback(() => {
-    setLoading(true);
-    fetch('/api/tags')
-      .then((r) => r.json())
-      .then((res) => setTags(res.data || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    const timeout = setTimeout(fetchTags, 0);
-    return () => clearTimeout(timeout);
-  }, [fetchTags]);
 
   function resetForm() {
     setName('');
@@ -59,20 +50,16 @@ export default function AdminTagsPage() {
     setSaving(true);
 
     const body = { name: name.trim(), slug: slug.trim() };
-    const url = editingId ? `/api/tags/${editingId}` : '/api/tags';
-    const method = editingId ? 'PUT' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const result = await saveAdminResource({
+      endpoint: '/api/tags',
+      editingId,
+      body,
     });
 
     setSaving(false);
 
-    if (!res.ok) {
-      const err = await res.json();
-      toast.error(err.error || '保存失败');
+    if (!result.ok) {
+      toast.error(result.error);
       return;
     }
 
@@ -83,8 +70,8 @@ export default function AdminTagsPage() {
 
   async function handleDelete(id: string, tagName: string) {
     if (!confirm(`确定删除标签「${tagName}」？`)) return;
-    const res = await fetch(`/api/tags/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    const deleted = await deleteAdminResource('/api/tags', id);
+    if (deleted) {
       toast.success('标签已删除');
       if (editingId === id) resetForm();
       fetchTags();

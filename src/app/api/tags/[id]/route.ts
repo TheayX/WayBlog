@@ -6,8 +6,8 @@
  * 删除分支会返回 204 空响应，更新分支则返回最新实体，便于调用方区分两类结果语义。
  */
 import { NextRequest } from 'next/server';
-import { badRequest, conflict, noContent, notFound, ok, serverError } from '@/lib/response';
-import { requireAuth } from '@/lib/auth-guard';
+import { conflict, noContent, notFound, ok, serverError } from '@/lib/response';
+import { parseJsonBody, requireAdminAccess, resolveRouteId } from '@/lib/api/admin';
 import { prisma } from '@/lib/prisma';
 import { updateTagSchema } from '@/lib/validations';
 
@@ -24,16 +24,12 @@ interface RouteParams {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
-    const body = await request.json();
-    const parsed = updateTagSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
-    }
+    const id = await resolveRouteId(params);
+    const parsed = await parseJsonBody(request, updateTagSchema);
+    if (!parsed.success) return parsed.response;
 
     const existing = await prisma.tag.findUnique({ where: { id } });
     if (!existing) {
@@ -75,10 +71,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
+    const id = await resolveRouteId(params);
     const existing = await prisma.tag.findUnique({ where: { id } });
 
     if (!existing) {

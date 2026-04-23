@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
+import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
 
 /**
@@ -19,27 +21,16 @@ interface Category {
 }
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    items: categories,
+    loading,
+    refresh: fetchCategories,
+  } = useAdminResourceList<Category>('/api/categories');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const fetchCategories = useCallback(() => {
-    setLoading(true);
-    fetch('/api/categories')
-      .then((r) => r.json())
-      .then((res) => setCategories(res.data || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    const timeout = setTimeout(fetchCategories, 0);
-    return () => clearTimeout(timeout);
-  }, [fetchCategories]);
 
   function resetForm() {
     setName('');
@@ -63,20 +54,16 @@ export default function AdminCategoriesPage() {
     setSaving(true);
 
     const body = { name: name.trim(), slug: slug.trim(), description: description.trim() || null };
-    const url = editingId ? `/api/categories/${editingId}` : '/api/categories';
-    const method = editingId ? 'PUT' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const result = await saveAdminResource({
+      endpoint: '/api/categories',
+      editingId,
+      body,
     });
 
     setSaving(false);
 
-    if (!res.ok) {
-      const err = await res.json();
-      toast.error(err.error || '保存失败');
+    if (!result.ok) {
+      toast.error(result.error);
       return;
     }
 
@@ -87,8 +74,8 @@ export default function AdminCategoriesPage() {
 
   async function handleDelete(id: string, catName: string) {
     if (!confirm(`确定删除分类「${catName}」？文章将变为未分类。`)) return;
-    const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    const deleted = await deleteAdminResource('/api/categories', id);
+    if (deleted) {
       toast.success('分类已删除');
       if (editingId === id) resetForm();
       fetchCategories();

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { deleteAdminResource, fetchAdminCollection } from '@/lib/admin/client';
 import { formatDateShort } from '@/lib/utils';
 
 /**
@@ -38,8 +39,7 @@ export default function AdminPostsPage() {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (statusFilter) params.set('status', statusFilter);
 
-    fetch(`/api/posts?${params}`)
-      .then((r) => r.json())
+    fetchAdminCollection<{ data?: PostItem[]; total?: number }>(`/api/posts?${params}`)
       .then((res) => {
         setPosts(res.data || []);
         setTotal(res.total || 0);
@@ -56,8 +56,8 @@ export default function AdminPostsPage() {
   async function handleDelete(id: string, title: string) {
     if (!confirm(`确定删除文章「${title}」？此操作不可恢复。`)) return;
 
-    const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    const deleted = await deleteAdminResource('/api/posts', id);
+    if (deleted) {
       toast.success('文章已删除');
       fetchPosts();
     } else {

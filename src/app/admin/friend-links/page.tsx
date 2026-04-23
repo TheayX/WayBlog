@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
+import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 
 /**
  * 管理后台友链管理页。
@@ -19,8 +21,11 @@ interface FriendLink {
 }
 
 export default function AdminFriendLinksPage() {
-  const [links, setLinks] = useState<FriendLink[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    items: links,
+    loading,
+    refresh: fetchLinks,
+  } = useAdminResourceList<FriendLink>('/api/friend-links');
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [avatar, setAvatar] = useState('');
@@ -28,20 +33,6 @@ export default function AdminFriendLinksPage() {
   const [sortOrder, setSortOrder] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const fetchLinks = useCallback(() => {
-    setLoading(true);
-    fetch('/api/friend-links')
-      .then((r) => r.json())
-      .then((res) => setLinks(res.data || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    const timeout = setTimeout(fetchLinks, 0);
-    return () => clearTimeout(timeout);
-  }, [fetchLinks]);
 
   function resetForm() {
     setName(''); setUrl(''); setAvatar(''); setDescription(''); setSortOrder(0); setEditingId(null);
@@ -71,20 +62,16 @@ export default function AdminFriendLinksPage() {
       sortOrder,
     };
 
-    const endpoint = editingId ? `/api/friend-links/${editingId}` : '/api/friend-links';
-    const method = editingId ? 'PUT' : 'POST';
-
-    const res = await fetch(endpoint, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const result = await saveAdminResource({
+      endpoint: '/api/friend-links',
+      editingId,
+      body,
     });
 
     setSaving(false);
 
-    if (!res.ok) {
-      const err = await res.json();
-      toast.error(err.error || '保存失败');
+    if (!result.ok) {
+      toast.error(result.error);
       return;
     }
 
@@ -95,8 +82,8 @@ export default function AdminFriendLinksPage() {
 
   async function handleDelete(id: string, linkName: string) {
     if (!confirm(`确定删除友链「${linkName}」？`)) return;
-    const res = await fetch(`/api/friend-links/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    const deleted = await deleteAdminResource('/api/friend-links', id);
+    if (deleted) {
       toast.success('友链已删除');
       if (editingId === id) resetForm();
       fetchLinks();
