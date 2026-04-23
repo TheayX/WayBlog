@@ -9,6 +9,11 @@ interface RateLimitOptions {
   windowMs: number;
 }
 
+function getNumberFromEnv(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 /**
  * 创建一个按 key 计数的限流器。
  * key 通常由客户端 IP 或 "IP + 路由" 组合而成，用来区分不同访问方和接口。
@@ -41,16 +46,28 @@ export function rateLimit(options: RateLimitOptions) {
 // ─── 预定义限流器 ───
 
 /** 登录接口：5 次/分钟/IP */
-export const loginLimiter = rateLimit({ max: 5, windowMs: 60 * 1000 });
+export const loginLimiter = rateLimit({
+  max: getNumberFromEnv('RATE_LIMIT_LOGIN', 5),
+  windowMs: 60 * 1000,
+});
 
 /** 浏览量记录：1 次/秒/IP */
-export const viewsLimiter = rateLimit({ max: 1, windowMs: 1000 });
+export const viewsLimiter = rateLimit({
+  max: getNumberFromEnv('RATE_LIMIT_VIEWS', 1),
+  windowMs: 1000,
+});
 
 /** 搜索接口：30 次/分钟/IP */
-export const searchLimiter = rateLimit({ max: 30, windowMs: 60 * 1000 });
+export const searchLimiter = rateLimit({
+  max: getNumberFromEnv('RATE_LIMIT_SEARCH', 30),
+  windowMs: 60 * 1000,
+});
 
 /** 通用 API：60 次/分钟/IP */
-export const apiLimiter = rateLimit({ max: 60, windowMs: 60 * 1000 });
+export const apiLimiter = rateLimit({
+  max: getNumberFromEnv('RATE_LIMIT_API', 60),
+  windowMs: 60 * 1000,
+});
 
 /**
  * 从请求头中提取客户端 IP。

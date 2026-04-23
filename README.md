@@ -222,6 +222,7 @@ WayBlog/
 | `DATABASE_URL`       | PostgreSQL 连接字符串                           | —                                                   |
 | `REDIS_URL`          | Redis 连接字符串，用于限流和浏览量 UV 去重      | `redis://localhost:6381/0`                          |
 | `REDIS_KEY_PREFIX`   | Redis key 前缀，用于隔离不同项目                | `wayblog`                                           |
+| `PORT`               | 本地开发与生产启动端口                          | `3610`                                              |
 | `NEXTAUTH_URL`       | 站点 URL（认证回调）                            | `http://localhost:3610`                             |
 | `NEXTAUTH_SECRET`    | JWT 签名密钥                                    | —                                                   |
 | `SITE_NAME`          | 站点名称                                        | `Way`                                               |
@@ -231,6 +232,11 @@ WayBlog/
 | `ADMIN_PASSWORD`     | 管理员密码（seed 用）                           | —                                                   |
 | `UPLOAD_MAX_SIZE`    | 上传文件大小限制（bytes）                       | `5242880` (5MB)                                     |
 | `UPLOAD_DIR`         | 上传目录                                        | `public/uploads`                                    |
+| `UPLOAD_ALLOWED_TYPES` | 允许上传的 MIME 类型，逗号分隔                | `image/jpeg,image/png,image/gif,image/webp`         |
+| `RATE_LIMIT_LOGIN`   | 登录接口每分钟/IP 限流次数                     | `5`                                                 |
+| `RATE_LIMIT_VIEWS`   | 浏览量接口每秒/IP/文章限流次数                 | `1`                                                 |
+| `RATE_LIMIT_SEARCH`  | 搜索接口每分钟/IP 限流次数                     | `30`                                                |
+| `RATE_LIMIT_API`     | 通用 API 每分钟/IP 限流次数                    | `60`                                                |
 | `AI_PROVIDER`        | AI 服务提供商，可选 `aliyun-bailian` / `ollama` | `aliyun-bailian`                                    |
 | `AI_TIMEOUT_MS`      | AI 请求超时时间（毫秒）                         | `120000`                                            |
 | `DASHSCOPE_API_KEY`  | 阿里百炼 API Key                                | —                                                   |

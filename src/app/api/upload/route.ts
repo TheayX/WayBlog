@@ -9,7 +9,17 @@ import { randomUUID } from 'crypto';
  *
  * 这里只接受博客正文常见图片格式，目的是降低管理后台误传二进制文件、脚本文件或体积异常资源的概率。
  */
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const DEFAULT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+function getAllowedUploadTypes() {
+  const configured = process.env.UPLOAD_ALLOWED_TYPES?.split(',')
+    .map((type) => type.trim())
+    .filter(Boolean);
+
+  return configured && configured.length > 0 ? configured : DEFAULT_ALLOWED_TYPES;
+}
+
+const ALLOWED_TYPES = getAllowedUploadTypes();
 
 /**
  * 单文件大小上限。
@@ -18,6 +28,10 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
  * 过大的图片即使能上传，也会拉高管理后台编辑等待时间和公开页首屏负担。
  */
 const MAX_SIZE = parseInt(process.env.UPLOAD_MAX_SIZE || '5242880', 10);
+const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
+const PUBLIC_UPLOAD_PREFIX = UPLOAD_DIR.replace(/\\/g, '/')
+  .replace(/^\/+|\/+$/g, '')
+  .replace(/^public\//, '');
 
 /**
  * 管理后台图片上传路由处理器。
@@ -64,14 +78,14 @@ export async function POST(request: NextRequest) {
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const filename = `${randomUUID()}.${ext}`;
 
-    const uploadDir = join(process.cwd(), 'public', 'uploads', yearMonth);
+    const uploadDir = join(process.cwd(), UPLOAD_DIR, yearMonth);
     await mkdir(uploadDir, { recursive: true });
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const filePath = join(uploadDir, filename);
     await writeFile(filePath, buffer);
 
-    const url = `/uploads/${yearMonth}/${filename}`;
+    const url = `/${PUBLIC_UPLOAD_PREFIX}/${yearMonth}/${filename}`;
 
     return NextResponse.json(
       { data: { url, filename, size: file.size } },
