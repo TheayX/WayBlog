@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth-guard';
-import { PostStatus } from '@/generated/prisma/client';
+import { ok, serverError } from '@/lib/response';
+import { requireAdminAccess } from '@/lib/api/admin';
+import { getDashboardStats } from '@/lib/stats/service';
 
 /**
  * 管理后台仪表盘统计路由处理器。
@@ -14,76 +13,12 @@ import { PostStatus } from '@/generated/prisma/client';
  */
 export async function GET() {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const [
-      totalPosts,
-      totalPublished,
-      totalDrafts,
-      totalCategories,
-      totalTags,
-      viewsAgg,
-      recentViews,
-      topPosts,
-    ] = await Promise.all([
-      prisma.post.count(),
-      prisma.post.count({ where: { status: PostStatus.PUBLISHED } }),
-      prisma.post.count({ where: { status: PostStatus.DRAFT } }),
-      prisma.category.count(),
-      prisma.tag.count(),
-      prisma.post.aggregate({ _sum: { viewCount: true } }),
-      // 最近 30 天每日 PV/UV，供后台趋势图使用。
-      prisma.pageView.findMany({
-        where: {
-          date: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-        },
-        orderBy: { date: 'asc' },
-      }),
-      // Top 5 仅统计已发布文章，避免草稿进入管理后台“热门内容”语义。
-      prisma.post.findMany({
-        where: { status: PostStatus.PUBLISHED },
-        select: { id: true, title: true, slug: true, viewCount: true },
-        orderBy: { viewCount: 'desc' },
-        take: 5,
-      }),
-    ]);
-
-    /**
-     * pageView 表按日期粒度累计原始记录，这里再次按天归一化，输出前端图表直接可消费的结构。
-     *
-     * 这样可以把 PV/UV 聚合规则固定在路由层，避免前台页面或管理后台页面各自重复实现日期分组逻辑。
-     */
-    const dailyMap = new Map<string, { pv: number; uv: number }>();
-    for (const pv of recentViews) {
-      const dateKey = pv.date.toISOString().slice(0, 10);
-      const existing = dailyMap.get(dateKey) || { pv: 0, uv: 0 };
-      existing.pv += pv.pvCount;
-      existing.uv += pv.uvCount;
-      dailyMap.set(dateKey, existing);
-    }
-
-    const recentViewsData = Array.from(dailyMap.entries()).map(([date, stats]) => ({
-      date,
-      pv: stats.pv,
-      uv: stats.uv,
-    }));
-
-    return NextResponse.json({
-      data: {
-        totalPosts,
-        totalPublished,
-        totalDrafts,
-        totalCategories,
-        totalTags,
-        totalViews: viewsAgg._sum.viewCount || 0,
-        recentViews: recentViewsData,
-        topPosts,
-      },
-    });
+    return ok(await getDashboardStats());
   } catch (error) {
-    console.error('GET /api/stats error:', error);
-    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
+    return serverError('GET /api/stats', error);
   }
 }
 
