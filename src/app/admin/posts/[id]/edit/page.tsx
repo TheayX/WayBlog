@@ -1,56 +1,24 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { PostForm } from '@/components/admin/PostForm';
+import { getAdminPostEditorData } from '@/lib/posts/queries';
 
 /**
  * 管理后台文章编辑页。
  *
- * 先按 id 拉取现有文章详情，再把数据回填到统一表单中；
- * 如果文章不存在，则在页面层直接给出错误提示而不是进入空白编辑状态。
+ * 直接在服务端读取受保护的后台编辑数据，再回填到统一表单中；
+ * 这样可以避免先渲染空壳页面、再从客户端请求后台详情，也不会再依赖一个暴露面过宽的读取接口。
  */
-export default function EditPostPage() {
-  const params = useParams();
-  const id = params.id as string;
-  const [postData, setPostData] = useState<null | {
-    id: string;
-    title: string;
-    slug: string;
-    content: string;
-    excerpt: string;
-    coverImage: string;
-    status: 'DRAFT' | 'PUBLISHED';
-    pinned: boolean;
-    categoryId: string;
-    tagIds: string[];
-  }>(null);
-  const [loading, setLoading] = useState(true);
+interface EditPostPageProps {
+  params: Promise<{ id: string }>;
+}
 
-  useEffect(() => {
-    fetch(`/api/posts/${id}`)
-      .then((r) => r.json())
-      .then((res) => {
-        const post = res.data;
-        setPostData({
-          id: post.id,
-          title: post.title,
-          slug: post.slug,
-          content: post.content,
-          excerpt: post.excerpt || '',
-          coverImage: post.coverImage || '',
-          status: post.status,
-          pinned: post.pinned,
-          categoryId: post.categoryId || '',
-          tagIds: post.tags?.map((t: { id: string }) => t.id) || [],
-        });
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [id]);
+export default async function EditPostPage({ params }: EditPostPageProps) {
+  const { id } = await params;
+  const postData = await getAdminPostEditorData(id);
 
-  if (loading) return <p className="text-muted-foreground">加载中...</p>;
-  if (!postData) return <p className="text-destructive">文章不存在</p>;
+  if (!postData) {
+    notFound();
+  }
 
   return (
     <div>

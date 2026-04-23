@@ -4,7 +4,7 @@
  * 负责在启动 Next.js dev server 前尽量确保本地 PostgreSQL 容器可用，
  * 并在终端输出额外的后台管理地址提示，减少开发时的重复准备步骤。
  */
-import { spawn, execSync, exec } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -12,18 +12,18 @@ import { createInterface } from 'node:readline';
 const ensureDatabase = async () => {
   try {
     execSync('docker info', { stdio: 'ignore' });
-  } catch (err) {
+  } catch {
     console.log('⏳ Docker 尚未运行，正在尝试为您唤起 Docker Desktop...');
     try {
       // 优先尝试项目当前开发机上的 Docker Desktop 路径，减少手动启动成本。
       execSync('start "" "E:\\DockerDesktop\\Docker Desktop.exe"');
-    } catch (e) {
-        try {
-          // 兼容另一条常见安装路径，避免开发机路径差异导致脚本直接失败。
-          execSync('start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"');
-        } catch (e2) {
-          console.log('⚠️ 无法自动打开 Docker Desktop，请确保它安装在默认路径，或者请手动将其打开。');
-        }
+    } catch {
+      try {
+        // 兼容另一条常见安装路径，避免开发机路径差异导致脚本直接失败。
+        execSync('start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"');
+      } catch {
+        console.log('⚠️ 无法自动打开 Docker Desktop，请确保它安装在默认路径，或者请手动将其打开。');
+      }
     }
 
     // 最多等待约 60 秒让 Docker 引擎就绪，避免数据库容器启动命令过早失败。
@@ -33,9 +33,9 @@ const ensureDatabase = async () => {
         execSync('docker info', { stdio: 'ignore' });
         console.log('✅ Docker 引擎现已就绪！\n');
         break;
-      } catch (e) {
+      } catch {
         attempts++;
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise((resolveDelay) => setTimeout(resolveDelay, 2000));
         process.stdout.write('.');
       }
     }
@@ -44,7 +44,7 @@ const ensureDatabase = async () => {
   try {
     console.log('📦 正在确保本地数据库 (PostgreSQL) 运行中...');
     execSync('docker-compose up -d', { stdio: 'inherit' });
-  } catch (e) {
+  } catch {
     console.error('❌ 自动启动数据库遇到问题。');
   }
 };

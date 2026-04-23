@@ -1,12 +1,13 @@
 /**
  * 单篇帖子路由处理器。
  *
- * - GET 返回完整关联数据，主要服务管理后台编辑回填；它本身不做鉴权，也不构成公开页的安全读取边界。
+ * - GET 仅返回管理后台编辑回填所需的最小字段，并要求先通过鉴权。
  * - PUT / DELETE 仅允许管理后台操作，且在真正写入前完成鉴权、请求校验、存在性判断与唯一性约束检查。
  */
 import { NextRequest } from 'next/server';
 import { badRequest, conflict, noContent, notFound, ok, serverError } from '@/lib/response';
 import { requireAuth } from '@/lib/auth-guard';
+import { getAdminPostEditorData } from '@/lib/posts/queries';
 import { prisma } from '@/lib/prisma';
 import { updatePostSchema } from '@/lib/validations';
 
@@ -17,23 +18,16 @@ interface RouteParams {
 /**
  * 获取单篇帖子详情。
  *
- * 该路由处理器返回完整帖子及作者、分类、标签关联数据，主要供管理后台编辑页回填使用。
- * 它本身不做鉴权，也不按“已发布 / 草稿”状态过滤，因此不应被视为公开页的受控读取边界。
- * 如果需要面向前台页面安全暴露帖子详情，应由上层受控入口或专用公开查询链路额外限制只读取已发布内容。
- * 这里没有额外请求体验证，是因为输入只来自路径参数；路由处理器本身仅负责在记录不存在时返回 404，
- * 并把已命中的详情数据完整返回给调用方。
+ * 该入口只面向管理后台编辑页，因此必须先完成鉴权，再返回表单回填所需的最小字段。
+ * 公开页详情不应复用这个接口，而应通过受控的公开查询链路按 slug 读取已发布文章。
  */
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
+    const authResult = await requireAuth();
+    if (!authResult.authorized) return authResult.response;
+
     const { id } = await params;
-    const post = await prisma.post.findUnique({
-      where: { id },
-      include: {
-        author: { select: { id: true, name: true, avatar: true } },
-        category: { select: { id: true, name: true, slug: true } },
-        tags: { select: { id: true, name: true, slug: true } },
-      },
-    });
+    const post = await getAdminPostEditorData(id);
 
     if (!post) {
       return notFound('Post not found');

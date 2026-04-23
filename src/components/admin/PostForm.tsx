@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { AiSuggestionDrawer } from '@/components/admin/AiSuggestionDrawer';
 import { usePostAiAssistant } from '@/components/admin/use-post-ai-assistant';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
+import type { AdminPostEditorData } from '@/lib/posts/queries';
 import { slugify } from '@/lib/utils';
 
 /**
@@ -27,21 +28,8 @@ interface Tag {
   slug?: string;
 }
 
-interface PostData {
-  id?: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string;
-  coverImage: string;
-  status: 'DRAFT' | 'PUBLISHED';
-  pinned: boolean;
-  categoryId: string;
-  tagIds: string[];
-}
-
 interface PostFormProps {
-  initialData?: PostData;
+  initialData?: AdminPostEditorData;
   isEdit?: boolean;
 }
 
