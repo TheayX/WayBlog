@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: wayblog
       POSTGRES_USER: wayblog
-      POSTGRES_PASSWORD: wayblog123
+      POSTGRES_PASSWORD: wayblog_dev_password
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped

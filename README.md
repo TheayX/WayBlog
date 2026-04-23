@@ -2,7 +2,7 @@
 
 WayBlog 是一个基于 Next.js、Prisma 和 PostgreSQL 的个人博客系统，面向单管理员场景，包含公开前台、管理后台、全文搜索、浏览量统计和 AI 辅助写作。
 
-## Features
+## 功能特性
 
 - 文章、分类、标签、友链管理
 - Markdown 渲染、代码高亮、目录导航、上一篇/下一篇
@@ -12,7 +12,7 @@ WayBlog 是一个基于 Next.js、Prisma 和 PostgreSQL 的个人博客系统，
 - 本地图片上传
 - AI 辅助写作，支持阿里百炼或 Ollama
 
-## Tech Stack
+## 技术栈
 
 - Next.js 16 / React 19 / TypeScript
 - Tailwind CSS 4
@@ -22,13 +22,13 @@ WayBlog 是一个基于 Next.js、Prisma 和 PostgreSQL 的个人博客系统，
 - Zod
 - pnpm
 
-## Requirements
+## 环境要求
 
 - Node.js 20+
 - pnpm 9+
 - Docker Desktop
 
-## Quick Start
+## 快速开始
 
 ```bash
 pnpm install
@@ -68,7 +68,7 @@ pnpm dev
 
 管理员初始账号由 `.env` 中的 `ADMIN_EMAIL` 和 `ADMIN_PASSWORD` 决定。
 
-## Scripts
+## 常用命令
 
 | Command | Description |
 | --- | --- |
@@ -83,7 +83,7 @@ pnpm dev
 | `pnpm db:seed` | 写入种子数据 |
 | `pnpm db:studio` | 打开 Prisma Studio |
 
-## Project Structure
+## 项目结构
 
 ```text
 WayBlog/
@@ -98,7 +98,7 @@ WayBlog/
     └── types/             # 全局类型
 ```
 
-## Documentation
+## 文档
 
 - [需求说明](./docs/core/requirements.md)
 - [系统设计](./docs/core/design.md)
@@ -109,7 +109,7 @@ WayBlog/
 
 配置项以 [.env.example](./.env.example) 为准；部署、数据库能力和运行边界见 `docs/`。
 
-## Notes
+## 说明
 
 - 默认端口是 `3610`。
 - PostgreSQL 默认映射到宿主机 `6432`。

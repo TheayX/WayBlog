@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { getSiteConfig } from '@/lib/site';
 
 /**
  * robots.txt 元数据路由。
@@ -7,7 +8,7 @@ import type { MetadataRoute } from 'next';
  * 输出依赖环境变量中的站点地址，不涉及数据库读取。
  */
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.SITE_URL || 'http://localhost:3610';
+  const siteUrl = getSiteConfig().url;
 
   return {
     rules: [

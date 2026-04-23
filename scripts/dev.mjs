@@ -8,21 +8,30 @@ import { spawn, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
+import { getDockerDesktopCandidates, resolveDockerComposeCommand } from './dev-utils.mjs';
+
+function commandExists(command) {
+  try {
+    execSync(command, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const ensureDatabase = async () => {
   try {
     execSync('docker info', { stdio: 'ignore' });
   } catch {
-    console.log('⏳ Docker 尚未运行，正在尝试为您唤起 Docker Desktop...');
-    try {
-      // 优先尝试项目当前开发机上的 Docker Desktop 路径，减少手动启动成本。
-      execSync('start "" "E:\\DockerDesktop\\Docker Desktop.exe"');
-    } catch {
+    console.log('⏳ Docker 尚未运行，请先确保 Docker Desktop 或 Docker Engine 可用...');
+
+    for (const candidate of getDockerDesktopCandidates()) {
       try {
-        // 兼容另一条常见安装路径，避免开发机路径差异导致脚本直接失败。
-        execSync('start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"');
+        // Windows 本地开发时尝试唤起常见安装路径，失败后继续提示手动启动。
+        execSync(`start "" "${candidate}"`);
+        break;
       } catch {
-        console.log('⚠️ 无法自动打开 Docker Desktop，请确保它安装在默认路径，或者请手动将其打开。');
+        // 多个候选路径逐个尝试，全部失败后交给下面的等待与提示处理。
       }
     }
 
@@ -42,10 +51,15 @@ const ensureDatabase = async () => {
   }
 
   try {
-    console.log('📦 正在确保本地数据库 (PostgreSQL) 运行中...');
-    execSync('docker-compose up -d', { stdio: 'inherit' });
+    const composeCommand = resolveDockerComposeCommand(commandExists);
+    if (!composeCommand) {
+      throw new Error('未找到 docker compose 或 docker-compose 命令');
+    }
+
+    console.log('📦 正在确保本地数据库和 Redis 运行中...');
+    execSync(`${composeCommand} up -d`, { stdio: 'inherit' });
   } catch {
-    console.error('❌ 自动启动数据库遇到问题。');
+    console.error('❌ 自动启动本地基础设施遇到问题，请手动运行 docker compose up -d。');
   }
 };
 

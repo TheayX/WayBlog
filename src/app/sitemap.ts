@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getPublishedSitemapPosts } from '@/lib/posts/queries';
+import { getSiteConfig } from '@/lib/site';
 import { getPublicCategorySlugs, getPublicTagSlugs } from '@/lib/taxonomies/queries';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * 仅收录已发布文章，以及所有分类页、标签页；管理后台和草稿不会出现在这里。
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.SITE_URL || 'http://localhost:3610';
+  const siteUrl = getSiteConfig().url;
 
   // 公开页中的稳定静态入口，优先级相对固定。
   const staticPages: MetadataRoute.Sitemap = [

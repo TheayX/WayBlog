@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
+import { getSiteConfig } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,9 +10,7 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const siteName = process.env.SITE_NAME || "Way";
-const siteDescription = process.env.SITE_DESCRIPTION || "A Journey of Code and Thought";
-const siteUrl = process.env.SITE_URL || "http://localhost:3610";
+const siteConfig = getSiteConfig();
 
 /**
  * 应用根布局与全站默认元数据。
@@ -21,28 +20,28 @@ const siteUrl = process.env.SITE_URL || "http://localhost:3610";
  */
 export const metadata: Metadata = {
   title: {
-    default: `${siteName} — ${siteDescription}`,
-    template: `%s — ${siteName}`,
+    default: `${siteConfig.name} — ${siteConfig.description}`,
+    template: `%s — ${siteConfig.name}`,
   },
-  description: siteDescription,
-  metadataBase: new URL(siteUrl),
+  description: siteConfig.description,
+  metadataBase: new URL(siteConfig.url),
   openGraph: {
     type: "website",
     locale: "zh_CN",
-    siteName,
+    siteName: siteConfig.name,
     title: {
-      default: `${siteName} — ${siteDescription}`,
-      template: `%s — ${siteName}`,
+      default: `${siteConfig.name} — ${siteConfig.description}`,
+      template: `%s — ${siteConfig.name}`,
     },
-    description: siteDescription,
+    description: siteConfig.description,
   },
   twitter: {
     card: "summary_large_image",
     title: {
-      default: `${siteName} — ${siteDescription}`,
-      template: `%s — ${siteName}`,
+      default: `${siteConfig.name} — ${siteConfig.description}`,
+      template: `%s — ${siteConfig.name}`,
     },
-    description: siteDescription,
+    description: siteConfig.description,
   },
   alternates: {
     types: {

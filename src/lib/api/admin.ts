@@ -23,7 +23,18 @@ export async function parseJsonBody<TSchema extends z.ZodTypeAny>(
   request: NextRequest,
   schema: TSchema,
 ) {
-  const body = await request.json();
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    // JSON 语法错误属于客户端请求问题，应稳定返回 400，避免被统一异常处理误报为服务端故障。
+    return {
+      success: false as const,
+      response: badRequest(undefined, 'Invalid JSON body'),
+    };
+  }
+
   const parsed = schema.safeParse(body);
 
   if (!parsed.success) {
