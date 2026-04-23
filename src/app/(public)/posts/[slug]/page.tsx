@@ -102,7 +102,9 @@ export default async function PostPage({ params }: PostPageProps) {
       <div className="xl:grid xl:grid-cols-[1fr_200px] xl:gap-8">
         <article className="min-w-0">
           <header className="mb-10 lg:mb-14">
-            <h1 className="mb-6 text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-foreground">{post.title}</h1>
+            <h1 className="mb-6 text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-foreground">
+              {post.title}
+            </h1>
 
             <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground/80">
               {post.author.name && (
@@ -114,8 +116,18 @@ export default async function PostPage({ params }: PostPageProps) {
                 </span>
               )}
               {post.publishedAt && (
-                <time dateTime={post.publishedAt.toISOString()} className="flex items-center gap-1.5">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <time
+                  dateTime={post.publishedAt.toISOString()}
+                  className="flex items-center gap-1.5"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
                   {formatDate(post.publishedAt)}
                 </time>
               )}
@@ -124,7 +136,14 @@ export default async function PostPage({ params }: PostPageProps) {
                   href={`/categories/${post.category.slug}`}
                   className="flex items-center gap-1.5 transition-colors hover:text-primary"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                    />
+                  </svg>
                   {post.category.name}
                 </Link>
               )}

@@ -1,3 +1,5 @@
+import type { AiOptimizeInput } from '@/lib/ai/types';
+
 /**
  * AI 提示词共享规则与构造工具。
  *
@@ -29,6 +31,46 @@ export const FIELD_RULES = {
   category: ['优先从候选分类中选择', '只推荐一个'],
   tags: ['优先从候选标签中选择', '数量保持克制'],
 } as const;
+
+const PROMPT_PROFILES = {
+  default: {
+    label: '通用文章',
+    rules: ['保持自然清晰的中文表达'],
+  },
+  technical: {
+    label: '技术文章',
+    rules: ['保留术语、代码标识和关键步骤', '优先让结构便于复盘和排查问题'],
+  },
+  essay: {
+    label: '随笔复盘',
+    rules: ['保留个人表达和情绪色彩', '不要改成营销文或教程腔'],
+  },
+} as const;
+
+/**
+ * 根据已有标题、正文、分类和标签选择轻量提示词模板。
+ * 这里先只做保守关键词判断，后续再按真实失败案例扩展 profile。
+ */
+export function resolvePromptProfile(input: AiOptimizeInput) {
+  const taxonomyText = [
+    input.title,
+    input.content,
+    ...input.categories.map((item) => item.name),
+    ...input.tags.map((item) => item.name),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  if (/(代码|编程|开发|架构|数据库|前端|后端|react|next|prisma|typescript)/i.test(taxonomyText)) {
+    return PROMPT_PROFILES.technical;
+  }
+
+  if (/(随笔|生活|复盘|感想|记录|思考|日记)/i.test(taxonomyText)) {
+    return PROMPT_PROFILES.essay;
+  }
+
+  return PROMPT_PROFILES.default;
+}
 
 export const AI_SYSTEM_PROMPT = `
 你是中文技术博客写作助手。

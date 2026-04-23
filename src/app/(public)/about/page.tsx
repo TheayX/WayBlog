@@ -28,11 +28,7 @@ export default async function AboutPage() {
         <MarkdownRenderer content={page.content} />
       ) : (
         <p className="text-muted-foreground">
-          这里还没有内容，去后台创建一个 slug 为
-          {' '}
-          <code>about</code>
-          {' '}
-          的页面即可。
+          这里还没有内容，去后台创建一个 slug 为 <code>about</code> 的页面即可。
         </p>
       )}
     </div>

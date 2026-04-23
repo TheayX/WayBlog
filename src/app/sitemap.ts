@@ -16,10 +16,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 公开页中的稳定静态入口，优先级相对固定。
   const staticPages: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
-    { url: `${siteUrl}/archives`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.7 },
+    {
+      url: `${siteUrl}/archives`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.7,
+    },
     { url: `${siteUrl}/tags`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${siteUrl}/friends`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${siteUrl}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    {
+      url: `${siteUrl}/friends`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    },
+    {
+      url: `${siteUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
     { url: `${siteUrl}/search`, changeFrequency: 'monthly', priority: 0.4 },
   ];
 
@@ -53,4 +68,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [...staticPages, ...postPages, ...categoryPages, ...tagPages];
 }
-

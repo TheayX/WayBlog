@@ -25,9 +25,7 @@ export async function GET() {
 
   const items = posts
     .map((post) => {
-      const pubDate = post.publishedAt
-        ? new Date(post.publishedAt).toUTCString()
-        : '';
+      const pubDate = post.publishedAt ? new Date(post.publishedAt).toUTCString() : '';
       const description = post.excerpt || post.content.slice(0, 300);
 
       return `    <item>
@@ -63,4 +61,3 @@ ${items}
     },
   });
 }
-

@@ -70,9 +70,7 @@ export default async function ArchivesPage() {
               <div className="space-y-6">
                 {group.months.map(({ month, posts: monthPosts }) => (
                   <div key={month}>
-                    <h3 className="mb-3 text-lg font-semibold text-muted-foreground">
-                      {month} 月
-                    </h3>
+                    <h3 className="mb-3 text-lg font-semibold text-muted-foreground">{month} 月</h3>
                     <ul className="space-y-2 border-l-2 border-border pl-4">
                       {monthPosts.map((post) => (
                         <li key={post.slug} className="flex items-baseline gap-3">

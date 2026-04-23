@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type {
   AiFieldInput,
   AiOptimizeInput,
@@ -9,6 +10,10 @@ import type {
  * 归一化模块的共享工具集合。
  * 负责把模型返回的宽松 JSON 数据清洗成前端与路由处理器都能稳定消费的结构。
  */
+
+const modelJsonObjectSchema = z
+  .record(z.string(), z.unknown())
+  .refine((value) => !Array.isArray(value), 'Model JSON must be an object');
 
 /** 安全读取字符串字段，并在缺失时回退到默认值。 */
 export function getString(value: unknown, fallback = '') {
@@ -28,6 +33,19 @@ export function extractJsonObject(raw: string) {
   }
 
   return raw.slice(start, end + 1);
+}
+
+/**
+ * 解析并校验模型返回的 JSON 对象。
+ * 只允许对象作为后续归一化入口，避免数组、字符串等异常结构被强转后继续流入业务逻辑。
+ */
+export function parseModelJsonObject(raw: string) {
+  if (raw.trimStart().startsWith('[')) {
+    throw new Error('Model JSON must be an object');
+  }
+
+  const parsed = JSON.parse(extractJsonObject(raw));
+  return modelJsonObjectSchema.parse(parsed);
 }
 
 /** 去掉模型偶尔包裹在外层的 Markdown 代码围栏。 */
@@ -92,7 +110,10 @@ export function normalizeCategory(
  * 归一化标签推荐列表。
  * 会优先复用现有候选标签的 id，并按名称去重，同时把数量限制在后台可直接消费的范围内。
  */
-export function normalizeTags(value: unknown, input: AiOptimizeInput | AiFieldInput): AiSuggestionTag[] {
+export function normalizeTags(
+  value: unknown,
+  input: AiOptimizeInput | AiFieldInput,
+): AiSuggestionTag[] {
   if (!Array.isArray(value)) return [];
 
   const seen = new Set<string>();

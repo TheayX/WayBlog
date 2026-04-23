@@ -20,6 +20,7 @@ interface RawSearchResult {
  * 搜索已发布文章。
  *
  * 这里保留原有全文检索 SQL 语义：simple 字典、AND 词项、高亮正文片段、按 rank 排序。
+ * 当相关度相同时再按发布时间倒序，避免同一关键词的结果顺序在不同查询间漂移。
  * 分类和标签仍由 ORM 补充，避免把关系 join 继续塞进原始 SQL。
  */
 export async function searchPublishedPosts({ q, page, pageSize }: SearchPostsParams) {
@@ -38,11 +39,12 @@ export async function searchPublishedPosts({ q, page, pageSize }: SearchPostsPar
     `SELECT p.id, p.title, p.slug,
             ts_headline('simple', p.content, to_tsquery('simple', $1),
               'MaxFragments=2, MaxWords=30, MinWords=10') AS highlight,
-            p."publishedAt"
+            p."publishedAt",
+            ts_rank(p."search_vector", to_tsquery('simple', $1)) AS rank
      FROM "Post" p
      WHERE p.status = 'PUBLISHED'
        AND p."search_vector" @@ to_tsquery('simple', $1)
-     ORDER BY ts_rank(p."search_vector", to_tsquery('simple', $1)) DESC
+     ORDER BY rank DESC, p."publishedAt" DESC NULLS LAST
      LIMIT $2 OFFSET $3`,
     tsQuery,
     pageSize,

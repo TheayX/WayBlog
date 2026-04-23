@@ -1,5 +1,7 @@
+import { unstable_cache } from 'next/cache';
 import type { Prisma } from '@generated/prisma/client';
 import { PostStatus } from '@generated/prisma/client';
+import { PUBLIC_CONTENT_REVALIDATE_SECONDS, PUBLIC_METADATA_REVALIDATE_SECONDS } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 
 /**
@@ -200,144 +202,168 @@ export async function getAdminPostEditorData(id: string) {
  *
  * 公开列表统一按“置顶优先、发布时间倒序”的规则排序，避免首页、分类页等入口各自定义排序语义。
  */
-export async function getPublishedPostsPage(page: number, pageSize: number) {
-  const where = { status: PostStatus.PUBLISHED } as const;
+export const getPublishedPostsPage = unstable_cache(
+  async (page: number, pageSize: number) => {
+    const where = { status: PostStatus.PUBLISHED } as const;
 
-  const [data, total] = await Promise.all([
-    prisma.post.findMany({
-      where,
-      select: publicPostListSelect,
-      orderBy: publicPostListOrderBy,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.post.count({ where }),
-  ]);
+    const [data, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        select: publicPostListSelect,
+        orderBy: publicPostListOrderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.post.count({ where }),
+    ]);
 
-  return { data, total };
-}
+    return { data, total };
+  },
+  ['published-posts-page'],
+  { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取某个分类下的已发布文章分页结果。
  *
  * 分类实体是否存在由 taxonomies 查询层判断；这里仅负责维护文章公开可见性、排序与列表字段。
  */
-export async function getPublishedPostsPageByCategory(
-  categoryId: string,
-  page: number,
-  pageSize: number,
-) {
-  const where = { status: PostStatus.PUBLISHED, categoryId } as const;
+export const getPublishedPostsPageByCategory = unstable_cache(
+  async (categoryId: string, page: number, pageSize: number) => {
+    const where = { status: PostStatus.PUBLISHED, categoryId } as const;
 
-  const [data, total] = await Promise.all([
-    prisma.post.findMany({
-      where,
-      select: publicPostListSelect,
-      orderBy: publicPostListOrderBy,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.post.count({ where }),
-  ]);
+    const [data, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        select: publicPostListSelect,
+        orderBy: publicPostListOrderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.post.count({ where }),
+    ]);
 
-  return { data, total };
-}
+    return { data, total };
+  },
+  ['published-posts-page-by-category'],
+  { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取某个标签下的已发布文章分页结果。
  *
  * 标签页和首页复用同一套列表字段与排序规则，只在 where 条件中追加标签关联约束。
  */
-export async function getPublishedPostsPageByTag(tagId: string, page: number, pageSize: number) {
-  const where = {
-    status: PostStatus.PUBLISHED,
-    tags: { some: { id: tagId } },
-  } as const;
+export const getPublishedPostsPageByTag = unstable_cache(
+  async (tagId: string, page: number, pageSize: number) => {
+    const where = {
+      status: PostStatus.PUBLISHED,
+      tags: { some: { id: tagId } },
+    } as const;
 
-  const [data, total] = await Promise.all([
-    prisma.post.findMany({
-      where,
-      select: publicPostListSelect,
-      orderBy: publicPostListOrderBy,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.post.count({ where }),
-  ]);
+    const [data, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        select: publicPostListSelect,
+        orderBy: publicPostListOrderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.post.count({ where }),
+    ]);
 
-  return { data, total };
-}
+    return { data, total };
+  },
+  ['published-posts-page-by-tag'],
+  { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取归档页时间线所需的已发布文章列表。
  *
  * 归档只需要标题、slug 与发布时间，因此不复用卡片列表查询，避免额外读取正文和关联数据。
  */
-export async function getPublishedArchivePosts() {
-  return prisma.post.findMany({
-    where: { status: PostStatus.PUBLISHED },
-    select: {
-      slug: true,
-      title: true,
-      publishedAt: true,
-    },
-    orderBy: { publishedAt: 'desc' },
-  });
-}
+export const getPublishedArchivePosts = unstable_cache(
+  async () => {
+    return prisma.post.findMany({
+      where: { status: PostStatus.PUBLISHED },
+      select: {
+        slug: true,
+        title: true,
+        publishedAt: true,
+      },
+      orderBy: { publishedAt: 'desc' },
+    });
+  },
+  ['published-archive-posts'],
+  { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取 RSS 使用的最新已发布文章。
  *
  * 该查询仅返回 feed 所需字段，避免 RSS 路由为了订阅输出读取多余关联数据。
  */
-export async function getPublishedFeedPosts(limit: number) {
-  return prisma.post.findMany({
-    where: { status: PostStatus.PUBLISHED },
-    select: {
-      title: true,
-      slug: true,
-      excerpt: true,
-      content: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-      category: { select: { name: true } },
-    },
-    orderBy: { publishedAt: 'desc' },
-    take: limit,
-  });
-}
+export const getPublishedFeedPosts = unstable_cache(
+  async (limit: number) => {
+    return prisma.post.findMany({
+      where: { status: PostStatus.PUBLISHED },
+      select: {
+        title: true,
+        slug: true,
+        excerpt: true,
+        content: true,
+        publishedAt: true,
+        author: { select: { name: true } },
+        category: { select: { name: true } },
+      },
+      orderBy: { publishedAt: 'desc' },
+      take: limit,
+    });
+  },
+  ['published-feed-posts'],
+  { revalidate: PUBLIC_METADATA_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取 sitemap 使用的公开文章 URL 列表。
  *
  * sitemap 只关心 slug 与更新时间，因此保持最小字段选择即可。
  */
-export async function getPublishedSitemapPosts() {
-  return prisma.post.findMany({
-    where: { status: PostStatus.PUBLISHED },
-    select: { slug: true, updatedAt: true },
-    orderBy: { publishedAt: 'desc' },
-  });
-}
+export const getPublishedSitemapPosts = unstable_cache(
+  async () => {
+    return prisma.post.findMany({
+      where: { status: PostStatus.PUBLISHED },
+      select: { slug: true, updatedAt: true },
+      orderBy: { publishedAt: 'desc' },
+    });
+  },
+  ['published-sitemap-posts'],
+  { revalidate: PUBLIC_METADATA_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取公开页文章元数据。
  *
  * 只返回已发布文章的 SEO 所需字段，确保元数据生成逻辑不会绕过公开可见性边界。
  */
-export async function getPublishedPostMetadata(slug: string) {
-  return prisma.post.findFirst({
-    where: { slug, status: PostStatus.PUBLISHED },
-    select: {
-      title: true,
-      excerpt: true,
-      coverImage: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-      tags: { select: { name: true } },
-    },
-  });
-}
+export const getPublishedPostMetadata = unstable_cache(
+  async (slug: string) => {
+    return prisma.post.findFirst({
+      where: { slug, status: PostStatus.PUBLISHED },
+      select: {
+        title: true,
+        excerpt: true,
+        coverImage: true,
+        publishedAt: true,
+        author: { select: { name: true } },
+        tags: { select: { name: true } },
+      },
+    });
+  },
+  ['published-post-metadata'],
+  { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取公开文章详情。
@@ -345,25 +371,29 @@ export async function getPublishedPostMetadata(slug: string) {
  * 详情页正文和结构化数据都依赖这份查询结果，因此这里集中约束“只读已发布文章”，
  * 避免前台页面再次各自拼接 where 条件。
  */
-export async function getPublishedPostDetail(slug: string) {
-  return prisma.post.findFirst({
-    where: { slug, status: PostStatus.PUBLISHED },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      content: true,
-      excerpt: true,
-      coverImage: true,
-      publishedAt: true,
-      updatedAt: true,
-      viewCount: true,
-      author: { select: { name: true, avatar: true } },
-      category: { select: { name: true, slug: true } },
-      tags: { select: { name: true, slug: true } },
-    },
-  });
-}
+export const getPublishedPostDetail = unstable_cache(
+  async (slug: string) => {
+    return prisma.post.findFirst({
+      where: { slug, status: PostStatus.PUBLISHED },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        content: true,
+        excerpt: true,
+        coverImage: true,
+        publishedAt: true,
+        updatedAt: true,
+        viewCount: true,
+        author: { select: { name: true, avatar: true } },
+        category: { select: { name: true, slug: true } },
+        tags: { select: { name: true, slug: true } },
+      },
+    });
+  },
+  ['published-post-detail'],
+  { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);
 
 /**
  * 获取公开文章详情页的上下篇导航。
@@ -371,25 +401,29 @@ export async function getPublishedPostDetail(slug: string) {
  * 这里沿用现有规则：比当前发布时间更晚的是“上一篇”，更早的是“下一篇”，
  * 统一由领域查询层维护，避免详情页自己再次组合两条近似查询。
  */
-export async function getPublishedPostNavigation(publishedAt: Date) {
-  const [prevPost, nextPost] = await Promise.all([
-    prisma.post.findFirst({
-      where: {
-        status: PostStatus.PUBLISHED,
-        publishedAt: { gt: publishedAt },
-      },
-      orderBy: { publishedAt: 'asc' },
-      select: { slug: true, title: true },
-    }),
-    prisma.post.findFirst({
-      where: {
-        status: PostStatus.PUBLISHED,
-        publishedAt: { lt: publishedAt },
-      },
-      orderBy: { publishedAt: 'desc' },
-      select: { slug: true, title: true },
-    }),
-  ]);
+export const getPublishedPostNavigation = unstable_cache(
+  async (publishedAt: Date) => {
+    const [prevPost, nextPost] = await Promise.all([
+      prisma.post.findFirst({
+        where: {
+          status: PostStatus.PUBLISHED,
+          publishedAt: { gt: publishedAt },
+        },
+        orderBy: { publishedAt: 'asc' },
+        select: { slug: true, title: true },
+      }),
+      prisma.post.findFirst({
+        where: {
+          status: PostStatus.PUBLISHED,
+          publishedAt: { lt: publishedAt },
+        },
+        orderBy: { publishedAt: 'desc' },
+        select: { slug: true, title: true },
+      }),
+    ]);
 
-  return { prevPost, nextPost };
-}
+    return { prevPost, nextPost };
+  },
+  ['published-post-navigation'],
+  { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: ['public-posts'] },
+);

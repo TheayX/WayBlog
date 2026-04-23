@@ -45,11 +45,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   if (!category) notFound();
 
-  const { data: posts, total } = await getPublishedPostsPageByCategory(
-    category.id,
-    page,
-    pageSize,
-  );
+  const { data: posts, total } = await getPublishedPostsPageByCategory(category.id, page, pageSize);
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -57,9 +53,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     <div>
       <header className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">{category.name}</h1>
-        {category.description && (
-          <p className="text-muted-foreground">{category.description}</p>
-        )}
+        {category.description && <p className="text-muted-foreground">{category.description}</p>}
         <p className="mt-1 text-sm text-muted-foreground">共 {total} 篇文章</p>
       </header>
 

@@ -1,8 +1,13 @@
-import type { AiFieldInput, AiFieldResult, AiOptimizeInput, AiOptimizeResult } from '@/lib/ai/types';
+import type {
+  AiFieldInput,
+  AiFieldResult,
+  AiOptimizeInput,
+  AiOptimizeResult,
+} from '@/lib/ai/types';
 import { getAiConfig } from '@/lib/ai/config';
 import { normalizeOptimizeFieldResult } from '@/lib/ai/normalizers/optimize-field';
 import { normalizeOptimizePostResult } from '@/lib/ai/normalizers/optimize-post';
-import { extractJsonObject } from '@/lib/ai/normalizers/shared';
+import { parseModelJsonObject } from '@/lib/ai/normalizers/shared';
 import { buildOptimizeFieldPrompt } from '@/lib/ai/prompts/optimize-field';
 import { buildOptimizePostPrompt } from '@/lib/ai/prompts/optimize-post';
 import { AI_SYSTEM_PROMPT } from '@/lib/ai/prompts/shared';
@@ -21,7 +26,7 @@ async function callAi(userPrompt: string) {
     timeoutMs: runtime.timeoutMs,
   });
 
-  return JSON.parse(extractJsonObject(raw)) as Record<string, unknown>;
+  return parseModelJsonObject(raw);
 }
 
 /**

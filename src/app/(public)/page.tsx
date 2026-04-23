@@ -13,7 +13,7 @@ interface HomePageProps {
  * 前台首页。
  *
  * 负责展示公开站点的文章列表入口，数据源来自数据库中的已发布文章；
- * 采用动态渲染以保证分页与最新发布内容实时可见，草稿不会出现在这里。
+ * 页面保持运行期渲染，公开文章查询在数据层使用短周期缓存；草稿不会出现在这里。
  */
 export default async function HomePage({ searchParams }: HomePageProps) {
   const { page: pageStr } = await searchParams;
@@ -33,7 +33,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             Way.
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-            A Journey of Code and Thought. Documenting technical explorations, life reflections, and everything in between.
+            A Journey of Code and Thought. Documenting technical explorations, life reflections, and
+            everything in between.
           </p>
         </div>
       </section>
@@ -41,7 +42,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <section className="mx-auto w-full max-w-4xl space-y-8">
         <div className="flex items-center gap-3 border-b border-border/50 pb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+              />
+            </svg>
           </div>
           <h2 className="text-2xl font-bold tracking-tight">最新文章</h2>
         </div>
