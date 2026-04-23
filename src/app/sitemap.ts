@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * 仅收录已发布文章，以及所有分类页、标签页；管理后台和草稿不会出现在这里。
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.SITE_URL || 'http://localhost:3333';
+  const siteUrl = process.env.SITE_URL || 'http://localhost:3610';
 
   // 公开页中的稳定静态入口，优先级相对固定。
   const staticPages: MetadataRoute.Sitemap = [

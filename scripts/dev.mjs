@@ -51,7 +51,7 @@ const ensureDatabase = async () => {
 
 await ensureDatabase();
 
-const port = process.env.PORT || '3333';
+const port = process.env.PORT || '3610';
 const baseUrl =
   process.env.SITE_URL ||
   process.env.NEXTAUTH_URL ||

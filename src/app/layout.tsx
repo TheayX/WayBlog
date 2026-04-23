@@ -11,7 +11,7 @@ const inter = Inter({
 
 const siteName = process.env.SITE_NAME || "Way";
 const siteDescription = process.env.SITE_DESCRIPTION || "A Journey of Code and Thought";
-const siteUrl = process.env.SITE_URL || "http://localhost:3333";
+const siteUrl = process.env.SITE_URL || "http://localhost:3610";
 
 /**
  * 应用根布局与全站默认元数据。

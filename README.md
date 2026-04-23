@@ -114,8 +114,8 @@ pnpm dev
 
 访问：
 
-- 前台：`http://localhost:3333`
-- 后台：`http://localhost:3333/admin`
+- 前台：`http://localhost:3610`
+- 后台：`http://localhost:3610/admin`
 
 管理员初始账号由 `.env` 中的 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 配置。
 
@@ -123,7 +123,7 @@ pnpm dev
 
 | 命令               | 说明                             |
 | ------------------ | -------------------------------- |
-| `pnpm dev`         | 启动开发服务器 (端口 3333)       |
+| `pnpm dev`         | 启动开发服务器 (端口 3610)       |
 | `pnpm build`       | 构建生产版本                     |
 | `pnpm start`       | 启动生产服务器                   |
 | `pnpm lint`        | ESLint 代码检查                  |
@@ -222,11 +222,11 @@ WayBlog/
 | `DATABASE_URL`       | PostgreSQL 连接字符串                           | —                                                   |
 | `REDIS_URL`          | Redis 连接字符串，用于限流和浏览量 UV 去重      | `redis://localhost:6381/0`                          |
 | `REDIS_KEY_PREFIX`   | Redis key 前缀，用于隔离不同项目                | `wayblog`                                           |
-| `NEXTAUTH_URL`       | 站点 URL（认证回调）                            | `http://localhost:3333`                             |
+| `NEXTAUTH_URL`       | 站点 URL（认证回调）                            | `http://localhost:3610`                             |
 | `NEXTAUTH_SECRET`    | JWT 签名密钥                                    | —                                                   |
 | `SITE_NAME`          | 站点名称                                        | `Way`                                               |
 | `SITE_DESCRIPTION`   | 站点描述                                        | `A Journey of Code and Thought`                     |
-| `SITE_URL`           | 站点公开 URL                                    | `http://localhost:3333`                             |
+| `SITE_URL`           | 站点公开 URL                                    | `http://localhost:3610`                             |
 | `ADMIN_EMAIL`        | 管理员邮箱（seed 用）                           | —                                                   |
 | `ADMIN_PASSWORD`     | 管理员密码（seed 用）                           | —                                                   |
 | `UPLOAD_MAX_SIZE`    | 上传文件大小限制（bytes）                       | `5242880` (5MB)                                     |
