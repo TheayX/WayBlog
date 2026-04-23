@@ -161,6 +161,13 @@ WayBlog/
     │   ├── auth.ts            # NextAuth 完整配置（含 Prisma）
     │   ├── auth.config.ts     # NextAuth 核心配置（Edge Runtime 安全）
     │   ├── auth-guard.ts      # API 路由认证守卫
+    │   ├── api/               # Route Handler 通用辅助（鉴权、JSON 校验、路由参数）
+    │   ├── posts/             # 文章查询、后台写入服务、浏览量服务
+    │   ├── taxonomies/        # 分类/标签查询与后台服务
+    │   ├── friend-links/      # 友链查询与后台服务
+    │   ├── pages/             # 单页内容查询
+    │   ├── search/            # 全文搜索服务
+    │   ├── stats/             # 后台统计服务
     │   ├── prisma.ts          # Prisma Client 单例
     │   ├── rate-limit.ts      # 滑动窗口限流器
     │   ├── response.ts        # HTTP 响应构造工具
@@ -168,7 +175,7 @@ WayBlog/
     │   ├── utils.ts           # 通用工具函数
     │   └── validations.ts     # Zod 校验 Schema
     ├── components/
-    │   ├── admin/             # 后台表单组件
+    │   ├── admin/             # 后台表单组件、编辑器 Hook 与管理页复用逻辑
     │   ├── layout/            # 布局组件（Header、Sidebar、Footer、主题切换）
     │   ├── post/              # 文章相关组件（卡片、目录、Markdown 渲染）
     │   ├── seo/               # SEO 组件（JSON-LD）

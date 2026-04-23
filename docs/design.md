@@ -10,6 +10,7 @@ Browser
      -> Public Pages
      -> Admin Pages
      -> API Route Handlers
+     -> Domain Services / Queries
      -> Prisma
      -> PostgreSQL
 ```
@@ -20,6 +21,7 @@ Browser
 - 服务端优先：公开内容页尽量由服务端直接查库渲染
 - 客户端最小化：后台交互页再使用客户端组件
 - 工具轻量化：优先使用 Next.js、Prisma、Zod、NextAuth 自带能力
+- 薄路由优先：Route Handler 只负责鉴权、校验和响应组装，业务查询与写入下沉到 `lib/*/service.ts` 或 `lib/*/queries.ts`
 
 ## 路由划分
 
@@ -89,17 +91,52 @@ Browser
 - 登录方式为 `Credentials`
 - Session 策略为 JWT
 - `src/proxy.ts` 保护 `/admin/:path*`
-- API 写操作通过 `requireAuth()` 保护
+- API 写操作通过 `src/lib/api/admin.ts` 中的 `requireAdminAccess()` 统一保护，底层仍复用 NextAuth 会话
 
 ## 数据访问
 
 ### 公开内容页
 
-公开内容页通常直接在 Server Component 中调用 Prisma，避免额外的 HTTP 请求。
+公开内容页仍然由 Server Component 直接渲染，但不再在页面中直接调用 Prisma。
+页面通过 `src/lib/*/queries.ts` 读取数据，例如：
+
+- `src/lib/posts/queries.ts`：公开文章列表、文章详情、归档、RSS、sitemap 所需文章数据
+- `src/lib/taxonomies/queries.ts`：公开分类/标签读取
+- `src/lib/friend-links/queries.ts`：公开友链读取
+- `src/lib/pages/queries.ts`：关于页等单页内容读取
+
+这样可以把“只读取已发布文章”“公开页排序规则”“SEO 所需字段”等边界固定在查询层，而不是散落在页面组件里。
 
 ### 后台页面
 
 后台页面通过 `fetch('/api/...')` 调用 Route Handlers，便于统一鉴权和输入校验。
+
+后台页面的重复列表拉取、保存和删除逻辑集中在：
+
+- `src/components/admin/use-admin-resource-list.ts`
+- `src/lib/admin/client.ts`
+- `src/lib/admin/post-client.ts`
+
+文章编辑页拆分为字段状态、元数据加载、AI 协调和 UI 区块，避免单个表单组件继续承担所有职责。
+
+### API 与服务层
+
+API Route Handler 保持轻量，主要负责：
+
+- 读取路径参数或查询参数
+- 执行 Zod 校验
+- 执行登录鉴权
+- 调用对应 service / query
+- 通过 `src/lib/response.ts` 返回统一 JSON 响应
+
+当前主要服务层：
+
+- `src/lib/posts/admin-service.ts`：文章后台列表、创建、更新、删除、slug 冲突检查
+- `src/lib/posts/views-service.ts`：文章浏览量、PV/UV 聚合
+- `src/lib/taxonomies/admin-service.ts`：分类/标签后台 CRUD 和冲突检查
+- `src/lib/friend-links/admin-service.ts`：友链后台 CRUD
+- `src/lib/search/service.ts`：全文搜索 SQL、高亮和关系补充
+- `src/lib/stats/service.ts`：后台仪表盘统计聚合
 
 ## Markdown 方案
 
@@ -141,7 +178,7 @@ Browser
 
 - `app/`：路由与页面
 - `components/`：可复用组件
-- `lib/`：鉴权、Prisma、校验、API 工具、限流
+- `lib/`：鉴权、Prisma、校验、API 工具、限流、领域查询与服务层
 - `prisma/`：schema、迁移、种子数据
 
 ## 当前设计边界
