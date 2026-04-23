@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import {
+  AdminFormActions,
+  AdminFormPanel,
+  AdminResourceListState,
+} from '@/components/admin/AdminCrudLayout';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
@@ -78,9 +83,7 @@ export default function AdminTagsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">标签管理</h1>
 
-      {/* 表单 */}
-      <div className="rounded-lg border border-border p-4 space-y-3">
-        <h2 className="text-sm font-medium">{editingId ? '编辑标签' : '新建标签'}</h2>
+      <AdminFormPanel title={editingId ? '编辑标签' : '新建标签'}>
         <div className="grid gap-3 md:grid-cols-2">
           <input
             value={name}
@@ -105,28 +108,15 @@ export default function AdminTagsPage() {
             className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            {editingId ? '更新' : '创建'}
-          </button>
-          {editingId && (
-            <button onClick={resetForm} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">
-              取消
-            </button>
-          )}
-        </div>
-      </div>
+        <AdminFormActions
+          editing={Boolean(editingId)}
+          saving={saving}
+          onSave={handleSave}
+          onCancel={resetForm}
+        />
+      </AdminFormPanel>
 
-      {/* 列表 */}
-      {loading ? (
-        <p className="text-muted-foreground">加载中...</p>
-      ) : tags.length === 0 ? (
-        <p className="text-muted-foreground">暂无标签</p>
-      ) : (
+      <AdminResourceListState loading={loading} empty={tags.length === 0} emptyText="暂无标签">
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <div
@@ -140,7 +130,7 @@ export default function AdminTagsPage() {
             </div>
           ))}
         </div>
-      )}
+      </AdminResourceListState>
     </div>
   );
 }

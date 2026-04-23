@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import {
+  AdminFormActions,
+  AdminFormPanel,
+  AdminResourceListState,
+} from '@/components/admin/AdminCrudLayout';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import type { AdminFriendLinkItem } from '@/types';
@@ -88,9 +93,7 @@ export default function AdminFriendLinksPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">友链管理</h1>
 
-      {/* 表单 */}
-      <div className="rounded-lg border border-border p-4 space-y-3">
-        <h2 className="text-sm font-medium">{editingId ? '编辑友链' : '新建友链'}</h2>
+      <AdminFormPanel title={editingId ? '编辑友链' : '新建友链'}>
         <div className="grid gap-3 md:grid-cols-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="站点名称" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
@@ -98,22 +101,15 @@ export default function AdminFriendLinksPage() {
           <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="描述（可选）" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
           <input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} placeholder="排序权重" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
         </div>
-        <div className="flex gap-2">
-          <button onClick={handleSave} disabled={saving} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-            {editingId ? '更新' : '创建'}
-          </button>
-          {editingId && (
-            <button onClick={resetForm} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">取消</button>
-          )}
-        </div>
-      </div>
+        <AdminFormActions
+          editing={Boolean(editingId)}
+          saving={saving}
+          onSave={handleSave}
+          onCancel={resetForm}
+        />
+      </AdminFormPanel>
 
-      {/* 列表 */}
-      {loading ? (
-        <p className="text-muted-foreground">加载中...</p>
-      ) : links.length === 0 ? (
-        <p className="text-muted-foreground">暂无友链</p>
-      ) : (
+      <AdminResourceListState loading={loading} empty={links.length === 0} emptyText="暂无友链">
         <div className="rounded-lg border border-border">
           {links.map((link) => (
             <div key={link.id} className="flex items-center justify-between border-b border-border px-4 py-3 last:border-0">
@@ -131,7 +127,7 @@ export default function AdminFriendLinksPage() {
             </div>
           ))}
         </div>
-      )}
+      </AdminResourceListState>
     </div>
   );
 }
