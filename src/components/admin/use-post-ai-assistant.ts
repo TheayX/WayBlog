@@ -4,6 +4,13 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Dispatch, SetStateAction } from 'react';
 import type { AiField, AiFieldResult, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
+import {
+  applyAiFieldValue,
+  getAiFieldLabel,
+  getMatchedCategoryId,
+  getMatchedTagIds,
+  normalizeFieldResult,
+} from '@/components/admin/post-ai-helpers';
 
 /**
  * 管理后台文章 AI 助手 Hook。
@@ -80,35 +87,6 @@ export function usePostAiAssistant({
     }
   }
 
-  function getMatchedCategoryId(result: { categorySuggestion?: AiOptimizeResult['categorySuggestion'] }) {
-    const suggestion = result.categorySuggestion;
-    if (!suggestion) return '';
-
-    if (suggestion.id) return suggestion.id;
-
-    const matched = categories.find(
-      (item) => item.name.toLowerCase() === suggestion.name.toLowerCase(),
-    );
-
-    return matched?.id || '';
-  }
-
-  function getMatchedTagIds(result: { tagSuggestions?: AiSuggestionTag[] }) {
-    const suggestions = result.tagSuggestions || [];
-
-    const ids = suggestions
-      // 仅回填已存在标签；标记为 isNew 的建议保留给人工判断，避免前端伪造不存在的关联 id。
-      .filter((item) => !item.isNew)
-      .map((item) => {
-        if (item.id) return item.id;
-        const matched = tags.find((tag) => tag.name.toLowerCase() === item.name.toLowerCase());
-        return matched?.id || '';
-      })
-      .filter(Boolean);
-
-    return Array.from(new Set(ids));
-  }
-
   function applyFieldSuggestion(
     field: AiField,
     result: Pick<
@@ -116,83 +94,51 @@ export function usePostAiAssistant({
       'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
     >,
   ) {
-    switch (field) {
-      case 'title':
-        setTitle(result.title);
-        break;
-      case 'slug':
-        setSlug(result.slug);
-        setSlugManuallyEdited(true);
-        break;
-      case 'content':
-        setContent(result.content);
-        break;
-      case 'excerpt':
-        setExcerpt(result.excerpt);
-        break;
-      case 'category': {
-        const matchedCategoryId = getMatchedCategoryId(result);
-        if (!matchedCategoryId) {
-          toast.warning('AI 暂未匹配到现有分类，请手动确认。');
-          return;
-        }
-        setCategoryId(matchedCategoryId);
-        break;
-      }
-      case 'tags': {
-        const matchedTagIds = getMatchedTagIds(result);
-        if (matchedTagIds.length === 0) {
-          toast.warning('AI 暂未匹配到现有标签，请手动确认。');
-          return;
-        }
-        setSelectedTagIds(matchedTagIds);
-        break;
-      }
+    const applyResult = applyAiFieldValue(field, result, categories, tags, {
+      setTitle,
+      setSlug,
+      setContent,
+      setExcerpt,
+      setCategoryId,
+      setSelectedTagIds,
+      setSlugManuallyEdited,
+    });
+
+    if (!applyResult.success) {
+      toast.warning(
+        applyResult.reason === 'category'
+          ? 'AI 暂未匹配到现有分类，请手动确认。'
+          : 'AI 暂未匹配到现有标签，请手动确认。',
+      );
+      return;
     }
 
-    toast.success(`已应用${getFieldLabel(field)}建议`);
+    toast.success(`已应用${getAiFieldLabel(field)}建议`);
   }
 
   function applyFieldResult(result: AiFieldResult) {
     showFieldWarnings(result.warnings);
+    const normalized = normalizeFieldResult(result);
+    const applyResult = applyAiFieldValue(result.field, normalized, categories, tags, {
+      setTitle,
+      setSlug,
+      setContent,
+      setExcerpt,
+      setCategoryId,
+      setSelectedTagIds,
+      setSlugManuallyEdited,
+    });
 
-    switch (result.field) {
-      case 'title':
-        if (result.value) setTitle(result.value);
-        break;
-      case 'slug':
-        if (result.value) {
-          setSlug(result.value);
-          setSlugManuallyEdited(true);
-        }
-        break;
-      case 'content':
-        if (result.value) setContent(result.value);
-        break;
-      case 'excerpt':
-        if (result.value) setExcerpt(result.value);
-        break;
-      case 'category': {
-        const matchedCategoryId = getMatchedCategoryId(result);
-        if (!matchedCategoryId) {
-          toast.warning('AI 暂未匹配到现有分类，请手动确认。');
-          return;
-        }
-        setCategoryId(matchedCategoryId);
-        break;
-      }
-      case 'tags': {
-        const matchedTagIds = getMatchedTagIds(result);
-        if (matchedTagIds.length === 0) {
-          toast.warning('AI 暂未匹配到现有标签，请手动确认。');
-          return;
-        }
-        setSelectedTagIds(matchedTagIds);
-        break;
-      }
+    if (!applyResult.success) {
+      toast.warning(
+        applyResult.reason === 'category'
+          ? 'AI 暂未匹配到现有分类，请手动确认。'
+          : 'AI 暂未匹配到现有标签，请手动确认。',
+      );
+      return;
     }
 
-    toast.success(`已应用${getFieldLabel(result.field)}建议`);
+    toast.success(`已应用${getAiFieldLabel(result.field)}建议`);
   }
 
   function applyAllAi() {
@@ -205,12 +151,12 @@ export function usePostAiAssistant({
     setContent(aiResult.content);
     setExcerpt(aiResult.excerpt);
 
-    const matchedCategoryId = getMatchedCategoryId(aiResult);
+    const matchedCategoryId = getMatchedCategoryId(categories, aiResult);
     if (matchedCategoryId) {
       setCategoryId(matchedCategoryId);
     }
 
-    const matchedTagIds = getMatchedTagIds(aiResult);
+    const matchedTagIds = getMatchedTagIds(tags, aiResult);
     if (matchedTagIds.length > 0) {
       setSelectedTagIds(matchedTagIds);
     }
@@ -309,8 +255,10 @@ export function usePostAiAssistant({
     setAiOpen,
     buildAiPayload,
     showFieldWarnings,
-    getMatchedCategoryId,
-    getMatchedTagIds,
+    getMatchedCategoryId: (result: { categorySuggestion?: AiOptimizeResult['categorySuggestion'] }) =>
+      getMatchedCategoryId(categories, result),
+    getMatchedTagIds: (result: { tagSuggestions?: AiSuggestionTag[] }) =>
+      getMatchedTagIds(tags, result),
     applyFieldResult,
     applyFieldSuggestion,
     applyAllAi,
@@ -318,21 +266,4 @@ export function usePostAiAssistant({
     requestAiSuggestions,
     requestFieldAi,
   };
-}
-
-function getFieldLabel(field: AiField) {
-  switch (field) {
-    case 'title':
-      return '标题';
-    case 'slug':
-      return 'Slug';
-    case 'content':
-      return '正文';
-    case 'excerpt':
-      return '摘要';
-    case 'category':
-      return '分类';
-    case 'tags':
-      return '标签';
-  }
 }

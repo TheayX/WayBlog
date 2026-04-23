@@ -1,54 +1,57 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AiSuggestionDrawer } from '@/components/admin/AiSuggestionDrawer';
+import { usePostEditorMetadata } from '@/components/admin/use-post-editor-metadata';
+import { usePostFormState } from '@/components/admin/use-post-form-state';
 import { usePostAiAssistant } from '@/components/admin/use-post-ai-assistant';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
+import { savePost, uploadPostImage } from '@/lib/admin/post-client';
 import type { AdminPostEditorData } from '@/lib/posts/queries';
-import { slugify } from '@/lib/utils';
-
-/**
- * 管理后台文章编辑表单。
- *
- * 负责聚合文章基础字段编辑、Markdown 预览、图片插入和 AI 建议应用流程。
- * 这里刻意将保存逻辑、Slug 生成约束与 AI 辅助状态收敛在同一处，避免管理后台
- * 在“人工编辑 / AI 覆盖 / 草稿发布”三条路径之间出现状态分叉。
- */
-interface Category {
-  id: string;
-  name: string;
-  slug?: string;
-}
-
-interface Tag {
-  id: string;
-  name: string;
-  slug?: string;
-}
 
 interface PostFormProps {
   initialData?: AdminPostEditorData;
   isEdit?: boolean;
 }
 
+/**
+ * 管理后台文章编辑表单。
+ *
+ * 当前组件只负责界面编排，把字段状态、元数据加载和接口调用分别委托给专门 Hook / 客户端辅助层，
+ * 避免继续把整个编辑流程压成一个不可维护的大组件。
+ */
 export function PostForm({ initialData, isEdit = false }: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-
-  const [title, setTitle] = useState(initialData?.title || '');
-  const [slug, setSlug] = useState(initialData?.slug || '');
-  const [content, setContent] = useState(initialData?.content || '');
-  const [excerpt, setExcerpt] = useState(initialData?.excerpt || '');
-  const [coverImage, setCoverImage] = useState(initialData?.coverImage || '');
-  const [status] = useState<'DRAFT' | 'PUBLISHED'>(initialData?.status || 'DRAFT');
-  const [pinned, setPinned] = useState(initialData?.pinned || false);
-  const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds || []);
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const { categories, tags } = usePostEditorMetadata();
+  const {
+    title,
+    slug,
+    content,
+    excerpt,
+    coverImage,
+    status,
+    pinned,
+    categoryId,
+    selectedTagIds,
+    setTitle,
+    setSlug,
+    setContent,
+    setExcerpt,
+    setCoverImage,
+    setPinned,
+    setCategoryId,
+    setSelectedTagIds,
+    setSlugManuallyEdited,
+    handleTitleChange,
+    handleSlugChange,
+    toggleTag,
+  } = usePostFormState({
+    initialData,
+    isEdit,
+  });
 
   const {
     aiLoading,
@@ -78,33 +81,6 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     setSlugManuallyEdited,
   });
 
-  const fetchMetadata = useCallback(() => {
-    Promise.all([
-      fetch('/api/categories').then((r) => r.json()),
-      fetch('/api/tags').then((r) => r.json()),
-    ]).then(([catRes, tagRes]) => {
-      setCategories(catRes.data || []);
-      setTags(tagRes.data || []);
-    });
-  }, []);
-
-  useEffect(() => {
-    fetchMetadata();
-  }, [fetchMetadata]);
-
-  function handleTitleChange(newTitle: string) {
-    setTitle(newTitle);
-    if (!slugManuallyEdited && !isEdit) {
-      setSlug(slugify(newTitle));
-    }
-  }
-
-  function toggleTag(tagId: string) {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
-    );
-  }
-
   async function handleUploadImage() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -113,25 +89,21 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
       const file = input.files?.[0];
       if (!file) return;
 
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!res.ok) {
+      const result = await uploadPostImage(file);
+      if (!result.ok || !result.url) {
         toast.error('图片上传失败');
         return;
       }
 
-      const { data } = await res.json();
       const textarea = document.getElementById('content-editor') as HTMLTextAreaElement | null;
 
       if (textarea) {
         const start = textarea.selectionStart;
         const before = content.slice(0, start);
         const after = content.slice(start);
-        setContent(`${before}![${file.name}](${data.url})${after}`);
+        setContent(`${before}![${file.name}](${result.url})${after}`);
       } else {
-        setContent((prev) => `${prev}\n![${file.name}](${data.url})`);
+        setContent((prev) => `${prev}\n![${file.name}](${result.url})`);
       }
 
       toast.success('图片已上传并插入正文');
@@ -165,20 +137,12 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     };
 
     // 提交前统一做最小归一化，避免把空字符串写入后端，减少 Prisma 层判空分支。
-    const url = isEdit ? `/api/posts/${initialData?.id}` : '/api/posts';
-    const method = isEdit ? 'PUT' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const result = await savePost(initialData?.id || null, body);
 
     setSaving(false);
 
-    if (!res.ok) {
-      const err = await res.json();
-      toast.error(err.error || '保存失败');
+    if (!result.ok) {
+      toast.error(result.error);
       return;
     }
 
@@ -187,6 +151,15 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     router.refresh();
   }
 
+  function handleSlugInputChange(val: string) {
+    if (val === '' || /^[a-z0-9-]+$/.test(val)) {
+      handleSlugChange(val);
+    } else {
+      toast.warning('Slug 只能包含小写字母、数字和连字符');
+    }
+  }
+
+  const publishButtonLabel = isEdit && status === 'PUBLISHED' ? '更新发布' : '发布文章';
   const matchedCategoryId = aiResult ? getMatchedCategoryId(aiResult) : '';
 
   return (
@@ -215,15 +188,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           <input
             type="text"
             value={slug}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || /^[a-z0-9-]+$/.test(val)) {
-                setSlug(val);
-                setSlugManuallyEdited(true);
-              } else {
-                toast.warning('Slug 只能包含小写字母、数字和连字符');
-              }
-            }}
+            onChange={(e) => handleSlugInputChange(e.target.value)}
             placeholder="article-slug"
             className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
           />
@@ -380,7 +345,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
             disabled={saving}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isEdit && status === 'PUBLISHED' ? '更新发布' : '发布文章'}
+            {publishButtonLabel}
           </button>
           <button
             onClick={() => router.back()}
