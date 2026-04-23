@@ -11,9 +11,8 @@ export function buildOptimizePostPrompt(input: AiOptimizeInput) {
     input,
     [
       '优化标题、slug、摘要、正文',
-      '正文可以中度改写，但不得偏离原意',
-      '可以补充必要的小节、列表和分段',
-      '优先提升可读性、信息密度和发布质量',
+      '正文只做必要整理和表达优化',
+      '保持原有信息边界，不扩写新事实',
     ],
     `{
   "title": "优化后的标题",

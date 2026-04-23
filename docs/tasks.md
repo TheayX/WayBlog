@@ -27,6 +27,8 @@
 - 搜索、统计、浏览量接口已拆出 service 层
 - 新增 GitHub Actions CI，自动执行 `pnpm lint`、`pnpm test`、`pnpm exec tsc --noEmit` 和 `pnpm build`
 - 清理 `src/types` 中重构后不再引用的历史类型导出
+- 将 Prisma Client 生成目录从 `src/generated/prisma` 迁移到仓库根部 `generated/prisma`
+- 将 AI 提示词收敛为基础可用版，后续按真实失败案例渐进补充规则
 
 ## 仍建议继续整理
 

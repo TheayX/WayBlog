@@ -4,7 +4,7 @@
  * Next.js 在开发环境会频繁触发模块热重载；如果每次都新建 PrismaClient，容易产生过多连接。
  * 因此这里在非生产环境挂载到 `globalThis`，生产环境则保持进程内正常初始化。
  */
-import { PrismaClient } from '@/generated/prisma/client';
+import { PrismaClient } from '@generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = globalThis as unknown as {

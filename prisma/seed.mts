@@ -1,4 +1,4 @@
-import * as PrismaModule from '../src/generated/prisma/client';
+import * as PrismaModule from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from 'bcryptjs';
 import { config } from 'dotenv';
@@ -11,7 +11,7 @@ import { config } from 'dotenv';
  */
 config();
 
-type PrismaClientModule = typeof import('../src/generated/prisma/client');
+type PrismaClientModule = typeof import('../generated/prisma/client');
 
 // 兼容 tsx 以 CJS 方式加载生成客户端时的 default 包装差异。
 const mod = (PrismaModule as PrismaClientModule & { default?: PrismaClientModule }).default ?? PrismaModule;

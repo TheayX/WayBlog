@@ -138,7 +138,7 @@ Page 独立
 
 ## 当前实现说明
 
-- Prisma Client 输出目录是 `src/generated/prisma`
+- Prisma Client 输出目录是仓库根部 `generated/prisma`
 - 运行前需要先执行 `prisma generate`
 - 种子脚本文件是 `prisma/seed.mts`
 

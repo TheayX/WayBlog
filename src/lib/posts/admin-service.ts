@@ -1,5 +1,5 @@
-import type { Prisma } from '@/generated/prisma/client';
-import { PostStatus } from '@/generated/prisma/client';
+import type { Prisma } from '@generated/prisma/client';
+import { PostStatus } from '@generated/prisma/client';
 import { prisma } from '@/lib/prisma';
 import type { createPostSchema, updatePostSchema } from '@/lib/validations';
 import type { z } from 'zod';

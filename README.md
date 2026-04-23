@@ -154,7 +154,6 @@ WayBlog/
 │   └── tasks.md               #   整理清单
 └── src/
     ├── proxy.ts               # NextAuth Proxy（后台路由保护，Next.js 16 约定）
-    ├── generated/prisma/      # Prisma Client（自动生成，已 gitignore）
     ├── types/
     │   └── index.ts           # 全局类型定义
     ├── lib/
@@ -262,7 +261,7 @@ AI 写作能力已经拆分为清晰的服务分层：
 
 - 运行项目前需要先启动 Docker Desktop，否则 PostgreSQL 容器不会起来。
 - 图片上传当前为本地存储，适合单机部署；后续可切换至 MinIO / OSS。
-- Prisma Client 输出到 `src/generated/prisma`，该目录已在 `.gitignore` 中忽略，首次克隆需执行 `pnpm db:generate`。
+- Prisma Client 输出到仓库根部 `generated/prisma`，该目录已在 `.gitignore` 中忽略，首次克隆需执行 `pnpm db:generate`。
 - Rate Limiter 基于内存实现，进程重启后计数器重置，适合单实例部署。
 
 ## 文档

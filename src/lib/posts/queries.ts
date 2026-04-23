@@ -1,5 +1,5 @@
-import type { Prisma } from '@/generated/prisma/client';
-import { PostStatus } from '@/generated/prisma/client';
+import type { Prisma } from '@generated/prisma/client';
+import { PostStatus } from '@generated/prisma/client';
 import { prisma } from '@/lib/prisma';
 
 /**

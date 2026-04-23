@@ -1,4 +1,4 @@
-import { PostStatus } from '@/generated/prisma/client';
+import { PostStatus } from '@generated/prisma/client';
 import { prisma } from '@/lib/prisma';
 import type {
   createCategorySchema,
