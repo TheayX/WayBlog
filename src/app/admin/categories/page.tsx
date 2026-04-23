@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
+import type { AdminCategoryItem } from '@/types';
 
 /**
  * 管理后台分类管理页。
@@ -12,20 +13,12 @@ import { slugify } from '@/lib/utils';
  * 负责分类的创建、编辑与删除表单交互；
  * 页面只维护输入状态，真正的唯一性校验与持久化仍交给分类 API 处理。
  */
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  postCount: number;
-}
-
 export default function AdminCategoriesPage() {
   const {
     items: categories,
     loading,
     refresh: fetchCategories,
-  } = useAdminResourceList<Category>('/api/categories');
+  } = useAdminResourceList<AdminCategoryItem>('/api/categories');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
@@ -39,7 +32,7 @@ export default function AdminCategoriesPage() {
     setEditingId(null);
   }
 
-  function startEdit(cat: Category) {
+  function startEdit(cat: AdminCategoryItem) {
     setEditingId(cat.id);
     setName(cat.name);
     setSlug(cat.slug);

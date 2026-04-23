@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
+import type { AdminTagItem } from '@/types';
 
 /**
  * 管理后台标签管理页。
@@ -12,19 +13,12 @@ import { slugify } from '@/lib/utils';
  * 提供标签的 CRUD 表单与列表视图，并在新建场景下根据名称自动生成 slug；
  * 页面侧只做轻量输入约束，最终校验仍以标签 API 为准。
  */
-interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-  postCount: number;
-}
-
 export default function AdminTagsPage() {
   const {
     items: tags,
     loading,
     refresh: fetchTags,
-  } = useAdminResourceList<Tag>('/api/tags');
+  } = useAdminResourceList<AdminTagItem>('/api/tags');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -36,7 +30,7 @@ export default function AdminTagsPage() {
     setEditingId(null);
   }
 
-  function startEdit(tag: Tag) {
+  function startEdit(tag: AdminTagItem) {
     setEditingId(tag.id);
     setName(tag.name);
     setSlug(tag.slug);

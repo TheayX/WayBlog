@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { deleteAdminResource, fetchAdminCollection } from '@/lib/admin/client';
 import { formatDateShort } from '@/lib/utils';
+import type { AdminPostListItem } from '@/types';
 
 /**
  * 管理后台文章列表页。
@@ -12,21 +13,8 @@ import { formatDateShort } from '@/lib/utils';
  * 负责分页拉取文章、按状态筛选，并提供跳转编辑与删除入口；
  * 真正的数据约束和鉴权仍由 `/api/posts` 路由处理器负责。
  */
-interface PostItem {
-  id: string;
-  title: string;
-  slug: string;
-  status: 'DRAFT' | 'PUBLISHED';
-  pinned: boolean;
-  publishedAt: string | null;
-  viewCount: number;
-  category: { name: string } | null;
-  tags: { name: string }[];
-  createdAt: string;
-}
-
 export default function AdminPostsPage() {
-  const [posts, setPosts] = useState<PostItem[]>([]);
+  const [posts, setPosts] = useState<AdminPostListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -39,7 +27,7 @@ export default function AdminPostsPage() {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (statusFilter) params.set('status', statusFilter);
 
-    fetchAdminCollection<{ data?: PostItem[]; total?: number }>(`/api/posts?${params}`)
+    fetchAdminCollection<{ data?: AdminPostListItem[]; total?: number }>(`/api/posts?${params}`)
       .then((res) => {
         setPosts(res.data || []);
         setTotal(res.total || 0);

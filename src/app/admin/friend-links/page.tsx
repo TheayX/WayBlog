@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
+import type { AdminFriendLinkItem } from '@/types';
 
 /**
  * 管理后台友链管理页。
@@ -11,21 +12,12 @@ import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
  * 负责友链资料的录入、排序和删除交互；
  * 页面层主要维护表单状态和列表刷新，数据合法性依旧交给友链 API 约束。
  */
-interface FriendLink {
-  id: string;
-  name: string;
-  url: string;
-  avatar: string | null;
-  description: string | null;
-  sortOrder: number;
-}
-
 export default function AdminFriendLinksPage() {
   const {
     items: links,
     loading,
     refresh: fetchLinks,
-  } = useAdminResourceList<FriendLink>('/api/friend-links');
+  } = useAdminResourceList<AdminFriendLinkItem>('/api/friend-links');
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [avatar, setAvatar] = useState('');
@@ -38,7 +30,7 @@ export default function AdminFriendLinksPage() {
     setName(''); setUrl(''); setAvatar(''); setDescription(''); setSortOrder(0); setEditingId(null);
   }
 
-  function startEdit(link: FriendLink) {
+  function startEdit(link: AdminFriendLinkItem) {
     setEditingId(link.id);
     setName(link.name);
     setUrl(link.url);

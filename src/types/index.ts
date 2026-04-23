@@ -52,6 +52,47 @@ export interface DashboardStats {
   topPosts: { id: string; title: string; slug: string; viewCount: number }[];
 }
 
+/** 后台分类管理页列表项。 */
+export interface AdminCategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  postCount: number;
+}
+
+/** 后台标签管理页列表项。 */
+export interface AdminTagItem {
+  id: string;
+  name: string;
+  slug: string;
+  postCount: number;
+}
+
+/** 后台友链管理页列表项。 */
+export interface AdminFriendLinkItem {
+  id: string;
+  name: string;
+  url: string;
+  avatar: string | null;
+  description: string | null;
+  sortOrder: number;
+}
+
+/** 后台文章管理页列表项。 */
+export interface AdminPostListItem {
+  id: string;
+  title: string;
+  slug: string;
+  status: 'DRAFT' | 'PUBLISHED';
+  pinned: boolean;
+  publishedAt: string | null;
+  viewCount: number;
+  category: { name: string } | null;
+  tags: { name: string }[];
+  createdAt: string;
+}
+
 /** 统一的分页响应结构，供前后台列表接口共享。 */
 export interface PaginatedResponse<T> {
   data: T[];
