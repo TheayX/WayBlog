@@ -120,6 +120,23 @@ export interface PublicArchivePost {
   publishedAt: Date | null;
 }
 
+/** RSS 输出所需的公开文章最小结构。 */
+export interface PublicFeedPost {
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string;
+  publishedAt: Date | null;
+  author: { name: string } | null;
+  category: { name: string } | null;
+}
+
+/** sitemap 文章项所需的最小结构。 */
+export interface PublicSitemapPost {
+  slug: string;
+  updatedAt: Date;
+}
+
 /**
  * 将帖子实体收敛为后台编辑页使用的最小数据结构。
  *
@@ -264,6 +281,41 @@ export async function getPublishedArchivePosts() {
       title: true,
       publishedAt: true,
     },
+    orderBy: { publishedAt: 'desc' },
+  });
+}
+
+/**
+ * 获取 RSS 使用的最新已发布文章。
+ *
+ * 该查询仅返回 feed 所需字段，避免 RSS 路由为了订阅输出读取多余关联数据。
+ */
+export async function getPublishedFeedPosts(limit: number) {
+  return prisma.post.findMany({
+    where: { status: PostStatus.PUBLISHED },
+    select: {
+      title: true,
+      slug: true,
+      excerpt: true,
+      content: true,
+      publishedAt: true,
+      author: { select: { name: true } },
+      category: { select: { name: true } },
+    },
+    orderBy: { publishedAt: 'desc' },
+    take: limit,
+  });
+}
+
+/**
+ * 获取 sitemap 使用的公开文章 URL 列表。
+ *
+ * sitemap 只关心 slug 与更新时间，因此保持最小字段选择即可。
+ */
+export async function getPublishedSitemapPosts() {
+  return prisma.post.findMany({
+    where: { status: PostStatus.PUBLISHED },
+    select: { slug: true, updatedAt: true },
     orderBy: { publishedAt: 'desc' },
   });
 }

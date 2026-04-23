@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
-import { prisma } from '@/lib/prisma';
+import { getPublicPageBySlug } from '@/lib/pages/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,9 +16,7 @@ export const metadata: Metadata = {
  * 如果后台尚未创建该页面，则展示创建提示而不是 404。
  */
 export default async function AboutPage() {
-  const page = await prisma.page.findUnique({
-    where: { slug: 'about' },
-  });
+  const page = await getPublicPageBySlug('about');
 
   return (
     <div>

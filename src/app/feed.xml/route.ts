@@ -1,6 +1,5 @@
-import { prisma } from '@/lib/prisma';
+import { getPublishedFeedPosts } from '@/lib/posts/queries';
 import { getSiteConfig } from '@/lib/site';
-import { PostStatus } from '@/generated/prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,20 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const site = getSiteConfig();
 
-  const posts = await prisma.post.findMany({
-    where: { status: PostStatus.PUBLISHED },
-    select: {
-      title: true,
-      slug: true,
-      excerpt: true,
-      content: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-      category: { select: { name: true } },
-    },
-    orderBy: { publishedAt: 'desc' },
-    take: 20,
-  });
+  const posts = await getPublishedFeedPosts(20);
 
   // 手写 XML 时必须转义特殊字符，避免 Markdown 或摘要内容破坏文档结构。
   const escapeXml = (str: string) =>

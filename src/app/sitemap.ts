@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { prisma } from '@/lib/prisma';
-import { PostStatus } from '@/generated/prisma/client';
+import { getPublishedSitemapPosts } from '@/lib/posts/queries';
+import { getPublicCategorySlugs, getPublicTagSlugs } from '@/lib/taxonomies/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // 文章 URL 来源于数据库，只暴露已发布内容。
-  const posts = await prisma.post.findMany({
-    where: { status: PostStatus.PUBLISHED },
-    select: { slug: true, updatedAt: true },
-    orderBy: { publishedAt: 'desc' },
-  });
+  const posts = await getPublishedSitemapPosts();
 
   const postPages: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${siteUrl}/posts/${post.slug}`,
@@ -38,9 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // 分类页本身是公开聚合页，即使分类下暂时没有文章也会保留入口。
-  const categories = await prisma.category.findMany({
-    select: { slug: true },
-  });
+  const categories = await getPublicCategorySlugs();
 
   const categoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
     url: `${siteUrl}/categories/${cat.slug}`,
@@ -49,9 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // 标签页与分类页类似，用于公开检索与 SEO 聚合。
-  const tags = await prisma.tag.findMany({
-    select: { slug: true },
-  });
+  const tags = await getPublicTagSlugs();
 
   const tagPages: MetadataRoute.Sitemap = tags.map((tag) => ({
     url: `${siteUrl}/tags/${tag.slug}`,

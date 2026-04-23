@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { prisma } from '@/lib/prisma';
+import { getPublicFriendLinks } from '@/lib/friend-links/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +15,7 @@ export const metadata: Metadata = {
  * 展示后台维护的友情链接列表，并按排序权重与创建时间输出稳定顺序。
  */
 export default async function FriendsPage() {
-  const links = await prisma.friendLink.findMany({
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-  });
+  const links = await getPublicFriendLinks();
 
   return (
     <div>

@@ -43,3 +43,21 @@ export async function getPublicTagsWithPostCount() {
     orderBy: { name: 'asc' },
   });
 }
+
+/**
+ * 获取 sitemap 使用的公开分类 slug 列表。
+ */
+export async function getPublicCategorySlugs() {
+  return prisma.category.findMany({
+    select: { slug: true },
+  });
+}
+
+/**
+ * 获取 sitemap 使用的公开标签 slug 列表。
+ */
+export async function getPublicTagSlugs() {
+  return prisma.tag.findMany({
+    select: { slug: true },
+  });
+}
