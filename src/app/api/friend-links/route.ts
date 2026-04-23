@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server';
 import { ok, serverError } from '@/lib/response';
 import { parseJsonBody, requireAdminAccess } from '@/lib/api/admin';
-import { prisma } from '@/lib/prisma';
+import { createFriendLink, getAdminFriendLinks } from '@/lib/friend-links/admin-service';
 import { createFriendLinkSchema } from '@/lib/validations';
 
 /**
@@ -20,11 +20,7 @@ import { createFriendLinkSchema } from '@/lib/validations';
  */
 export async function GET() {
   try {
-    const data = await prisma.friendLink.findMany({
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    });
-
-    return ok(data);
+    return ok(await getAdminFriendLinks());
   } catch (error) {
     return serverError('GET /api/friend-links', error);
   }
@@ -44,8 +40,7 @@ export async function POST(request: NextRequest) {
     const parsed = await parseJsonBody(request, createFriendLinkSchema);
     if (!parsed.success) return parsed.response;
 
-    const link = await prisma.friendLink.create({ data: parsed.data });
-    return ok(link, { status: 201 });
+    return ok(await createFriendLink(parsed.data), { status: 201 });
   } catch (error) {
     return serverError('POST /api/friend-links', error);
   }

@@ -8,7 +8,12 @@
 import { NextRequest } from 'next/server';
 import { conflict, noContent, notFound, ok, serverError } from '@/lib/response';
 import { parseJsonBody, requireAdminAccess, resolveRouteId } from '@/lib/api/admin';
-import { prisma } from '@/lib/prisma';
+import {
+  deleteTag,
+  tagExists,
+  tagNameOrSlugExists,
+  updateTag,
+} from '@/lib/taxonomies/admin-service';
 import { updateTagSchema } from '@/lib/validations';
 
 interface RouteParams {
@@ -31,33 +36,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const parsed = await parseJsonBody(request, updateTagSchema);
     if (!parsed.success) return parsed.response;
 
-    const existing = await prisma.tag.findUnique({ where: { id } });
-    if (!existing) {
+    if (!(await tagExists(id))) {
       return notFound('Tag not found');
     }
 
-    if (parsed.data.slug || parsed.data.name) {
-      const existingConflict = await prisma.tag.findFirst({
-        where: {
-          id: { not: id },
-          OR: [
-            ...(parsed.data.name ? [{ name: parsed.data.name }] : []),
-            ...(parsed.data.slug ? [{ slug: parsed.data.slug }] : []),
-          ],
-        },
-      });
-
-      if (existingConflict) {
-        return conflict('Tag name or slug already exists');
-      }
+    if (await tagNameOrSlugExists(parsed.data, id)) {
+      return conflict('Tag name or slug already exists');
     }
 
-    const tag = await prisma.tag.update({
-      where: { id },
-      data: parsed.data,
-    });
-
-    return ok(tag);
+    return ok(await updateTag(id, parsed.data));
   } catch (error) {
     return serverError('PUT /api/tags/[id]', error);
   }
@@ -75,13 +62,11 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     if (!authResult.authorized) return authResult.response;
 
     const id = await resolveRouteId(params);
-    const existing = await prisma.tag.findUnique({ where: { id } });
-
-    if (!existing) {
+    if (!(await tagExists(id))) {
       return notFound('Tag not found');
     }
 
-    await prisma.tag.delete({ where: { id } });
+    await deleteTag(id);
     return noContent();
   } catch (error) {
     return serverError('DELETE /api/tags/[id]', error);

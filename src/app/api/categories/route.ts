@@ -5,10 +5,13 @@
  * - POST 仅供管理后台创建分类，必须先完成鉴权、请求校验与名称/slug 唯一性检查。
  */
 import { NextRequest } from 'next/server';
-import { PostStatus } from '@/generated/prisma/client';
 import { conflict, ok, serverError } from '@/lib/response';
 import { parseJsonBody, requireAdminAccess } from '@/lib/api/admin';
-import { prisma } from '@/lib/prisma';
+import {
+  categoryNameOrSlugExists,
+  createCategory,
+  getAdminCategories,
+} from '@/lib/taxonomies/admin-service';
 import { createCategorySchema } from '@/lib/validations';
 
 /**
@@ -20,27 +23,7 @@ import { createCategorySchema } from '@/lib/validations';
  */
 export async function GET() {
   try {
-    const categories = await prisma.category.findMany({
-      include: {
-        _count: {
-          select: {
-            posts: { where: { status: PostStatus.PUBLISHED } },
-          },
-        },
-      },
-      orderBy: { name: 'asc' },
-    });
-
-    const data = categories.map((category) => ({
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      description: category.description,
-      postCount: category._count.posts,
-      createdAt: category.createdAt,
-    }));
-
-    return ok(data);
+    return ok(await getAdminCategories());
   } catch (error) {
     return serverError('GET /api/categories', error);
   }
@@ -60,18 +43,11 @@ export async function POST(request: NextRequest) {
     const parsed = await parseJsonBody(request, createCategorySchema);
     if (!parsed.success) return parsed.response;
 
-    const existing = await prisma.category.findFirst({
-      where: {
-        OR: [{ name: parsed.data.name }, { slug: parsed.data.slug }],
-      },
-    });
-
-    if (existing) {
+    if (await categoryNameOrSlugExists(parsed.data)) {
       return conflict('Category name or slug already exists');
     }
 
-    const category = await prisma.category.create({ data: parsed.data });
-    return ok(category, { status: 201 });
+    return ok(await createCategory(parsed.data), { status: 201 });
   } catch (error) {
     return serverError('POST /api/categories', error);
   }

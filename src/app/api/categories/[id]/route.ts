@@ -7,7 +7,12 @@
 import { NextRequest } from 'next/server';
 import { conflict, noContent, notFound, ok, serverError } from '@/lib/response';
 import { parseJsonBody, requireAdminAccess, resolveRouteId } from '@/lib/api/admin';
-import { prisma } from '@/lib/prisma';
+import {
+  categoryExists,
+  categoryNameOrSlugExists,
+  deleteCategory,
+  updateCategory,
+} from '@/lib/taxonomies/admin-service';
 import { updateCategorySchema } from '@/lib/validations';
 
 interface RouteParams {
@@ -30,33 +35,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const parsed = await parseJsonBody(request, updateCategorySchema);
     if (!parsed.success) return parsed.response;
 
-    const existing = await prisma.category.findUnique({ where: { id } });
-    if (!existing) {
+    if (!(await categoryExists(id))) {
       return notFound('Category not found');
     }
 
-    if (parsed.data.slug || parsed.data.name) {
-      const existingConflict = await prisma.category.findFirst({
-        where: {
-          id: { not: id },
-          OR: [
-            ...(parsed.data.name ? [{ name: parsed.data.name }] : []),
-            ...(parsed.data.slug ? [{ slug: parsed.data.slug }] : []),
-          ],
-        },
-      });
-
-      if (existingConflict) {
-        return conflict('Category name or slug already exists');
-      }
+    if (await categoryNameOrSlugExists(parsed.data, id)) {
+      return conflict('Category name or slug already exists');
     }
 
-    const category = await prisma.category.update({
-      where: { id },
-      data: parsed.data,
-    });
-
-    return ok(category);
+    return ok(await updateCategory(id, parsed.data));
   } catch (error) {
     return serverError('PUT /api/categories/[id]', error);
   }
@@ -75,13 +62,11 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     if (!authResult.authorized) return authResult.response;
 
     const id = await resolveRouteId(params);
-    const existing = await prisma.category.findUnique({ where: { id } });
-
-    if (!existing) {
+    if (!(await categoryExists(id))) {
       return notFound('Category not found');
     }
 
-    await prisma.category.delete({ where: { id } });
+    await deleteCategory(id);
     return noContent();
   } catch (error) {
     return serverError('DELETE /api/categories/[id]', error);

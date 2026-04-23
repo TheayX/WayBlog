@@ -8,7 +8,11 @@
 import { NextRequest } from 'next/server';
 import { noContent, notFound, ok, serverError } from '@/lib/response';
 import { parseJsonBody, requireAdminAccess, resolveRouteId } from '@/lib/api/admin';
-import { prisma } from '@/lib/prisma';
+import {
+  deleteFriendLink,
+  friendLinkExists,
+  updateFriendLink,
+} from '@/lib/friend-links/admin-service';
 import { updateFriendLinkSchema } from '@/lib/validations';
 
 interface RouteParams {
@@ -31,17 +35,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const parsed = await parseJsonBody(request, updateFriendLinkSchema);
     if (!parsed.success) return parsed.response;
 
-    const existing = await prisma.friendLink.findUnique({ where: { id } });
-    if (!existing) {
+    if (!(await friendLinkExists(id))) {
       return notFound('Friend link not found');
     }
 
-    const link = await prisma.friendLink.update({
-      where: { id },
-      data: parsed.data,
-    });
-
-    return ok(link);
+    return ok(await updateFriendLink(id, parsed.data));
   } catch (error) {
     return serverError('PUT /api/friend-links/[id]', error);
   }
@@ -59,13 +57,11 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     if (!authResult.authorized) return authResult.response;
 
     const id = await resolveRouteId(params);
-    const existing = await prisma.friendLink.findUnique({ where: { id } });
-
-    if (!existing) {
+    if (!(await friendLinkExists(id))) {
       return notFound('Friend link not found');
     }
 
-    await prisma.friendLink.delete({ where: { id } });
+    await deleteFriendLink(id);
     return noContent();
   } catch (error) {
     return serverError('DELETE /api/friend-links/[id]', error);
