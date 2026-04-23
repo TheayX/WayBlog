@@ -56,15 +56,15 @@ Base URL：
 
 - `page`
 - `pageSize`
-- `status`
 - `categoryId`
 - `tagId`
 - `pinned`
 
 说明：
 
-- 未登录时只返回已发布文章
-- 已登录时可按状态筛选
+- 公开读取入口
+- 始终只返回已发布文章
+- 不接受 `status` 查询参数
 
 ### `POST /api/posts`
 
@@ -99,6 +99,24 @@ Base URL：
 需要登录。
 
 成功时返回 `204`。
+
+### `GET /api/admin/posts`
+
+需要登录。
+
+查询参数：
+
+- `page`
+- `pageSize`
+- `status`
+- `categoryId`
+- `tagId`
+- `pinned`
+
+说明：
+
+- 后台文章列表读取入口
+- 可按状态筛选草稿或已发布文章
 
 ### `POST /api/posts/[id]/views`
 

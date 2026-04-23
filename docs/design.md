@@ -52,6 +52,7 @@ Browser
 
 - `/api/auth/[...nextauth]`
 - `/api/posts`
+- `/api/admin/posts`
 - `/api/posts/[id]`
 - `/api/posts/[id]/views`
 - `/api/categories`

@@ -73,6 +73,14 @@ export interface PublicPostListItem {
   tags: Array<{ name: string; slug: string }>;
 }
 
+interface PublicPostListParams {
+  page: number;
+  pageSize: number;
+  categoryId?: string;
+  tagId?: string;
+  pinned?: boolean;
+}
+
 /**
  * 公开页文章元数据所需字段。
  *
@@ -169,6 +177,40 @@ function toAdminPostEditorData(post: {
     categoryId: post.categoryId || '',
     tagIds: post.tags.map((tag) => tag.id),
   };
+}
+
+/**
+ * 获取公开接口使用的已发布文章分页结果。
+ *
+ * 该查询只服务 `/api/posts` 公开读取入口，不接受后台状态筛选；
+ * 分类、标签和置顶筛选都在已发布集合内追加，确保公开 API 无法越过草稿边界。
+ */
+export async function getPublicPostList({
+  page,
+  pageSize,
+  categoryId,
+  tagId,
+  pinned,
+}: PublicPostListParams) {
+  const where: Prisma.PostWhereInput = {
+    status: PostStatus.PUBLISHED,
+    ...(categoryId ? { categoryId } : {}),
+    ...(tagId ? { tags: { some: { id: tagId } } } : {}),
+    ...(pinned !== undefined ? { pinned } : {}),
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.post.findMany({
+      where,
+      select: publicPostListSelect,
+      orderBy: publicPostListOrderBy,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.post.count({ where }),
+  ]);
+
+  return { data, total };
 }
 
 /**

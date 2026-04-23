@@ -11,7 +11,7 @@ import type { AdminPostListItem } from '@/types';
  * 管理后台文章列表页。
  *
  * 负责分页拉取文章、按状态筛选，并提供跳转编辑与删除入口；
- * 真正的数据约束和鉴权仍由 `/api/posts` 路由处理器负责。
+ * 后台列表读取走 `/api/admin/posts`，避免和公开文章列表接口共用权限语义。
  */
 export default function AdminPostsPage() {
   const [posts, setPosts] = useState<AdminPostListItem[]>([]);
@@ -27,7 +27,7 @@ export default function AdminPostsPage() {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (statusFilter) params.set('status', statusFilter);
 
-    fetchAdminCollection<{ data?: AdminPostListItem[]; total?: number }>(`/api/posts?${params}`)
+    fetchAdminCollection<{ data?: AdminPostListItem[]; total?: number }>(`/api/admin/posts?${params}`)
       .then((res) => {
         setPosts(res.data || []);
         setTotal(res.total || 0);

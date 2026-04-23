@@ -62,15 +62,22 @@ export const createPostSchema = z.object({
 export const updatePostSchema = createPostSchema.partial();
 
 /**
- * 文章列表查询参数。
- * 同时服务公开页和管理后台，因此筛选条件既包含分页，也包含状态、分类、标签和置顶标记。
+ * 公开文章列表查询参数。
+ * 公开入口不接受 status，服务端始终只返回已发布文章，避免调用方通过参数影响可见性边界。
  */
-export const postQuerySchema = paginationSchema.extend({
-  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
+export const publicPostQuerySchema = paginationSchema.extend({
   categoryId: z.string().uuid().optional(),
   tagId: z.string().uuid().optional(),
   pinned: booleanQuerySchema.optional(),
-});
+}).strict();
+
+/**
+ * 后台文章列表查询参数。
+ * 该 schema 只用于已鉴权的管理端列表接口，因此允许按文章状态筛选。
+ */
+export const adminPostQuerySchema = publicPostQuerySchema.extend({
+  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
+}).strict();
 
 /** 后台分类创建接口约束。 */
 export const createCategorySchema = z.object({
