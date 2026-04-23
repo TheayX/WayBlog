@@ -144,9 +144,14 @@ Page 独立
 
 ## 搜索相关说明
 
-当前搜索接口使用 PostgreSQL 全文搜索，但 `schema.prisma` 中没有显式声明 `tsvector` 字段。
+当前搜索接口使用 PostgreSQL 全文搜索，相关数据库能力在 `prisma/migrations/0_init/migration.sql` 中通过 SQL 显式维护。
 
-这意味着：
+搜索依赖包括：
 
-- 搜索能力依赖数据库中已有的额外搜索字段或 SQL 迁移
-- 如果后续要正式维护这部分能力，建议补充专门的 SQL migration 文档和迁移文件说明
+- `Post.search_vector`：`tsvector` 类型字段，用于保存文章标题和正文的搜索向量
+- `Post_search_vector_idx`：基于 `search_vector` 的 GIN 索引
+- `post_search_vector_update()`：在文章标题或正文变更时更新搜索向量的触发器函数
+- `post_search_vector_trigger`：挂载在 `Post` 表上的触发器
+- 初始化迁移末尾会对已有文章执行一次 `search_vector` 回填
+
+注意：`search_vector` 没有写入 `schema.prisma`，因为 Prisma schema 当前不直接表达这类 PostgreSQL 专有字段和触发器逻辑。后续如果调整搜索字段、权重或分词策略，应通过新的 SQL migration 显式维护，并同步更新本文档。
