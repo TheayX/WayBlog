@@ -5,10 +5,16 @@
  * - PUT / DELETE 仅允许管理后台操作，且在真正写入前完成鉴权、请求校验、存在性判断与唯一性约束检查。
  */
 import { NextRequest } from 'next/server';
-import { badRequest, conflict, noContent, notFound, ok, serverError } from '@/lib/response';
-import { requireAuth } from '@/lib/auth-guard';
+import { conflict, noContent, notFound, ok, serverError } from '@/lib/response';
+import { parseJsonBody, requireAdminAccess, resolveRouteId } from '@/lib/api/admin';
+import {
+  deletePost,
+  getPostUpdateTarget,
+  postExists,
+  postSlugExists,
+  updatePost,
+} from '@/lib/posts/admin-service';
 import { getAdminPostEditorData } from '@/lib/posts/queries';
-import { prisma } from '@/lib/prisma';
 import { updatePostSchema } from '@/lib/validations';
 
 interface RouteParams {
@@ -23,10 +29,10 @@ interface RouteParams {
  */
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
+    const id = await resolveRouteId(params);
     const post = await getAdminPostEditorData(id);
 
     if (!post) {
@@ -47,52 +53,23 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
-    const body = await request.json();
-    const parsed = updatePostSchema.safeParse(body);
+    const id = await resolveRouteId(params);
+    const parsed = await parseJsonBody(request, updatePostSchema);
+    if (!parsed.success) return parsed.response;
 
-    if (!parsed.success) {
-      return badRequest(parsed.error.flatten().fieldErrors, 'Validation failed');
-    }
-
-    const existing = await prisma.post.findUnique({ where: { id } });
+    const existing = await getPostUpdateTarget(id);
     if (!existing) {
       return notFound('Post not found');
     }
 
-    const { tagIds, ...postData } = parsed.data;
-
-    if (postData.slug) {
-      const slugExists = await prisma.post.findFirst({
-        where: { id: { not: id }, slug: postData.slug },
-      });
-
-      // slug 在帖子体系中必须全局唯一，否则公开页路由与后台编辑入口都会出现歧义。
-      if (slugExists) {
-        return conflict('Post slug already exists');
-      }
+    if (parsed.data.slug && (await postSlugExists(parsed.data.slug, id))) {
+      return conflict('Post slug already exists');
     }
 
-    const publishedAt =
-      postData.status === 'PUBLISHED' && !existing.publishedAt ? new Date() : undefined;
-
-    const post = await prisma.post.update({
-      where: { id },
-      data: {
-        ...postData,
-        ...(publishedAt ? { publishedAt } : {}),
-        // tagIds 传入时使用 set 语义整体替换；未传入则保持现有关联不变，避免管理后台局部更新误清空标签。
-        ...(tagIds !== undefined ? { tags: { set: tagIds.map((tagId) => ({ id: tagId })) } } : {}),
-      },
-      include: {
-        author: { select: { id: true, name: true, avatar: true } },
-        category: { select: { id: true, name: true, slug: true } },
-        tags: { select: { id: true, name: true, slug: true } },
-      },
-    });
+    const post = await updatePost(id, parsed.data, existing.publishedAt);
 
     return ok(post);
   } catch (error) {
@@ -108,17 +85,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireAuth();
+    const authResult = await requireAdminAccess();
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = await params;
-    const existing = await prisma.post.findUnique({ where: { id } });
-
-    if (!existing) {
+    const id = await resolveRouteId(params);
+    if (!(await postExists(id))) {
       return notFound('Post not found');
     }
 
-    await prisma.post.delete({ where: { id } });
+    await deletePost(id);
     return noContent();
   } catch (error) {
     return serverError('DELETE /api/posts/[id]', error);
