@@ -205,6 +205,7 @@ WayBlog/
         │   ├── tags/          #   标签管理
         │   └── friend-links/  #   友链管理
         └── api/               # RESTful API (Route Handlers)
+            ├── admin/         #   后台专用读取接口
             ├── auth/          #   认证（NextAuth）
             ├── posts/         #   文章 CRUD + 浏览量
             ├── categories/    #   分类 CRUD

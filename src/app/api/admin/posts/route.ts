@@ -5,10 +5,10 @@
  * 公开文章列表由 `/api/posts` 提供，二者不共享可见性判断，避免公开/后台权限语义混在同一路由中。
  */
 import { NextRequest } from 'next/server';
-import { badRequest, paged, serverError } from '@/lib/response';
-import { requireAdminAccess } from '@/lib/api/admin';
-import { getAdminPostList } from '@/lib/posts/admin-service';
-import { adminPostQuerySchema } from '@/lib/validations';
+import { badRequest, conflict, ok, paged, serverError } from '@/lib/response';
+import { parseJsonBody, requireAdminAccess } from '@/lib/api/admin';
+import { createPost, getAdminPostList, postSlugExists } from '@/lib/posts/admin-service';
+import { adminPostQuerySchema, createPostSchema } from '@/lib/validations';
 
 /**
  * 获取后台文章分页列表。
@@ -42,5 +42,32 @@ export async function GET(request: NextRequest) {
     return paged(data, { total, page, pageSize });
   } catch (error) {
     return serverError('GET /api/admin/posts', error);
+  }
+}
+
+/**
+ * 创建文章。
+ *
+ * 该入口仅面向管理后台：先鉴权，再校验请求体，最后检查 slug 唯一性。
+ * 对已发布内容在创建时立即写入 publishedAt，保证前台页面排序与发布时间语义一致。
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const authResult = await requireAdminAccess();
+    if (!authResult.authorized) return authResult.response;
+
+    const parsed = await parseJsonBody(request, createPostSchema);
+    if (!parsed.success) return parsed.response;
+
+    // slug 是前台页面路由与管理后台编辑入口共享的稳定标识，冲突时必须提前返回 409。
+    if (await postSlugExists(parsed.data.slug)) {
+      return conflict('Post slug already exists');
+    }
+
+    const post = await createPost(parsed.data, authResult.user.id!);
+
+    return ok(post, { status: 201 });
+  } catch (error) {
+    return serverError('POST /api/admin/posts', error);
   }
 }

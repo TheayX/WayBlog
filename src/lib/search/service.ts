@@ -1,5 +1,10 @@
 import { prisma } from '@/lib/prisma';
-import { buildSearchTsQuery } from '@/lib/search/query';
+import {
+  buildSearchHighlightSegments,
+  buildSearchTsQuery,
+  SEARCH_HIT_END,
+  SEARCH_HIT_START,
+} from '@/lib/search/query';
 import type { SearchResult } from '@/types';
 
 interface SearchPostsParams {
@@ -38,7 +43,7 @@ export async function searchPublishedPosts({ q, page, pageSize }: SearchPostsPar
   const results: RawSearchResult[] = await prisma.$queryRawUnsafe(
     `SELECT p.id, p.title, p.slug,
             ts_headline('simple', p.content, to_tsquery('simple', $1),
-              'MaxFragments=2, MaxWords=30, MinWords=10') AS highlight,
+              'StartSel=${SEARCH_HIT_START}, StopSel=${SEARCH_HIT_END}, MaxFragments=2, MaxWords=30, MinWords=10') AS highlight,
             p."publishedAt",
             ts_rank(p."search_vector", to_tsquery('simple', $1)) AS rank
      FROM "Post" p
@@ -73,11 +78,16 @@ export async function searchPublishedPosts({ q, page, pageSize }: SearchPostsPar
       : [];
 
   const relationsMap = new Map(postsWithRelations.map((post) => [post.id, post]));
-  const data = results.map((result) => ({
-    ...result,
-    category: relationsMap.get(result.id)?.category || null,
-    tags: relationsMap.get(result.id)?.tags || [],
-  }));
+  const data = results.map((result) => {
+    const { highlight, ...post } = result;
+
+    return {
+      ...post,
+      highlightSegments: buildSearchHighlightSegments(highlight),
+      category: relationsMap.get(result.id)?.category || null,
+      tags: relationsMap.get(result.id)?.tags || [],
+    };
+  });
 
   return {
     data,

@@ -10,7 +10,7 @@ import { parseJsonBody, requireAdminAccess } from '@/lib/api/admin';
 import {
   categoryNameOrSlugExists,
   createCategory,
-  getAdminCategories,
+  getCategoriesWithPublishedPostCount,
 } from '@/lib/taxonomies/admin-service';
 import { createCategorySchema } from '@/lib/validations';
 
@@ -23,7 +23,7 @@ import { createCategorySchema } from '@/lib/validations';
  */
 export async function GET() {
   try {
-    return ok(await getAdminCategories());
+    return ok(await getCategoriesWithPublishedPostCount());
   } catch (error) {
     return serverError('GET /api/categories', error);
   }

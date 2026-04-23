@@ -15,12 +15,12 @@ export interface SavePostPayload {
 /**
  * 保存文章。
  *
- * 编辑页与新建页都复用 `/api/posts` 的同一套写接口；
+ * 编辑页与新建页都复用 `/api/admin/posts` 的同一套后台写接口；
  * 抽到客户端辅助层后，PostForm 只需要关心表单归一化，不再自己拼装请求模板。
  */
 export async function savePost(editingId: string | null, body: SavePostPayload) {
   return saveAdminResource({
-    endpoint: '/api/posts',
+    endpoint: '/api/admin/posts',
     editingId,
     body,
   });

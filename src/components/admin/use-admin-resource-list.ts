@@ -18,7 +18,15 @@ export function useAdminResourceList<T>(endpoint: string) {
     setLoading(true);
 
     fetchAdminCollection<{ data?: T[] }>(endpoint)
-      .then((result) => setItems(result.data || []))
+      .then((result) => {
+        if (!result.ok) {
+          console.error(result.error);
+          setItems([]);
+          return;
+        }
+
+        setItems(result.data.data || []);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [endpoint]);

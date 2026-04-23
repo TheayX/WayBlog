@@ -30,8 +30,11 @@ export function usePostEditorMetadata() {
       fetchAdminCollection<{ data?: PostCategoryOption[] }>('/api/categories'),
       fetchAdminCollection<{ data?: PostTagOption[] }>('/api/tags'),
     ]).then(([categoryResult, tagResult]) => {
-      setCategories(categoryResult.data || []);
-      setTags(tagResult.data || []);
+      if (categoryResult.ok) setCategories(categoryResult.data.data || []);
+      if (tagResult.ok) setTags(tagResult.data.data || []);
+
+      if (!categoryResult.ok) console.error(categoryResult.error);
+      if (!tagResult.ok) console.error(tagResult.error);
     });
   }, []);
 

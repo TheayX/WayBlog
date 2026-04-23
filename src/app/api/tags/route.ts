@@ -7,7 +7,11 @@
 import { NextRequest } from 'next/server';
 import { conflict, ok, serverError } from '@/lib/response';
 import { parseJsonBody, requireAdminAccess } from '@/lib/api/admin';
-import { createTag, getAdminTags, tagNameOrSlugExists } from '@/lib/taxonomies/admin-service';
+import {
+  createTag,
+  getTagsWithPublishedPostCount,
+  tagNameOrSlugExists,
+} from '@/lib/taxonomies/admin-service';
 import { createTagSchema } from '@/lib/validations';
 
 /**
@@ -19,7 +23,7 @@ import { createTagSchema } from '@/lib/validations';
  */
 export async function GET() {
   try {
-    return ok(await getAdminTags());
+    return ok(await getTagsWithPublishedPostCount());
   } catch (error) {
     return serverError('GET /api/tags', error);
   }

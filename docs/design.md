@@ -53,7 +53,7 @@ Browser
 - `/api/auth/[...nextauth]`
 - `/api/posts`
 - `/api/admin/posts`
-- `/api/posts/[id]`
+- `/api/admin/posts/[id]`
 - `/api/posts/[id]/views`
 - `/api/categories`
 - `/api/categories/[id]`
@@ -159,6 +159,7 @@ API Route Handler 保持轻量，主要负责：
 - 使用 PostgreSQL 全文搜索
 - 通过 raw SQL 查询 `to_tsquery`、`ts_rank`、`ts_headline`
 - 目前只搜索已发布文章
+- 搜索摘要使用结构化高亮片段返回，前端不注入数据库生成的 HTML
 - 搜索接口带有限流
 
 ## 统计方案

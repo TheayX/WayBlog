@@ -66,40 +66,6 @@ Base URL：
 - 始终只返回已发布文章
 - 不接受 `status` 查询参数
 
-### `POST /api/posts`
-
-需要登录。
-
-请求体字段：
-
-- `title`
-- `slug`
-- `content`
-- `excerpt`
-- `coverImage`
-- `status`
-- `pinned`
-- `categoryId`
-- `tagIds`
-
-### `GET /api/posts/[id]`
-
-需要登录。
-
-获取单篇文章编辑详情，主要供后台编辑页使用。该接口只返回编辑表单回填所需字段，不作为公开文章详情接口。
-
-### `PUT /api/posts/[id]`
-
-需要登录。
-
-支持部分更新。
-
-### `DELETE /api/posts/[id]`
-
-需要登录。
-
-成功时返回 `204`。
-
 ### `GET /api/admin/posts`
 
 需要登录。
@@ -117,6 +83,34 @@ Base URL：
 
 - 后台文章列表读取入口
 - 可按状态筛选草稿或已发布文章
+
+### `POST /api/admin/posts`
+
+需要登录。
+
+请求体字段：
+
+- `title`
+- `slug`
+- `content`
+- `excerpt`
+- `coverImage`
+- `status`
+- `pinned`
+- `categoryId`
+- `tagIds`
+
+### `PUT /api/admin/posts/[id]`
+
+需要登录。
+
+支持部分更新。
+
+### `DELETE /api/admin/posts/[id]`
+
+需要登录。
+
+成功时返回 `204`。
 
 ### `POST /api/posts/[id]/views`
 
@@ -205,7 +199,7 @@ Base URL：
 说明：
 
 - 仅搜索已发布文章
-- 返回高亮摘要 `highlight`
+- 返回结构化高亮摘要 `highlightSegments`
 - 带有分页信息
 
 限流：

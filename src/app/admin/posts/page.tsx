@@ -29,8 +29,15 @@ export default function AdminPostsPage() {
 
     fetchAdminCollection<{ data?: AdminPostListItem[]; total?: number }>(`/api/admin/posts?${params}`)
       .then((res) => {
-        setPosts(res.data || []);
-        setTotal(res.total || 0);
+        if (!res.ok) {
+          toast.error(res.error);
+          setPosts([]);
+          setTotal(0);
+          return;
+        }
+
+        setPosts(res.data.data || []);
+        setTotal(res.data.total || 0);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -44,7 +51,7 @@ export default function AdminPostsPage() {
   async function handleDelete(id: string, title: string) {
     if (!confirm(`确定删除文章「${title}」？此操作不可恢复。`)) return;
 
-    const deleted = await deleteAdminResource('/api/posts', id);
+    const deleted = await deleteAdminResource('/api/admin/posts', id);
     if (deleted) {
       toast.success('文章已删除');
       fetchPosts();

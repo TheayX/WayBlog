@@ -9,7 +9,7 @@ interface SearchResult {
   id: string;
   title: string;
   slug: string;
-  highlight: string;
+  highlightSegments: Array<{ text: string; highlighted: boolean }>;
   publishedAt: string | null;
   category: { name: string; slug: string } | null;
   tags: { name: string; slug: string }[];
@@ -23,17 +23,9 @@ interface SearchResponse {
 }
 
 /**
- * 搜索结果高亮文本只允许保留 <b> 标签。
- * 这样既能保住数据库返回的命中强调效果，又避免把其余 HTML 直接注入前台页面。
- */
-function sanitizeHighlight(html: string): string {
-  return html.replace(/<\/?(?!b\b)[^>]*>/gi, '');
-}
-
-/**
  * 搜索页客户端主体。
  *
- * 负责同步查询参数、触发搜索请求、展示分页结果，并把高亮摘要安全渲染到前台页面。
+ * 负责同步查询参数、触发搜索请求、展示分页结果，并把结构化高亮摘要渲染到前台页面。
  */
 export function SearchPageClient() {
   const searchParams = useSearchParams();
@@ -163,11 +155,21 @@ export function SearchPageClient() {
                     </Link>
                   </h2>
 
-                  {result.highlight && (
-                    <p
-                      className="mt-2 text-sm leading-relaxed text-muted-foreground"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHighlight(result.highlight) }}
-                    />
+                  {result.highlightSegments.length > 0 && (
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {result.highlightSegments.map((segment, index) =>
+                        segment.highlighted ? (
+                          <mark
+                            key={`${index}-${segment.text}`}
+                            className="rounded-sm bg-primary/15 px-0.5 text-foreground"
+                          >
+                            {segment.text}
+                          </mark>
+                        ) : (
+                          <span key={`${index}-${segment.text}`}>{segment.text}</span>
+                        ),
+                      )}
+                    </p>
                   )}
 
                   {result.tags.length > 0 && (

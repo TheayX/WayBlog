@@ -1,13 +1,30 @@
+type AdminFetchResult<TResult> =
+  | { ok: true; status: number; data: TResult }
+  | { ok: false; status: number; error: string };
+
 /**
  * 获取后台列表接口的 JSON 结果。
  *
- * 后台列表页大多约定返回 `{ data, ...meta }` 结构，
- * 这里统一收敛基础读取和 JSON 解析，避免每个页面都重复写同样的 fetch 模板。
+ * 后台列表页大多约定返回 `{ data, ...meta }` 结构；
+ * 这里同时保留 HTTP 成功/失败状态，避免 401、500 或协议错误被页面误当成空列表。
  */
 export async function fetchAdminCollection<TResult>(endpoint: string) {
   const response = await fetch(endpoint);
-  const result = (await response.json()) as TResult;
-  return result;
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    return {
+      ok: false as const,
+      status: response.status,
+      error: result?.error || '加载失败',
+    } satisfies AdminFetchResult<TResult>;
+  }
+
+  return {
+    ok: true as const,
+    status: response.status,
+    data: result as TResult,
+  } satisfies AdminFetchResult<TResult>;
 }
 
 /**

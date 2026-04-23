@@ -14,11 +14,11 @@ type CreateTagInput = z.infer<typeof createTagSchema>;
 type UpdateTagInput = z.infer<typeof updateTagSchema>;
 
 /**
- * 获取后台分类列表。
+ * 获取分类列表及已发布文章计数。
  *
  * postCount 只统计已发布文章，保证后台列表与公开页可见内容口径一致。
  */
-export async function getAdminCategories() {
+export async function getCategoriesWithPublishedPostCount() {
   const categories = await prisma.category.findMany({
     include: {
       _count: {
@@ -40,8 +40,8 @@ export async function getAdminCategories() {
   }));
 }
 
-/** 获取后台标签列表。 */
-export async function getAdminTags() {
+/** 获取标签列表及已发布文章计数。 */
+export async function getTagsWithPublishedPostCount() {
   const tags = await prisma.tag.findMany({
     include: {
       _count: {
