@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: wayblog-postgres
     ports:
-      - "6432:5432"
+      - '6432:5432'
     environment:
       POSTGRES_DB: wayblog
       POSTGRES_USER: wayblog
@@ -12,6 +12,15 @@ services:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: wayblog-redis
+    ports:
+      - '6381:6379'
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
 volumes:
   pgdata:
-
+  redisdata:

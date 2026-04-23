@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const limitKey = `views:${ip}:${postId}`;
 
     // 同一 IP 对同一帖子短时间内重复上报时直接拒绝，降低刷量与无意义写入压力。
-    if (!viewsLimiter.check(limitKey)) {
+    if (!(await viewsLimiter.check(limitKey))) {
       return tooManyRequests();
     }
 

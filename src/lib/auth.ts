@@ -39,7 +39,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const { email, password } = normalized;
 
-        if (!loginLimiter.check(`login:${ip}`)) {
+        if (!(await loginLimiter.check(`login:${ip}`))) {
           auditFailedLogin({ email, ip, reason: 'rate-limited' });
           return null;
         }

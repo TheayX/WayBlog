@@ -4,16 +4,16 @@
 
 ## 技术栈
 
-| 分类 | 技术 |
-|------|------|
-| 框架 | Next.js 16 (App Router) |
-| 前端 | React 19 + TypeScript |
-| 样式 | Tailwind CSS 4 |
-| ORM | Prisma 7 + PostgreSQL 16 |
-| 认证 | NextAuth v5 (Credentials + JWT) |
+| 分类     | 技术                                           |
+| -------- | ---------------------------------------------- |
+| 框架     | Next.js 16 (App Router)                        |
+| 前端     | React 19 + TypeScript                          |
+| 样式     | Tailwind CSS 4                                 |
+| ORM      | Prisma 7 + PostgreSQL 16                       |
+| 认证     | NextAuth v5 (Credentials + JWT)                |
 | Markdown | react-markdown + remark-gfm + rehype-highlight |
-| 校验 | Zod 4 |
-| 包管理 | pnpm |
+| 校验     | Zod 4                                          |
+| 包管理   | pnpm                                           |
 
 ## 功能特性
 
@@ -40,7 +40,7 @@
 - 🤖 AI 辅助写作 — 支持文章润色、字段优化、分类和标签建议，可切换阿里百炼或 Ollama
 - 🖼️ 图片上传 — 本地存储到 `public/uploads`
 - 🌓 主题切换 — 亮色 / 暗色 / 跟随系统
-- 🛡️ 限流 — 基于内存的滑动窗口 Rate Limiter
+- 🛡️ 限流 — 基于 Redis 的跨实例 Rate Limiter
 - 🌐 SEO — Metadata、OpenGraph、RSS Feed、Sitemap、Robots、JSON-LD
 
 ## 环境要求
@@ -59,13 +59,13 @@ cd WayBlog
 pnpm install
 ```
 
-### 2. 启动 PostgreSQL
+### 2. 启动 PostgreSQL 与 Redis
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 ```
 
-> 默认端口映射为 `6432:5432`，数据库名/用户名均为 `wayblog`。
+> PostgreSQL 默认端口映射为 `6432:5432`，Redis 默认端口映射为 `6381:6379`，避免和本机其他项目 Redis 冲突。
 
 ### 3. 配置环境变量
 
@@ -121,18 +121,18 @@ pnpm dev
 
 ## 常用命令
 
-| 命令 | 说明 |
-|------|------|
-| `pnpm dev` | 启动开发服务器 (端口 3333) |
-| `pnpm build` | 构建生产版本 |
-| `pnpm start` | 启动生产服务器 |
-| `pnpm lint` | ESLint 代码检查 |
-| `pnpm format` | Prettier 格式化 |
-| `pnpm db:generate` | 生成 Prisma Client |
-| `pnpm db:migrate` | 执行数据库迁移 |
-| `pnpm db:push` | 同步 Schema 到数据库（跳过迁移） |
-| `pnpm db:seed` | 填充种子数据 |
-| `pnpm db:studio` | 打开 Prisma Studio 可视化管理 |
+| 命令               | 说明                             |
+| ------------------ | -------------------------------- |
+| `pnpm dev`         | 启动开发服务器 (端口 3333)       |
+| `pnpm build`       | 构建生产版本                     |
+| `pnpm start`       | 启动生产服务器                   |
+| `pnpm lint`        | ESLint 代码检查                  |
+| `pnpm format`      | Prettier 格式化                  |
+| `pnpm db:generate` | 生成 Prisma Client               |
+| `pnpm db:migrate`  | 执行数据库迁移                   |
+| `pnpm db:push`     | 同步 Schema 到数据库（跳过迁移） |
+| `pnpm db:seed`     | 填充种子数据                     |
+| `pnpm db:studio`   | 打开 Prisma Studio 可视化管理    |
 
 ## 项目结构
 
@@ -217,25 +217,27 @@ WayBlog/
 
 ## 环境变量
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DATABASE_URL` | PostgreSQL 连接字符串 | — |
-| `NEXTAUTH_URL` | 站点 URL（认证回调） | `http://localhost:3333` |
-| `NEXTAUTH_SECRET` | JWT 签名密钥 | — |
-| `SITE_NAME` | 站点名称 | `Way` |
-| `SITE_DESCRIPTION` | 站点描述 | `A Journey of Code and Thought` |
-| `SITE_URL` | 站点公开 URL | `http://localhost:3333` |
-| `ADMIN_EMAIL` | 管理员邮箱（seed 用） | — |
-| `ADMIN_PASSWORD` | 管理员密码（seed 用） | — |
-| `UPLOAD_MAX_SIZE` | 上传文件大小限制（bytes） | `5242880` (5MB) |
-| `UPLOAD_DIR` | 上传目录 | `public/uploads` |
-| `AI_PROVIDER` | AI 服务提供商，可选 `aliyun-bailian` / `ollama` | `aliyun-bailian` |
-| `AI_TIMEOUT_MS` | AI 请求超时时间（毫秒） | `120000` |
-| `DASHSCOPE_API_KEY` | 阿里百炼 API Key | — |
-| `DASHSCOPE_BASE_URL` | 阿里百炼兼容接口地址 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
-| `DASHSCOPE_MODEL` | 阿里百炼模型名 | `qwen3.6-plus` |
-| `OLLAMA_BASE_URL` | Ollama 服务地址 | `http://127.0.0.1:11434` |
-| `OLLAMA_MODEL` | Ollama 模型名 | `qwen2.5:1.5b` |
+| 变量                 | 说明                                            | 默认值                                              |
+| -------------------- | ----------------------------------------------- | --------------------------------------------------- |
+| `DATABASE_URL`       | PostgreSQL 连接字符串                           | —                                                   |
+| `REDIS_URL`          | Redis 连接字符串，用于限流和浏览量 UV 去重      | `redis://localhost:6381/0`                          |
+| `REDIS_KEY_PREFIX`   | Redis key 前缀，用于隔离不同项目                | `wayblog`                                           |
+| `NEXTAUTH_URL`       | 站点 URL（认证回调）                            | `http://localhost:3333`                             |
+| `NEXTAUTH_SECRET`    | JWT 签名密钥                                    | —                                                   |
+| `SITE_NAME`          | 站点名称                                        | `Way`                                               |
+| `SITE_DESCRIPTION`   | 站点描述                                        | `A Journey of Code and Thought`                     |
+| `SITE_URL`           | 站点公开 URL                                    | `http://localhost:3333`                             |
+| `ADMIN_EMAIL`        | 管理员邮箱（seed 用）                           | —                                                   |
+| `ADMIN_PASSWORD`     | 管理员密码（seed 用）                           | —                                                   |
+| `UPLOAD_MAX_SIZE`    | 上传文件大小限制（bytes）                       | `5242880` (5MB)                                     |
+| `UPLOAD_DIR`         | 上传目录                                        | `public/uploads`                                    |
+| `AI_PROVIDER`        | AI 服务提供商，可选 `aliyun-bailian` / `ollama` | `aliyun-bailian`                                    |
+| `AI_TIMEOUT_MS`      | AI 请求超时时间（毫秒）                         | `120000`                                            |
+| `DASHSCOPE_API_KEY`  | 阿里百炼 API Key                                | —                                                   |
+| `DASHSCOPE_BASE_URL` | 阿里百炼兼容接口地址                            | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `DASHSCOPE_MODEL`    | 阿里百炼模型名                                  | `qwen3.6-plus`                                      |
+| `OLLAMA_BASE_URL`    | Ollama 服务地址                                 | `http://127.0.0.1:11434`                            |
+| `OLLAMA_MODEL`       | Ollama 模型名                                   | `qwen2.5:1.5b`                                      |
 
 完整配置见 [.env.example](./.env.example)。
 

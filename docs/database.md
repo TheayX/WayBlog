@@ -142,6 +142,15 @@ Page 独立
 - 运行前需要先执行 `prisma generate`
 - 种子脚本文件是 `prisma/seed.mts`
 
+## Redis 运行时状态
+
+Redis 不承载主业务数据，只保存运行期状态：
+
+- 登录、搜索和浏览量接口的限流计数
+- 文章浏览量 UV 的按天去重集合
+
+本地 `docker-compose.yml` 默认提供 `wayblog-redis` 服务，并映射到宿主机 `6381`，避免和其他项目 Redis 冲突。应用通过 `REDIS_URL` 连接 Redis，并通过 `REDIS_KEY_PREFIX` 隔离 key 空间。
+
 ## 搜索相关说明
 
 当前搜索接口使用 PostgreSQL 全文搜索，相关数据库能力在 `prisma/migrations/0_init/migration.sql` 中通过 SQL 显式维护。

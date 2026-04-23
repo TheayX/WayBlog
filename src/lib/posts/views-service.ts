@@ -1,45 +1,22 @@
 import { prisma } from '@/lib/prisma';
-
-const uvCache = new Map<string, Set<string>>();
-let lastCleanDate = new Date().toISOString().slice(0, 10);
-
-/**
- * 仅保留当天的 UV 去重缓存。
- *
- * UV 语义是“按天的独立访客数”，跨天后必须清空内存态去重结果，
- * 否则第二天的访问会被错误复用为昨天的访客集合。
- */
-function cleanUvCache() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (today !== lastCleanDate) {
-    uvCache.clear();
-    lastCleanDate = today;
-  }
-}
+import { buildRedisKey, getRedisClient } from '@/lib/redis';
 
 /**
  * 判断当前访问是否应该计入新的 UV。
  *
- * 当前仍沿用进程内 Map 去重；后续如果引入 Redis，只需要替换这一层的实现，
- * route handler 和数据库写入逻辑不需要继续改动。
+ * UV 去重状态写入 Redis Set，并设置短期过期时间，保证多实例部署时同一天同一访客只计一次。
  */
-function markDailyUniqueVisitor(postId: string, ip: string, date: Date) {
-  cleanUvCache();
-
+async function markDailyUniqueVisitor(postId: string, ip: string, date: Date) {
   const dateKey = date.toISOString().slice(0, 10);
-  const uvKey = `${postId}:${dateKey}`;
+  const redis = getRedisClient();
+  const uvKey = buildRedisKey('views', 'uv', postId, dateKey);
+  const added = await redis.sadd(uvKey, ip);
 
-  if (!uvCache.has(uvKey)) {
-    uvCache.set(uvKey, new Set());
+  if (added === 1) {
+    await redis.expire(uvKey, 60 * 60 * 48);
   }
 
-  const ipSet = uvCache.get(uvKey)!;
-  if (ipSet.has(ip)) {
-    return false;
-  }
-
-  ipSet.add(ip);
-  return true;
+  return added === 1;
 }
 
 /** 判断文章是否存在。 */
@@ -60,7 +37,7 @@ export async function viewTargetPostExists(postId: string) {
 export async function recordPostView(postId: string, ip: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const isNewUv = markDailyUniqueVisitor(postId, ip, today);
+  const isNewUv = await markDailyUniqueVisitor(postId, ip, today);
 
   const [, updatedPost] = await prisma.$transaction([
     prisma.pageView.upsert({

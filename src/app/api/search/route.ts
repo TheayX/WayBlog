@@ -15,7 +15,7 @@ import { searchPublishedPosts } from '@/lib/search/service';
 export async function GET(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    if (!searchLimiter.check(`search:${ip}`)) {
+    if (!(await searchLimiter.check(`search:${ip}`))) {
       return tooManyRequests('搜索请求过于频繁');
     }
 
@@ -34,4 +34,3 @@ export async function GET(request: NextRequest) {
     return serverError('GET /api/search', error);
   }
 }
-

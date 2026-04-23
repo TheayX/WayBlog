@@ -1,26 +1,6 @@
-/**
- * 基于内存的轻量限流器。
- *
- * 适用于当前单机场景下的登录、搜索、浏览量记录等接口保护。
- * 由于状态保存在进程内内存中，因此不适合多实例部署或需要跨节点共享限流状态的场景。
- */
+import { buildRedisKey, getRedisClient } from '@/lib/redis';
 
-interface RateLimitEntry {
-  count: number;
-  resetTime: number;
-}
-
-const store = new Map<string, RateLimitEntry>();
-
-// 通过定时清理过期窗口，避免长期运行时无效 key 一直滞留在内存中。
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of store) {
-    if (now > entry.resetTime) {
-      store.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
+/** 基于 Redis 的限流器，适用于多实例部署下的登录、搜索和浏览量接口保护。 */
 
 interface RateLimitOptions {
   /** 单个时间窗口内允许通过的最大请求数。 */
@@ -41,22 +21,19 @@ export function rateLimit(options: RateLimitOptions) {
      * 检查给定 key 是否还能在当前窗口内继续请求。
      * 返回 `true` 表示放行，返回 `false` 表示命中限流。
      */
-    check(key: string): boolean {
-      const now = Date.now();
-      const entry = store.get(key);
+    async check(key: string): Promise<boolean> {
+      const redis = getRedisClient();
+      const redisKey = buildRedisKey('rate-limit', key);
+      const count = await redis.incr(redisKey);
 
-      if (!entry || now > entry.resetTime) {
-        // 首次访问或窗口已过期时，重新开始计数。
-        store.set(key, { count: 1, resetTime: now + windowMs });
-        return true;
+      if (count === 1) {
+        await redis.pexpire(redisKey, windowMs);
+      } else if ((await redis.pttl(redisKey)) < 0) {
+        // 极端情况下 key 没有 TTL 时补上过期时间，避免限流计数永久滞留。
+        await redis.pexpire(redisKey, windowMs);
       }
 
-      if (entry.count >= max) {
-        return false;
-      }
-
-      entry.count++;
-      return true;
+      return count <= max;
     },
   };
 }
@@ -90,4 +67,3 @@ export function getClientIp(request: Request): string {
   }
   return '127.0.0.1';
 }
-
