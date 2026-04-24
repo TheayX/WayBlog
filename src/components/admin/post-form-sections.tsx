@@ -231,12 +231,14 @@ function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
 export function PostAiToolbar({
   aiLoading,
   onOptimizeAll,
+  className,
 }: {
   aiLoading: boolean;
   onOptimizeAll: () => void;
+  className?: string;
 }) {
   return (
-    <div className="flex justify-end">
+    <div className={className ? `flex justify-end ${className}` : 'flex justify-end'}>
       <button
         type="button"
         onClick={onOptimizeAll}

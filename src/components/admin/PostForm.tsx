@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useSyncExternalStore, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { AiSuggestionDrawer } from '@/components/admin/AiSuggestionDrawer';
 import { AiTaxonomyDialog } from '@/components/admin/AiTaxonomyDialog';
@@ -22,6 +23,12 @@ import type { AdminPostEditorData } from '@/lib/posts/queries';
 interface PostFormProps {
   initialData?: AdminPostEditorData;
   isEdit?: boolean;
+  showToolbar?: boolean;
+  toolbarPortalTargetId?: string;
+}
+
+function subscribeClientReady() {
+  return () => {};
 }
 
 /**
@@ -30,7 +37,12 @@ interface PostFormProps {
  * 当前组件只负责界面编排，把字段状态、元数据加载和接口调用分别委托给专门 Hook / 客户端辅助层，
  * 避免继续把整个编辑流程压成一个不可维护的大组件。
  */
-export function PostForm({ initialData, isEdit = false }: PostFormProps) {
+export function PostForm({
+  initialData,
+  isEdit = false,
+  showToolbar = true,
+  toolbarPortalTargetId,
+}: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const { categories, tags } = usePostEditorMetadata();
@@ -178,11 +190,22 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
   const matchedCategoryId = aiResult ? getMatchedCategoryId(aiResult) : '';
   const taxonomyMatchedCategoryId = taxonomyAiState ? getMatchedCategoryId(taxonomyAiState) : '';
   const taxonomyMatchedTagIds = taxonomyAiState ? getMatchedTagIds(taxonomyAiState) : [];
+  const clientReady = useSyncExternalStore(subscribeClientReady, () => true, () => false);
+  const toolbarPortalTarget =
+    clientReady && toolbarPortalTargetId
+      ? document.getElementById(toolbarPortalTargetId)
+      : null;
+  const toolbarNode =
+    showToolbar || toolbarPortalTarget ? (
+      <PostAiToolbar aiLoading={aiLoading} onOptimizeAll={requestAiSuggestions} />
+    ) : null;
 
   return (
     <>
+      {toolbarPortalTarget && toolbarNode ? createPortal(toolbarNode, toolbarPortalTarget) : null}
+
       <div className="space-y-6">
-        <PostAiToolbar aiLoading={aiLoading} onOptimizeAll={requestAiSuggestions} />
+        {showToolbar && !toolbarPortalTarget ? toolbarNode : null}
 
         <TitleSlugSection
           title={title}
