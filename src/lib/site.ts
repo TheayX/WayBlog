@@ -1,8 +1,10 @@
+import { SITE_PROFILE } from '@/config/site';
+
 /**
  * 站点级基础配置读取入口。
  *
- * 这里统一从环境变量读取对外展示所需的站点信息，并提供本地开发默认值，
- * 避免公开页/前台页面和 SEO 相关代码散落读取 `process.env`。
+ * 站点品牌和描述属于公开内容配置，统一从 `src/config/site.ts` 读取；
+ * 这里只保留会随部署环境变化的站点 URL，避免把内容配置和运行环境配置混在一起。
  */
 export function normalizeSiteUrl(url: string) {
   return url.replace(/\/+$/g, '');
@@ -10,8 +12,8 @@ export function normalizeSiteUrl(url: string) {
 
 export function getSiteConfig() {
   return {
-    name: process.env.SITE_NAME || 'Way',
-    description: process.env.SITE_DESCRIPTION || 'A Journey of Code and Thought',
+    name: SITE_PROFILE.brandName,
+    description: SITE_PROFILE.siteDescription,
     url: normalizeSiteUrl(process.env.SITE_URL || 'http://localhost:3610'),
   };
 }

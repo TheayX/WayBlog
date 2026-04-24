@@ -7,8 +7,9 @@
 export const SITE_PROFILE = {
   brandName: 'WayBlog',
   shortBrandName: 'Way.',
+  siteDescription: 'A Journey of Code and Thought',
   contactEmail: 'way20031208@gmail.com',
-  githubUrl: 'https://github.com/wayblog',
+  githubUrl: 'https://github.com/TheayX/WayBlog',
   githubLabel: 'GitHub',
   homeEyebrow: 'Independent Notes',
   homeHeadline: '记录开发实践，也把复杂问题写成能被反复阅读的文字。',

@@ -68,6 +68,12 @@ pnpm dev
 
 管理员初始账号由 `.env` 中的 `ADMIN_EMAIL` 和 `ADMIN_PASSWORD` 决定。
 
+## 配置约定
+
+- 运行环境和敏感信息放在 `.env` / `.env.example`，例如 `DATABASE_URL`、`REDIS_URL`、`NEXTAUTH_SECRET`、`SITE_URL`、AI Key。
+- 公开站点资料和文案放在 [src/config/site.ts](./src/config/site.ts)，例如品牌名、站点描述、公开邮箱、GitHub 链接、首页和页脚文案。
+- `SITE_URL` 继续保留在环境变量中，因为它会随本地、测试和正式部署地址变化。
+
 ## 常用命令
 
 | Command | Description |
