@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import type {
   PostCategoryOption,
@@ -63,6 +64,12 @@ interface ActionBarProps {
   onCancel: () => void;
 }
 
+interface CategorySelectProps {
+  categories: PostCategoryOption[];
+  value: string;
+  onChange: (value: string) => void;
+}
+
 function FieldAiButton({ label, loading, onClick }: FieldAiButtonProps) {
   return (
     <button
@@ -73,6 +80,102 @@ function FieldAiButton({ label, loading, onClick }: FieldAiButtonProps) {
     >
       {loading ? '处理中...' : `${label} AI`}
     </button>
+  );
+}
+
+function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const listboxId = useId();
+  const selectedCategory = categories.find((category) => category.id === value);
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    // 下拉展开后统一由文档级事件兜底关闭，避免点击卡片空白区域时状态残留。
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-[1.5rem] border border-border bg-background px-4 text-sm text-foreground outline-none transition-colors hover:border-border-strong focus:border-primary"
+      >
+        <span className={selectedCategory ? '' : 'text-muted-foreground'}>
+          {selectedCategory?.name || '无分类'}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open ? (
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="分类选择"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-[1.25rem] border border-border bg-background shadow-[0_16px_40px_rgba(15,23,42,0.12)]"
+        >
+          <button
+            type="button"
+            role="option"
+            aria-selected={value === ''}
+            onClick={() => {
+              onChange('');
+              setOpen(false);
+            }}
+            className={`flex w-full items-center px-4 py-3 text-left text-sm transition-colors ${
+              value === ''
+                ? 'bg-primary/10 text-primary'
+                : 'text-foreground hover:bg-muted/60'
+            }`}
+          >
+            无分类
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              role="option"
+              aria-selected={value === category.id}
+              onClick={() => {
+                onChange(category.id);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center px-4 py-3 text-left text-sm transition-colors ${
+                value === category.id
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-foreground hover:bg-muted/60'
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -111,13 +214,18 @@ export function TitleSlugSection({
       </div>
 
       <div className="mt-5 space-y-4">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="文章标题"
-          className="editorial-title w-full border-b border-border bg-transparent pb-3 text-3xl font-semibold outline-none focus:border-primary"
-        />
+        <div className="relative">
+          <div className="absolute right-0 top-0 z-10">
+            <FieldAiButton label="标题" loading={aiLoading} onClick={onOptimizeTitle} />
+          </div>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="文章标题"
+            className="editorial-title w-full border-b border-border bg-transparent pb-3 pr-24 text-3xl font-semibold outline-none focus:border-primary"
+          />
+        </div>
 
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-background px-4">
@@ -130,10 +238,7 @@ export function TitleSlugSection({
               className="h-12 flex-1 bg-transparent text-sm outline-none"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <FieldAiButton label="标题" loading={aiLoading} onClick={onOptimizeTitle} />
-            <FieldAiButton label="Slug" loading={aiLoading} onClick={onOptimizeSlug} />
-          </div>
+          <FieldAiButton label="Slug" loading={aiLoading} onClick={onOptimizeSlug} />
         </div>
       </div>
     </section>
@@ -160,21 +265,23 @@ export function ContentEditorSection({
           <p className="eyebrow">Content</p>
           <h2 className="mt-2 text-xl font-semibold text-foreground">正文编辑</h2>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <FieldAiButton label="正文" loading={aiLoading} onClick={onOptimizeContent} />
-          <button
-            type="button"
-            onClick={onUploadImage}
-            className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-xs text-muted-foreground hover:border-border-strong hover:text-foreground"
-          >
-            插入图片
-          </button>
-        </div>
+        <FieldAiButton label="正文" loading={aiLoading} onClick={onOptimizeContent} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Markdown 编辑</label>
+          <div className="flex min-h-6 flex-wrap items-center justify-between gap-3">
+            <label htmlFor="content-editor" className="ml-5 text-sm font-medium text-foreground">
+              Markdown 编辑
+            </label>
+            <button
+              type="button"
+              onClick={onUploadImage}
+              className="mr-5 text-xs font-medium text-primary transition-colors hover:text-primary/80"
+            >
+              插入图片
+            </button>
+          </div>
           <textarea
             id="content-editor"
             value={content}
@@ -184,7 +291,9 @@ export function ContentEditorSection({
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">预览</label>
+          <div className="flex min-h-6 items-center">
+            <label className="ml-5 text-sm font-medium text-foreground">预览</label>
+          </div>
           <div className="h-[38rem] overflow-y-auto rounded-[1.5rem] border border-border bg-background p-4">
             {content ? (
               <MarkdownRenderer content={content} />
@@ -218,7 +327,6 @@ export function SummaryCoverSection({
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <label className="text-sm font-medium text-foreground">摘要</label>
             <FieldAiButton label="摘要" loading={aiLoading} onClick={onOptimizeExcerpt} />
           </div>
           <textarea
@@ -261,7 +369,7 @@ export function TaxonomySection({
   onOptimizeTags,
 }: TaxonomySectionProps) {
   return (
-    <section className="page-frame px-5 py-5">
+    <section className="page-frame z-10 overflow-visible px-5 py-5">
       <div className="mb-4">
         <p className="eyebrow">Metadata</p>
         <h2 className="mt-2 text-xl font-semibold text-foreground">分类、标签与状态</h2>
@@ -270,21 +378,11 @@ export function TaxonomySection({
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <label className="text-sm font-medium text-foreground">分类</label>
             <FieldAiButton label="分类" loading={aiLoading} onClick={onOptimizeCategory} />
           </div>
-          <select
-            value={categoryId}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            className="h-12 w-full rounded-[1.5rem] border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          >
-            <option value="">无分类</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative z-20">
+            <CategorySelect categories={categories} value={categoryId} onChange={onCategoryChange} />
+          </div>
         </div>
 
         <div className="flex items-end gap-4">
@@ -302,7 +400,6 @@ export function TaxonomySection({
 
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <label className="text-sm font-medium text-foreground">标签</label>
           <FieldAiButton label="标签" loading={aiLoading} onClick={onOptimizeTags} />
         </div>
         <div className="flex flex-wrap gap-2">
