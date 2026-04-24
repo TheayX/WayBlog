@@ -12,6 +12,19 @@ interface AccountProfile {
   avatar: string | null;
 }
 
+interface ApiErrorResult {
+  error?: string;
+  details?: Record<string, string[] | undefined>;
+}
+
+function getApiErrorMessage(result: ApiErrorResult | null, fallback: string) {
+  const firstFieldError = result?.details
+    ? Object.values(result.details).flat().find(Boolean)
+    : undefined;
+
+  return firstFieldError || result?.error || fallback;
+}
+
 /**
  * 管理后台账号设置页。
  *
@@ -67,7 +80,7 @@ export default function AdminSettingsPage() {
     setProfileSaving(false);
 
     if (!response.ok) {
-      toast.error(result?.error || '账号资料保存失败');
+      toast.error(getApiErrorMessage(result, '账号资料保存失败'));
       return;
     }
 
@@ -88,6 +101,11 @@ export default function AdminSettingsPage() {
       return;
     }
 
+    if (newPassword.length < 8) {
+      toast.error('新密码至少 8 位');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       toast.error('两次输入的新密码不一致');
       return;
@@ -105,7 +123,7 @@ export default function AdminSettingsPage() {
     setPasswordSaving(false);
 
     if (!response.ok) {
-      toast.error(result?.error || '密码修改失败');
+      toast.error(getApiErrorMessage(result, '密码修改失败'));
       return;
     }
 
