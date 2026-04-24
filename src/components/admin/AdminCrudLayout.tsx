@@ -1,5 +1,6 @@
 'use client';
 
+import { ChevronUp, Check, FilePlus2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -15,6 +16,15 @@ interface AdminFormActionsProps {
   saving: boolean;
   onSave: () => void;
   onCancel: () => void;
+}
+
+interface AdminComposerActionsProps {
+  open: boolean;
+  saving: boolean;
+  itemLabel: string;
+  onOpen: () => void;
+  onSubmit: () => void;
+  onCollapse: () => void;
 }
 
 interface AdminResourceListStateProps {
@@ -74,6 +84,52 @@ export function AdminFormActions({ editing, saving, onSave, onCancel }: AdminFor
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * 后台新增表单头部操作区。
+ *
+ * 闭合时展示“新建”入口，展开后切换为更像提交动作的主按钮，
+ * 避免把同一个带加号的按钮反复复用到打开态里，降低视觉和语义上的混淆。
+ */
+export function AdminComposerActions({
+  open,
+  saving,
+  itemLabel,
+  onOpen,
+  onSubmit,
+  onCollapse,
+}: AdminComposerActionsProps) {
+  return open ? (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={saving}
+        className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        <Check className="h-4 w-4" />
+        {saving ? '提交中...' : `提交${itemLabel}`}
+      </button>
+      <button
+        type="button"
+        onClick={onCollapse}
+        className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+      >
+        <ChevronUp className="h-4 w-4" />
+        收起表单
+      </button>
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+    >
+      <FilePlus2 className="h-4 w-4" />
+      新建{itemLabel}
+    </button>
   );
 }
 

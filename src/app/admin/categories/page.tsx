@@ -1,9 +1,10 @@
 'use client';
 
-import { FolderTree, PencilLine, Plus, Trash2, X } from 'lucide-react';
+import { FolderTree, PencilLine, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
+  AdminComposerActions,
   AdminFormActions,
   AdminFormPanel,
   AdminResourceListState,
@@ -100,38 +101,14 @@ export default function AdminCategoriesPage() {
         description="分类承担公开页主题聚合职责，建议保持语义稳定。"
         headerAction={
           !editingId ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {composerOpen ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {saving ? '创建中...' : '创建分类'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                    收起表单
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setComposerOpen(true)}
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-                >
-                  <Plus className="h-4 w-4" />
-                  创建分类
-                </button>
-              )}
-            </div>
+            <AdminComposerActions
+              open={composerOpen}
+              saving={saving}
+              itemLabel="分类"
+              onOpen={() => setComposerOpen(true)}
+              onSubmit={handleSave}
+              onCollapse={resetForm}
+            />
           ) : null
         }
       >
