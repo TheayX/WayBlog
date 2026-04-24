@@ -112,14 +112,38 @@ export default function AdminFriendLinksPage() {
         description="友链页更接近推荐列表，除了名称和地址，也要维护描述和排序权重。"
         headerAction={
           !editingId ? (
-            <button
-              type="button"
-              onClick={() => setComposerOpen((open) => !open)}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-            >
-              {composerOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {composerOpen ? '收起表单' : '创建友链'}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {composerOpen ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {saving ? '创建中...' : '创建友链'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                    收起表单
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setComposerOpen(true)}
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4" />
+                  创建友链
+                </button>
+              )}
+            </div>
           ) : null
         }
       >
@@ -162,12 +186,14 @@ export default function AdminFriendLinksPage() {
                 className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
               />
             </div>
-            <AdminFormActions
-              editing={Boolean(editingId)}
-              saving={saving}
-              onSave={handleSave}
-              onCancel={resetForm}
-            />
+            {editingId && (
+              <AdminFormActions
+                editing={Boolean(editingId)}
+                saving={saving}
+                onSave={handleSave}
+                onCancel={resetForm}
+              />
+            )}
           </div>
         </div>
       </AdminFormPanel>

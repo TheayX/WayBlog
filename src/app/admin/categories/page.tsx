@@ -1,6 +1,6 @@
 'use client';
 
-import { FolderTree, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { FolderTree, PencilLine, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -30,6 +30,7 @@ export default function AdminCategoriesPage() {
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
@@ -37,10 +38,12 @@ export default function AdminCategoriesPage() {
     setSlug('');
     setDescription('');
     setEditingId(null);
+    setComposerOpen(false);
   }
 
   function startEdit(cat: AdminCategoryItem) {
     setEditingId(cat.id);
+    setComposerOpen(true);
     setName(cat.name);
     setSlug(cat.slug);
     setDescription(cat.description || '');
@@ -97,54 +100,87 @@ export default function AdminCategoriesPage() {
         description="分类承担公开页主题聚合职责，建议保持语义稳定。"
         headerAction={
           !editingId ? (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-              {saving ? '创建中...' : '创建'}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {composerOpen ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {saving ? '创建中...' : '创建分类'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                    收起表单
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setComposerOpen(true)}
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4" />
+                  创建分类
+                </button>
+              )}
+            </div>
           ) : null
         }
       >
-        <div className="grid gap-3 md:grid-cols-3">
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (!editingId) setSlug(slugify(e.target.value));
-            }}
-            placeholder="分类名称"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={slug}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || /^[a-z0-9-]+$/.test(val)) {
-                setSlug(val);
-              } else {
-                toast.warning('Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)');
-              }
-            }}
-            placeholder="slug"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="描述（可选）"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
+        <div
+          className={`grid overflow-hidden transition-all duration-300 ease-out ${
+            editingId || composerOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="min-h-0">
+            <div className="grid gap-3 pt-1 md:grid-cols-3">
+              <input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (!editingId) setSlug(slugify(e.target.value));
+                }}
+                placeholder="分类名称"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={slug}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '' || /^[a-z0-9-]+$/.test(val)) {
+                    setSlug(val);
+                  } else {
+                    toast.warning('Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)');
+                  }
+                }}
+                placeholder="slug"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="描述（可选）"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            {editingId && (
+              <AdminFormActions
+                editing={Boolean(editingId)}
+                saving={saving}
+                onSave={handleSave}
+                onCancel={resetForm}
+              />
+            )}
+          </div>
         </div>
-        <AdminFormActions
-          editing={Boolean(editingId)}
-          saving={saving}
-          onSave={handleSave}
-          onCancel={resetForm}
-        />
       </AdminFormPanel>
 
       <AdminResourceListState

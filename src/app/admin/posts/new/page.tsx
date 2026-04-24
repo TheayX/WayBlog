@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { PostForm } from '@/components/admin/PostForm';
 
 /**
@@ -11,8 +13,15 @@ export default function NewPostPage() {
     <div className="space-y-6">
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_18rem]">
         <div className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
+          <Link
+            href="/admin/posts"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            返回文章列表
+          </Link>
           <p className="eyebrow">Editor</p>
-          <h1 className="mt-3 text-3xl font-semibold text-foreground">新建文章</h1>
+          <h1 className="mt-4 text-3xl font-semibold text-foreground">新建文章</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
             编辑页将标题、正文、摘要、封面、分类与 AI
             辅助统一收进一套创作工作台，不再是简单字段堆叠。

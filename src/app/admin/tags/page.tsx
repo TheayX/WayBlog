@@ -1,6 +1,6 @@
 'use client';
 
-import { Hash, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { Hash, PencilLine, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -29,16 +29,19 @@ export default function AdminTagsPage() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
     setName('');
     setSlug('');
     setEditingId(null);
+    setComposerOpen(false);
   }
 
   function startEdit(tag: AdminTagItem) {
     setEditingId(tag.id);
+    setComposerOpen(true);
     setName(tag.name);
     setSlug(tag.slug);
   }
@@ -94,48 +97,81 @@ export default function AdminTagsPage() {
         description="标签用于补充主题交叉关系，建议保持轻量且可复用。"
         headerAction={
           !editingId ? (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-              {saving ? '创建中...' : '创建'}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {composerOpen ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {saving ? '创建中...' : '创建标签'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                    收起表单
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setComposerOpen(true)}
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4" />
+                  创建标签
+                </button>
+              )}
+            </div>
           ) : null
         }
       >
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (!editingId) setSlug(slugify(e.target.value));
-            }}
-            placeholder="标签名称"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={slug}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || /^[a-z0-9-]+$/.test(val)) {
-                setSlug(val);
-              } else {
-                toast.warning('Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)');
-              }
-            }}
-            placeholder="slug"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
+        <div
+          className={`grid overflow-hidden transition-all duration-300 ease-out ${
+            editingId || composerOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="min-h-0">
+            <div className="grid gap-3 pt-1 md:grid-cols-2">
+              <input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (!editingId) setSlug(slugify(e.target.value));
+                }}
+                placeholder="标签名称"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={slug}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '' || /^[a-z0-9-]+$/.test(val)) {
+                    setSlug(val);
+                  } else {
+                    toast.warning('Slug 只能包含小写字母、数字和连字符 (不支持中文/特殊字符)');
+                  }
+                }}
+                placeholder="slug"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            {editingId && (
+              <AdminFormActions
+                editing={Boolean(editingId)}
+                saving={saving}
+                onSave={handleSave}
+                onCancel={resetForm}
+              />
+            )}
+          </div>
         </div>
-        <AdminFormActions
-          editing={Boolean(editingId)}
-          saving={saving}
-          onSave={handleSave}
-          onCancel={resetForm}
-        />
       </AdminFormPanel>
 
       <AdminResourceListState loading={loading} empty={tags.length === 0} emptyText="暂无标签">
