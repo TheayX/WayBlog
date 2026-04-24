@@ -66,6 +66,7 @@ interface CategorySelectProps {
   categories: PostCategoryOption[];
   value: string;
   onChange: (value: string) => void;
+  fullWidth?: boolean;
 }
 
 interface CategoryDropdownPosition {
@@ -95,7 +96,12 @@ function SectionAiButton({ label, loading, onClick }: FieldAiButtonProps) {
  * 展开面板通过 portal 挂到 body，避免被后台卡片的裁剪和层叠上下文截断；
  * 同时在展开期间同步触发器位置，保证滚动页面后下拉仍能贴着输入框。
  */
-function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
+function CategorySelect({
+  categories,
+  value,
+  onChange,
+  fullWidth = true,
+}: CategorySelectProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -155,7 +161,9 @@ function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
         aria-expanded={open}
         aria-controls={listboxId}
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-12 w-full items-center justify-between rounded-[1.5rem] border border-border bg-background px-4 text-sm text-foreground outline-none transition-colors hover:border-border-strong focus:border-primary"
+        className={`flex h-12 items-center justify-between rounded-[1.5rem] border border-border bg-background px-4 text-sm text-foreground outline-none transition-colors hover:border-border-strong focus:border-primary ${
+          fullWidth ? 'w-full' : 'min-w-[11rem]'
+        }`}
       >
         <span className={selectedCategory ? '' : 'text-muted-foreground'}>
           {selectedCategory?.name || '无分类'}
@@ -443,36 +451,44 @@ export function TaxonomySection({
         <SectionAiButton label="分类、标签与状态" loading={aiLoading} onClick={onOpenAi} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <div className="mb-2 h-9" />
-          <CategorySelect categories={categories} value={categoryId} onChange={onCategoryChange} />
+      {/* 分类与置顶压成一行，让更多空间留给未来可能持续增长的标签区域。 */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="w-fit max-w-full">
+          <CategorySelect
+            categories={categories}
+            value={categoryId}
+            onChange={onCategoryChange}
+            fullWidth={false}
+          />
         </div>
 
-        <div className="flex items-end gap-4">
-          <label className="inline-flex h-12 items-center gap-2 rounded-[1.5rem] border border-border bg-background px-4 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={pinned}
-              onChange={(e) => onPinnedChange(e.target.checked)}
-              className="h-4 w-4 rounded border-border"
-            />
-            置顶文章
-          </label>
-        </div>
+        <label className="inline-flex h-12 items-center gap-3 rounded-[1.5rem] border border-border bg-background px-4 text-sm text-foreground">
+          <span>置顶文章</span>
+          <input
+            type="checkbox"
+            checked={pinned}
+            onChange={(e) => onPinnedChange(e.target.checked)}
+            className="h-4 w-4 rounded border-border"
+          />
+        </label>
       </div>
 
-      <div className="mt-4">
-        <div className="mb-2 h-9" />
-        <div className="flex flex-wrap gap-2">
+      {/* 标签区单独放大成可扩展面板，避免标签一多就重新挤压上方控件。 */}
+      <div className="relative mt-4 min-h-[10rem] rounded-[1.5rem] border border-dashed border-border bg-background px-4 py-4">
+        <div className="absolute right-4 top-4">
+          <span className="rounded-full border border-border bg-background px-3 py-1 text-[11px] text-muted-foreground">
+            {selectedTagIds.length} / {tags.length}
+          </span>
+        </div>
+        <div className="flex flex-wrap content-start gap-2.5 pr-20">
           {tags.map((tag) => (
             <button
               key={tag.id}
               type="button"
               onClick={() => onToggleTag(tag.id)}
-              className={`rounded-full border px-3 py-2 text-xs transition-colors ${
+              className={`rounded-full border px-3.5 py-2 text-xs transition-colors ${
                 selectedTagIds.includes(tag.id)
-                  ? 'border-primary bg-primary/10 text-primary'
+                  ? 'border-primary bg-primary/12 text-primary shadow-[0_8px_18px_-14px_rgba(34,58,54,0.65)]'
                   : 'border-border bg-background text-muted-foreground hover:border-border-strong hover:text-foreground'
               }`}
             >
