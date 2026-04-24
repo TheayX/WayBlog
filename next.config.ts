@@ -25,6 +25,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+
+  // 允许开发环境使用 ngrok
+  allowedDevOrigins: ["lila-architraved-nonchromatically.ngrok-free.dev"],
+
   async headers() {
     return [
       {
