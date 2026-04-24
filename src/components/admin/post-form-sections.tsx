@@ -378,8 +378,8 @@ export function ContentEditorSection({
 /**
  * 摘要与封面字段区。
  *
- * 摘要属于适合直接回填的短文本场景，因此这里保留单个区块级 AI 入口，
- * 不再把摘要按钮拆回字段行内。
+ * 区块内同时承载摘要和封面，但当前 AI 只负责摘要建议；
+ * 因此按钮文案只强调摘要，避免用户误以为这里也会自动生成封面图。
  */
 export function SummaryCoverSection({
   excerpt,
@@ -396,7 +396,7 @@ export function SummaryCoverSection({
           <p className="eyebrow">Summary</p>
           <h2 className="mt-2 text-xl font-semibold text-foreground">摘要与封面</h2>
         </div>
-        <SectionAiButton label="摘要与封面" loading={aiLoading} onClick={onOpenAi} />
+        <SectionAiButton label="摘要建议" loading={aiLoading} onClick={onOpenAi} />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div>

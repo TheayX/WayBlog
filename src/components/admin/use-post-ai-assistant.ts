@@ -147,6 +147,11 @@ export function usePostAiAssistant({
       return;
     }
 
+    if (result.field === 'content') {
+      toast.success('已应用正文建议，当前正文已被覆盖');
+      return;
+    }
+
     toast.success(`已应用${getAiFieldLabel(result.field)}建议`);
   }
 
@@ -270,10 +275,20 @@ export function usePostAiAssistant({
   }
 
   async function requestContentSectionAi() {
+    if (content.trim().length < 120) {
+      toast.warning('正文内容过短，暂不建议直接用 AI 重写正文。请先补充到至少一小段完整内容。');
+      return;
+    }
+
     await requestFieldAi('content');
   }
 
   async function requestSummarySectionAi() {
+    if (content.trim().length < 60) {
+      toast.warning('请先补充更完整的正文，再生成摘要建议。');
+      return;
+    }
+
     await requestFieldAi('excerpt');
   }
 
