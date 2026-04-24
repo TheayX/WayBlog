@@ -55,10 +55,20 @@ export function formatDateShort(date: string | Date): string {
 }
 
 /**
+ * 将日期值安全转换为 ISO 字符串。
+ * 兼容查询层返回 `Date` 或已序列化字符串两种情况，避免页面层重复判断实例类型。
+ */
+export function toIsoString(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/**
  * 按指定长度截断文本，常用于列表摘要或搜索预览。
  */
 export function truncate(text: string, length: number = 200): string {
   if (text.length <= length) return text;
   return text.slice(0, length).trim() + '...';
 }
-

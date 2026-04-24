@@ -3,6 +3,7 @@ import { ArrowRight, Compass, Newspaper, Search } from 'lucide-react';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { getPublishedPostsPage } from '@/lib/posts/queries';
+import { toIsoString } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,7 +123,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 excerpt={post.excerpt}
                 content={post.content}
                 coverImage={post.coverImage}
-                publishedAt={post.publishedAt?.toISOString() || null}
+                publishedAt={toIsoString(post.publishedAt)}
                 viewCount={post.viewCount}
                 pinned={post.pinned}
                 category={post.category}

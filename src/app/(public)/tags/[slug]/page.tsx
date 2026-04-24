@@ -4,6 +4,7 @@ import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { getPublishedPostsPageByTag } from '@/lib/posts/queries';
 import { getPublicTagBySlug } from '@/lib/taxonomies/queries';
+import { toIsoString } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
               excerpt={post.excerpt}
               content={post.content}
               coverImage={post.coverImage}
-              publishedAt={post.publishedAt?.toISOString() || null}
+              publishedAt={toIsoString(post.publishedAt)}
               viewCount={post.viewCount}
               pinned={post.pinned}
               category={post.category}

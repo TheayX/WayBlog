@@ -14,7 +14,7 @@ import {
   getPublishedPostMetadata,
   getPublishedPostNavigation,
 } from '@/lib/posts/queries';
-import { formatDate } from '@/lib/utils';
+import { formatDate, toIsoString } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       title: post.title,
       description: post.excerpt || undefined,
       images: post.coverImage ? [post.coverImage] : undefined,
-      publishedTime: post.publishedAt?.toISOString(),
+      publishedTime: toIsoString(post.publishedAt) || undefined,
       authors: post.author?.name ? [post.author.name] : undefined,
       tags: post.tags.map((tag) => tag.name),
       url: `${site.url}/posts/${slug}`,
@@ -81,8 +81,8 @@ export default async function PostPage({ params }: PostPageProps) {
     headline: post.title,
     description: post.excerpt || undefined,
     image: post.coverImage || undefined,
-    datePublished: post.publishedAt?.toISOString(),
-    dateModified: post.updatedAt.toISOString(),
+    datePublished: toIsoString(post.publishedAt) || undefined,
+    dateModified: toIsoString(post.updatedAt) || undefined,
     author: {
       '@type': 'Person',
       name: post.author.name,
@@ -124,7 +124,7 @@ export default async function PostPage({ params }: PostPageProps) {
               )}
               {post.publishedAt && (
                 <time
-                  dateTime={post.publishedAt.toISOString()}
+                  dateTime={toIsoString(post.publishedAt) || undefined}
                   className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2"
                 >
                   <CalendarDays className="h-4 w-4 text-accent" />
