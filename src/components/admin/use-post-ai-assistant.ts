@@ -17,6 +17,7 @@ import {
  *
  * 负责封装 AI 请求、字段级应用、分类/标签归一化匹配与交互提示，
  * 让 PostForm 只关心界面编排，不直接承载 AI 返回结构的解释细节。
+ * 当前同时服务“整篇优化抽屉”“区块级直接回填”和“分类标签建议弹窗”三条交互链路。
  */
 interface CategoryOption {
   id: string;
@@ -46,6 +47,12 @@ interface UsePostAiAssistantParams {
   setSlugManuallyEdited: Dispatch<SetStateAction<boolean>>;
 }
 
+interface TaxonomyAiState {
+  categorySuggestion: AiOptimizeResult['categorySuggestion'];
+  tagSuggestions: AiSuggestionTag[];
+  warnings: string[];
+}
+
 export function usePostAiAssistant({
   title,
   slug,
@@ -66,6 +73,8 @@ export function usePostAiAssistant({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiResult, setAiResult] = useState<AiOptimizeResult | null>(null);
+  const [taxonomyAiOpen, setTaxonomyAiOpen] = useState(false);
+  const [taxonomyAiState, setTaxonomyAiState] = useState<TaxonomyAiState | null>(null);
 
   function buildAiPayload() {
     // 统一在 Hook 内收敛请求体形状，避免表单与不同 AI 入口各自拼装导致字段漂移。
@@ -186,6 +195,24 @@ export function usePostAiAssistant({
     }
   }
 
+  async function fetchFieldAi(field: AiField) {
+    const res = await fetch('/api/ai/field', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        field,
+        ...buildAiPayload(),
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error('AI 处理暂时不可用，请稍后重试。');
+    }
+
+    return data.data as AiFieldResult;
+  }
+
   async function requestAiSuggestions() {
     if (!content.trim()) {
       toast.warning('请先填写正文后再使用 AI 优化。');
@@ -224,25 +251,85 @@ export function usePostAiAssistant({
     setAiLoading(true);
 
     try {
-      const res = await fetch('/api/ai/field', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          field,
-          ...buildAiPayload(),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error('AI 处理暂时不可用，请稍后重试。');
-        return;
-      }
-
-      applyFieldResult(data.data as AiFieldResult);
+      const result = await fetchFieldAi(field);
+      applyFieldResult(result);
     } catch (error) {
       console.error(error);
-      toast.error('AI 服务调用失败，请稍后重试。');
+      toast.error(error instanceof Error ? error.message : 'AI 服务调用失败，请稍后重试。');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  async function requestIdentityAi() {
+    if (!canRunFieldAi('title') || !canRunFieldAi('slug')) return;
+
+    setAiLoading(true);
+
+    try {
+      const [titleResult, slugResult] = await Promise.all([fetchFieldAi('title'), fetchFieldAi('slug')]);
+      const titleNormalized = normalizeFieldResult(titleResult);
+      const slugNormalized = normalizeFieldResult(slugResult);
+      const warnings = Array.from(new Set([...titleResult.warnings, ...slugResult.warnings]));
+
+      applyAiFieldValue('title', titleNormalized, categories, tags, {
+        setTitle,
+        setSlug,
+        setContent,
+        setExcerpt,
+        setCategoryId,
+        setSelectedTagIds,
+        setSlugManuallyEdited,
+      });
+      applyAiFieldValue('slug', slugNormalized, categories, tags, {
+        setTitle,
+        setSlug,
+        setContent,
+        setExcerpt,
+        setCategoryId,
+        setSelectedTagIds,
+        setSlugManuallyEdited,
+      });
+      showFieldWarnings(warnings);
+      toast.success('已更新标题与链接建议');
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : 'AI 服务调用失败，请稍后重试。');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  async function requestContentSectionAi() {
+    await requestFieldAi('content');
+  }
+
+  async function requestSummarySectionAi() {
+    await requestFieldAi('excerpt');
+  }
+
+  async function requestTaxonomyAi() {
+    if (!canRunFieldAi('category') || !canRunFieldAi('tags')) return;
+
+    setAiLoading(true);
+
+    try {
+      const [categoryResult, tagsResult] = await Promise.all([
+        fetchFieldAi('category'),
+        fetchFieldAi('tags'),
+      ]);
+
+      const warnings = Array.from(new Set([...categoryResult.warnings, ...tagsResult.warnings]));
+      showFieldWarnings(warnings);
+      setTaxonomyAiState({
+        categorySuggestion: categoryResult.categorySuggestion || null,
+        tagSuggestions: tagsResult.tagSuggestions || [],
+        warnings,
+      });
+      setTaxonomyAiOpen(true);
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : 'AI 服务调用失败，请稍后重试。');
     } finally {
       setAiLoading(false);
     }
@@ -252,7 +339,10 @@ export function usePostAiAssistant({
     aiLoading,
     aiOpen,
     aiResult,
+    taxonomyAiOpen,
+    taxonomyAiState,
     setAiOpen,
+    setTaxonomyAiOpen,
     buildAiPayload,
     showFieldWarnings,
     getMatchedCategoryId: (result: { categorySuggestion?: AiOptimizeResult['categorySuggestion'] }) =>
@@ -265,5 +355,9 @@ export function usePostAiAssistant({
     canRunFieldAi,
     requestAiSuggestions,
     requestFieldAi,
+    requestIdentityAi,
+    requestContentSectionAi,
+    requestSummarySectionAi,
+    requestTaxonomyAi,
   };
 }

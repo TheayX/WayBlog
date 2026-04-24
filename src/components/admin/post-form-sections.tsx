@@ -21,9 +21,7 @@ interface TitleSlugSectionProps {
   aiLoading: boolean;
   onTitleChange: (value: string) => void;
   onSlugChange: (value: string) => void;
-  onOptimizeAll: () => void;
-  onOptimizeTitle: () => void;
-  onOptimizeSlug: () => void;
+  onOpenAi: () => void;
 }
 
 interface ContentEditorSectionProps {
@@ -31,7 +29,7 @@ interface ContentEditorSectionProps {
   aiLoading: boolean;
   onContentChange: (value: string) => void;
   onUploadImage: () => void;
-  onOptimizeContent: () => void;
+  onOpenAi: () => void;
 }
 
 interface SummaryCoverSectionProps {
@@ -40,7 +38,7 @@ interface SummaryCoverSectionProps {
   aiLoading: boolean;
   onExcerptChange: (value: string) => void;
   onCoverImageChange: (value: string) => void;
-  onOptimizeExcerpt: () => void;
+  onOpenAi: () => void;
 }
 
 interface TaxonomySectionProps {
@@ -53,8 +51,7 @@ interface TaxonomySectionProps {
   onCategoryChange: (value: string) => void;
   onPinnedChange: (value: boolean) => void;
   onToggleTag: (tagId: string) => void;
-  onOptimizeCategory: () => void;
-  onOptimizeTags: () => void;
+  onOpenAi: () => void;
 }
 
 interface ActionBarProps {
@@ -77,15 +74,17 @@ interface CategoryDropdownPosition {
   width: number;
 }
 
-function FieldAiButton({ label, loading, onClick }: FieldAiButtonProps) {
+function SectionAiButton({ label, loading, onClick }: FieldAiButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-xs text-muted-foreground hover:border-border-strong hover:text-foreground disabled:opacity-50"
+      aria-label={`${label} AI`}
+      title={`${label} AI`}
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:border-border-strong hover:text-foreground disabled:opacity-50"
     >
-      {loading ? '处理中...' : `${label} AI`}
+      <Sparkles className="h-4 w-4" />
     </button>
   );
 }
@@ -224,10 +223,38 @@ function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
 }
 
 /**
+ * 整篇优化操作条。
+ *
+ * 入口独立放在表单顶部，避免和区块级 AI 入口混在一起，
+ * 让“整篇优化”和“局部填充”形成清晰分层。
+ */
+export function PostAiToolbar({
+  aiLoading,
+  onOptimizeAll,
+}: {
+  aiLoading: boolean;
+  onOptimizeAll: () => void;
+}) {
+  return (
+    <div className="flex justify-end">
+      <button
+        type="button"
+        onClick={onOptimizeAll}
+        disabled={aiLoading}
+        className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        <Sparkles className="h-4 w-4" />
+        {aiLoading ? 'AI 处理中...' : 'AI 优化整篇'}
+      </button>
+    </div>
+  );
+}
+
+/**
  * 标题与 slug 输入区。
  *
- * 这里集中放置文章主标识字段和对应的 AI 入口，
- * 避免表单顶部的标题、slug、全文优化按钮在主组件中继续堆叠。
+ * 这里集中放置文章主标识字段，并把区块级 AI 收敛到标题区右上角的单一入口，
+ * 避免标题、Slug 和整篇优化混成多排按钮后破坏编辑节奏。
  */
 export function TitleSlugSection({
   title,
@@ -235,9 +262,7 @@ export function TitleSlugSection({
   aiLoading,
   onTitleChange,
   onSlugChange,
-  onOptimizeAll,
-  onOptimizeTitle,
-  onOptimizeSlug,
+  onOpenAi,
 }: TitleSlugSectionProps) {
   return (
     <section className="page-frame px-5 py-5">
@@ -246,33 +271,21 @@ export function TitleSlugSection({
           <p className="eyebrow">Identity</p>
           <h2 className="mt-2 text-xl font-semibold text-foreground">标题与链接</h2>
         </div>
-        <button
-          type="button"
-          onClick={onOptimizeAll}
-          disabled={aiLoading}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
-          <Sparkles className="h-4 w-4" />
-          {aiLoading ? 'AI 处理中...' : 'AI 优化整篇'}
-        </button>
+        <SectionAiButton label="标题与链接" loading={aiLoading} onClick={onOpenAi} />
       </div>
 
       <div className="mt-5 space-y-4">
-        {/* 标题 AI 贴在输入区右上角，减少独立标签行造成的视觉堆叠。 */}
-        <div className="relative">
-          <div className="absolute right-0 top-0 z-10">
-            <FieldAiButton label="标题" loading={aiLoading} onClick={onOptimizeTitle} />
-          </div>
+        <div>
           <input
             type="text"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
             placeholder="文章标题"
-            className="editorial-title w-full border-b border-border bg-transparent pb-3 pr-24 text-3xl font-semibold outline-none focus:border-primary"
+            className="editorial-title w-full border-b border-border bg-transparent pb-3 text-3xl font-semibold outline-none focus:border-primary"
           />
         </div>
 
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="flex">
           <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-background px-4">
             <span className="text-sm text-muted-foreground">/posts/</span>
             <input
@@ -283,7 +296,6 @@ export function TitleSlugSection({
               className="h-12 flex-1 bg-transparent text-sm outline-none"
             />
           </div>
-          <FieldAiButton label="Slug" loading={aiLoading} onClick={onOptimizeSlug} />
         </div>
       </div>
     </section>
@@ -301,7 +313,7 @@ export function ContentEditorSection({
   aiLoading,
   onContentChange,
   onUploadImage,
-  onOptimizeContent,
+  onOpenAi,
 }: ContentEditorSectionProps) {
   return (
     <section className="page-frame px-5 py-5">
@@ -310,7 +322,7 @@ export function ContentEditorSection({
           <p className="eyebrow">Content</p>
           <h2 className="mt-2 text-xl font-semibold text-foreground">正文编辑</h2>
         </div>
-        <FieldAiButton label="正文" loading={aiLoading} onClick={onOptimizeContent} />
+        <SectionAiButton label="正文编辑" loading={aiLoading} onClick={onOpenAi} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -355,6 +367,9 @@ export function ContentEditorSection({
 
 /**
  * 摘要与封面字段区。
+ *
+ * 摘要属于适合直接回填的短文本场景，因此这里保留单个区块级 AI 入口，
+ * 不再把摘要按钮拆回字段行内。
  */
 export function SummaryCoverSection({
   excerpt,
@@ -362,19 +377,19 @@ export function SummaryCoverSection({
   aiLoading,
   onExcerptChange,
   onCoverImageChange,
-  onOptimizeExcerpt,
+  onOpenAi,
 }: SummaryCoverSectionProps) {
   return (
     <section className="page-frame px-5 py-5">
-      <div className="mb-4">
-        <p className="eyebrow">Summary</p>
-        <h2 className="mt-2 text-xl font-semibold text-foreground">摘要与封面</h2>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="eyebrow">Summary</p>
+          <h2 className="mt-2 text-xl font-semibold text-foreground">摘要与封面</h2>
+        </div>
+        <SectionAiButton label="摘要与封面" loading={aiLoading} onClick={onOpenAi} />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <FieldAiButton label="摘要" loading={aiLoading} onClick={onOptimizeExcerpt} />
-          </div>
           <textarea
             value={excerpt}
             onChange={(e) => onExcerptChange(e.target.value)}
@@ -400,6 +415,9 @@ export function SummaryCoverSection({
 
 /**
  * 分类、标签与置顶状态区。
+ *
+ * 这一组字段同时包含“直接可选值”和“需要人工判断的新建议”，
+ * 因此区块级 AI 入口只负责打开建议弹窗，不直接覆盖当前选择。
  */
 export function TaxonomySection({
   categories,
@@ -411,21 +429,21 @@ export function TaxonomySection({
   onCategoryChange,
   onPinnedChange,
   onToggleTag,
-  onOptimizeCategory,
-  onOptimizeTags,
+  onOpenAi,
 }: TaxonomySectionProps) {
   return (
     <section className="page-frame px-5 py-5">
-      <div className="mb-4">
-        <p className="eyebrow">Metadata</p>
-        <h2 className="mt-2 text-xl font-semibold text-foreground">分类、标签与状态</h2>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="eyebrow">Metadata</p>
+          <h2 className="mt-2 text-xl font-semibold text-foreground">分类、标签与状态</h2>
+        </div>
+        <SectionAiButton label="分类、标签与状态" loading={aiLoading} onClick={onOpenAi} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <FieldAiButton label="分类" loading={aiLoading} onClick={onOptimizeCategory} />
-          </div>
+          <div className="mb-2 h-9" />
           <CategorySelect categories={categories} value={categoryId} onChange={onCategoryChange} />
         </div>
 
@@ -443,9 +461,7 @@ export function TaxonomySection({
       </div>
 
       <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <FieldAiButton label="标签" loading={aiLoading} onClick={onOptimizeTags} />
-        </div>
+        <div className="mb-2 h-9" />
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <button

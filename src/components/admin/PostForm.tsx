@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AiSuggestionDrawer } from '@/components/admin/AiSuggestionDrawer';
+import { AiTaxonomyDialog } from '@/components/admin/AiTaxonomyDialog';
 import {
   ContentEditorSection,
+  PostAiToolbar,
   PostFormActionBar,
   SummaryCoverSection,
   TaxonomySection,
@@ -63,12 +65,19 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
     aiLoading,
     aiOpen,
     aiResult,
+    taxonomyAiOpen,
+    taxonomyAiState,
     requestAiSuggestions,
-    requestFieldAi,
+    requestIdentityAi,
+    requestContentSectionAi,
+    requestSummarySectionAi,
+    requestTaxonomyAi,
     applyFieldSuggestion,
     applyAllAi,
     setAiOpen,
+    setTaxonomyAiOpen,
     getMatchedCategoryId,
+    getMatchedTagIds,
   } = usePostAiAssistant({
     title,
     slug,
@@ -167,19 +176,21 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
 
   const publishButtonLabel = isEdit && status === 'PUBLISHED' ? '更新发布' : '发布文章';
   const matchedCategoryId = aiResult ? getMatchedCategoryId(aiResult) : '';
+  const taxonomyMatchedCategoryId = taxonomyAiState ? getMatchedCategoryId(taxonomyAiState) : '';
+  const taxonomyMatchedTagIds = taxonomyAiState ? getMatchedTagIds(taxonomyAiState) : [];
 
   return (
     <>
       <div className="space-y-6">
+        <PostAiToolbar aiLoading={aiLoading} onOptimizeAll={requestAiSuggestions} />
+
         <TitleSlugSection
           title={title}
           slug={slug}
           aiLoading={aiLoading}
           onTitleChange={handleTitleChange}
           onSlugChange={handleSlugInputChange}
-          onOptimizeAll={requestAiSuggestions}
-          onOptimizeTitle={() => requestFieldAi('title')}
-          onOptimizeSlug={() => requestFieldAi('slug')}
+          onOpenAi={requestIdentityAi}
         />
 
         <ContentEditorSection
@@ -187,7 +198,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           aiLoading={aiLoading}
           onContentChange={setContent}
           onUploadImage={handleUploadImage}
-          onOptimizeContent={() => requestFieldAi('content')}
+          onOpenAi={requestContentSectionAi}
         />
 
         <SummaryCoverSection
@@ -196,7 +207,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           aiLoading={aiLoading}
           onExcerptChange={setExcerpt}
           onCoverImageChange={setCoverImage}
-          onOptimizeExcerpt={() => requestFieldAi('excerpt')}
+          onOpenAi={requestSummarySectionAi}
         />
 
         <TaxonomySection
@@ -209,8 +220,7 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           onCategoryChange={setCategoryId}
           onPinnedChange={setPinned}
           onToggleTag={toggleTag}
-          onOptimizeCategory={() => requestFieldAi('category')}
-          onOptimizeTags={() => requestFieldAi('tags')}
+          onOpenAi={requestTaxonomyAi}
         />
 
         <PostFormActionBar
@@ -232,6 +242,30 @@ export function PostForm({ initialData, isEdit = false }: PostFormProps) {
           applyFieldSuggestion(field, aiResult);
         }}
         onApplyAll={applyAllAi}
+      />
+
+      <AiTaxonomyDialog
+        open={taxonomyAiOpen}
+        categorySuggestion={taxonomyAiState?.categorySuggestion || null}
+        tagSuggestions={taxonomyAiState?.tagSuggestions || []}
+        matchedCategoryId={taxonomyMatchedCategoryId}
+        matchedTagIds={taxonomyMatchedTagIds}
+        warnings={taxonomyAiState?.warnings || []}
+        onClose={() => setTaxonomyAiOpen(false)}
+        onApplyCategory={() => {
+          if (!taxonomyAiState) return;
+          applyFieldSuggestion('category', taxonomyAiState);
+        }}
+        onApplyTags={() => {
+          if (!taxonomyAiState) return;
+          applyFieldSuggestion('tags', taxonomyAiState);
+        }}
+        onApplyAll={() => {
+          if (!taxonomyAiState) return;
+          applyFieldSuggestion('category', taxonomyAiState);
+          applyFieldSuggestion('tags', taxonomyAiState);
+          setTaxonomyAiOpen(false);
+        }}
       />
     </>
   );
