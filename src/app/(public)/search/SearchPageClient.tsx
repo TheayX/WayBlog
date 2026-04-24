@@ -1,9 +1,11 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { formatDate } from '@/lib/utils';
 
 interface SearchResult {
@@ -93,29 +95,22 @@ export function SearchPageClient() {
 
   return (
     <div className="space-y-8">
-      <header className="page-frame px-6 py-8 sm:px-8">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
-          <div className="space-y-4">
-            <p className="eyebrow">Search</p>
-            <div className="space-y-3">
-              <h1 className="editorial-title text-4xl font-semibold text-foreground sm:text-5xl">
-                按关键词检索文章内容
-              </h1>
-              <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                搜索页应当是高效入口，而不是一个空白输入框。这里会保留标题、结构化摘要和标签路径，方便快速定位内容。
-              </p>
+      <div className="space-y-8">
+        <PageIntro
+          eyebrow="Search"
+          title="按关键词检索文章内容"
+          description="搜索页应当是高效入口，而不是一个空白输入框。这里会保留标题、结构化摘要和标签路径，方便快速定位内容。"
+          aside={
+            <div className="surface-panel hidden rounded-[1.5rem] p-5 lg:block">
+              <p className="eyebrow">Tips</p>
+              <ul className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
+                <li>可直接搜索技术关键词、文章标题或标签。</li>
+                <li>结果摘要会高亮匹配片段。</li>
+                <li>无结果时建议更换更短或更具体的词。</li>
+              </ul>
             </div>
-          </div>
-
-          <div className="surface-panel rounded-[1.5rem] p-5">
-            <p className="eyebrow">Tips</p>
-            <ul className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
-              <li>可直接搜索技术关键词、文章标题或标签。</li>
-              <li>结果摘要会高亮匹配片段。</li>
-              <li>无结果时建议更换更短或更具体的词。</li>
-            </ul>
-          </div>
-        </div>
+          }
+        />
 
         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3 sm:flex-row">
           <input
@@ -135,7 +130,7 @@ export function SearchPageClient() {
             {loading ? '搜索中...' : '搜索'}
           </button>
         </form>
-      </header>
+      </div>
 
       {searched && (
         <section>
@@ -210,29 +205,26 @@ export function SearchPageClient() {
           )}
 
           {!loading && results.length === 0 && (
-            <div className="page-frame px-6 py-12 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted text-accent">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <h2 className="mt-5 text-2xl font-semibold text-foreground">没有找到匹配内容</h2>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
-                可以尝试缩短关键词、换一个同义词，或者直接从标签页、归档页继续浏览。
-              </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <Link
-                  href="/tags"
-                  className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
-                >
-                  浏览标签
-                </Link>
-                <Link
-                  href="/archives"
-                  className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
-                >
-                  浏览归档
-                </Link>
-              </div>
-            </div>
+            <EmptyState
+              title="没有找到匹配内容"
+              description="可以尝试缩短关键词、换一个同义词，或者直接从标签页、归档页继续浏览。"
+              action={
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Link
+                    href="/tags"
+                    className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                  >
+                    浏览标签
+                  </Link>
+                  <Link
+                    href="/archives"
+                    className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                  >
+                    浏览归档
+                  </Link>
+                </div>
+              }
+            />
           )}
 
           {totalPages > 1 && (

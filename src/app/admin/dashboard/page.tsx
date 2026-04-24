@@ -2,6 +2,8 @@
 
 import { BarChart3, FileText, FolderTree, PenSquare, Tag, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageIntro } from '@/components/ui/PageIntro';
 import type { DashboardStats } from '@/types';
 
 /**
@@ -25,19 +27,13 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">仪表盘</h1>
-        <p className="text-muted-foreground">加载中...</p>
+        <PageIntro eyebrow="Overview" title="内容运营概览" description="统计数据加载中，请稍候。" />
       </div>
     );
   }
 
   if (!stats) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold">仪表盘</h1>
-        <p className="text-muted-foreground">无法加载统计数据</p>
-      </div>
-    );
+    return <EmptyState title="统计加载失败" description="当前无法加载后台统计数据，请稍后重试。" />;
   }
 
   const cards = [
@@ -52,23 +48,23 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_22rem]">
-        <div className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
-          <p className="eyebrow">Overview</p>
-          <h1 className="mt-3 text-3xl font-semibold text-foreground">内容运营概览</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-            后台首页不再只堆数字卡片，而是优先呈现发布状态、流量趋势和热门内容，便于快速判断站点运营节奏。
-          </p>
-        </div>
-        <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
-          <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">Current</p>
-          <p className="mt-4 text-sm text-primary-foreground/80">累计浏览总量</p>
-          <p className="editorial-title mt-2 text-5xl font-semibold">{stats.totalViews}</p>
-          <p className="mt-5 text-sm leading-7 text-primary-foreground/80">
-            当前仪表盘聚焦内容生产与访问表现，后续可继续加入搜索、发布与 AI 辅助相关指标。
-          </p>
-        </div>
-      </section>
+      <PageIntro
+        eyebrow="Overview"
+        title="内容运营概览"
+        description="后台首页不再只堆数字卡片，而是优先呈现发布状态、流量趋势和热门内容，便于快速判断站点运营节奏。"
+        aside={
+          <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
+            <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">
+              Current
+            </p>
+            <p className="mt-4 text-sm text-primary-foreground/80">累计浏览总量</p>
+            <p className="editorial-title mt-2 text-5xl font-semibold">{stats.totalViews}</p>
+            <p className="mt-5 text-sm leading-7 text-primary-foreground/80">
+              当前仪表盘聚焦内容生产与访问表现，后续可继续加入搜索、发布与 AI 辅助相关指标。
+            </p>
+          </div>
+        }
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => {

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { getPublicTagsWithPostCount } from '@/lib/taxonomies/queries';
 
 export const dynamic = 'force-dynamic';
@@ -19,18 +21,14 @@ export default async function TagsPage() {
 
   return (
     <div className="space-y-8">
-      <header className="page-frame px-6 py-8 sm:px-8">
-        <p className="eyebrow">Tags</p>
-        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
-          标签索引
-        </h1>
-        <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-          共 {tags.length} 个标签。标签页承担主题聚合入口，应该比普通标签云更有秩序。
-        </p>
-      </header>
+      <PageIntro
+        eyebrow="Tags"
+        title="标签索引"
+        description={`共 ${tags.length} 个标签。标签页承担主题聚合入口，应该比普通标签云更有秩序。`}
+      />
 
       {tags.length === 0 ? (
-        <div className="page-frame px-6 py-12 text-muted-foreground">暂无标签。</div>
+        <EmptyState description="当前还没有标签可供浏览。" />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tags.map((tag) => (

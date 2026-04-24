@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PostCard } from '@/components/post/PostCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Pagination } from '@/components/ui/Pagination';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { getPublishedPostsPageByTag } from '@/lib/posts/queries';
 import { getPublicTagBySlug } from '@/lib/taxonomies/queries';
 import { toIsoString } from '@/lib/utils';
@@ -51,16 +53,10 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
 
   return (
     <div className="space-y-8">
-      <header className="page-frame px-6 py-8 sm:px-8">
-        <p className="eyebrow">Tag</p>
-        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
-          #{tag.name}
-        </h1>
-        <p className="mt-4 text-sm text-muted-foreground">共 {total} 篇文章</p>
-      </header>
+      <PageIntro eyebrow="Tag" title={`#${tag.name}`} description={`共 ${total} 篇文章`} />
 
       {posts.length === 0 ? (
-        <div className="page-frame px-6 py-12 text-muted-foreground">该标签下暂无文章。</div>
+        <EmptyState description="该标签下还没有文章，稍后再来看看。" />
       ) : (
         <div className="space-y-5">
           {posts.map((post) => (

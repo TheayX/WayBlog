@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { getPublishedArchivePosts } from '@/lib/posts/queries';
 
 export const dynamic = 'force-dynamic';
@@ -55,18 +57,14 @@ export default async function ArchivesPage() {
 
   return (
     <div className="space-y-8">
-      <header className="page-frame px-6 py-8 sm:px-8">
-        <p className="eyebrow">Archive</p>
-        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
-          按时间线回看内容更新
-        </h1>
-        <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-          共 {totalPosts} 篇文章。归档页强调时间秩序，方便从长期积累里回看主题变化与写作节奏。
-        </p>
-      </header>
+      <PageIntro
+        eyebrow="Archive"
+        title="按时间线回看内容更新"
+        description={`共 ${totalPosts} 篇文章。归档页强调时间秩序，方便从长期积累里回看主题变化与写作节奏。`}
+      />
 
       {groups.length === 0 ? (
-        <div className="page-frame px-6 py-12 text-muted-foreground">暂无文章。</div>
+        <EmptyState description="当前还没有可归档的文章。" />
       ) : (
         <div className="space-y-10">
           {groups.map((group) => (

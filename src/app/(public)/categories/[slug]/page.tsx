@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PostCard } from '@/components/post/PostCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Pagination } from '@/components/ui/Pagination';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { getPublishedPostsPageByCategory } from '@/lib/posts/queries';
 import { getPublicCategoryBySlug } from '@/lib/taxonomies/queries';
 import { toIsoString } from '@/lib/utils';
@@ -51,21 +53,20 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   return (
     <div className="space-y-8">
-      <header className="page-frame px-6 py-8 sm:px-8">
-        <p className="eyebrow">Category</p>
-        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
-          {category.name}
-        </h1>
-        {category.description && (
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-            {category.description}
-          </p>
-        )}
-        <p className="mt-4 text-sm text-muted-foreground">共 {total} 篇文章</p>
-      </header>
+      <PageIntro
+        eyebrow="Category"
+        title={category.name}
+        description={category.description || `共 ${total} 篇文章`}
+        aside={
+          <div className="page-frame hidden px-6 py-6 lg:block">
+            <p className="text-sm text-muted-foreground">当前分类文章数</p>
+            <p className="editorial-title mt-4 text-4xl font-semibold text-foreground">{total}</p>
+          </div>
+        }
+      />
 
       {posts.length === 0 ? (
-        <div className="page-frame px-6 py-12 text-muted-foreground">该分类下暂无文章。</div>
+        <EmptyState description="该分类下还没有文章，稍后再来看看。" />
       ) : (
         <div className="space-y-5">
           {posts.map((post) => (
