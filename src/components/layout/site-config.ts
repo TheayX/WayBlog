@@ -1,4 +1,5 @@
 import {
+  FileText,
   FolderTree,
   LayoutDashboard,
   PencilLine,
@@ -30,6 +31,7 @@ export interface AdminNavItem {
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: '/admin/dashboard', label: '仪表盘', icon: LayoutDashboard },
   { href: '/admin/posts', label: '文章管理', icon: PencilLine },
+  { href: '/admin/pages', label: '单页管理', icon: FileText },
   { href: '/admin/categories', label: '分类管理', icon: FolderTree },
   { href: '/admin/tags', label: '标签管理', icon: Tags },
   { href: '/admin/friend-links', label: '友链管理', icon: UsersRound },

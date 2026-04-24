@@ -60,6 +60,14 @@ export interface AdminFriendLinkItem {
   sortOrder: number;
 }
 
+/** 后台单页管理页列表项。 */
+export interface AdminPageItem {
+  id: string;
+  slug: string;
+  title: string;
+  updatedAt: string;
+}
+
 /** 后台文章管理页列表项。 */
 export interface AdminPostListItem {
   id: string;
@@ -73,5 +81,3 @@ export interface AdminPostListItem {
   tags: { name: string }[];
   createdAt: string;
 }
-
-

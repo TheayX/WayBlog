@@ -41,11 +41,7 @@ export const paginationSchema = z.object({
  */
 export const createPostSchema = z.object({
   title: z.string().min(1, '标题不能为空').max(255),
-  slug: z
-    .string()
-    .min(1)
-    .max(255)
-    .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
+  slug: z.string().min(1).max(255).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
   content: z.string().default(''),
   excerpt: z.string().max(500).nullable().optional(),
   coverImage: z.string().max(500).nullable().optional(),
@@ -65,28 +61,28 @@ export const updatePostSchema = createPostSchema.partial();
  * 公开文章列表查询参数。
  * 公开入口不接受 status，服务端始终只返回已发布文章，避免调用方通过参数影响可见性边界。
  */
-export const publicPostQuerySchema = paginationSchema.extend({
-  categoryId: z.string().uuid().optional(),
-  tagId: z.string().uuid().optional(),
-  pinned: booleanQuerySchema.optional(),
-}).strict();
+export const publicPostQuerySchema = paginationSchema
+  .extend({
+    categoryId: z.string().uuid().optional(),
+    tagId: z.string().uuid().optional(),
+    pinned: booleanQuerySchema.optional(),
+  })
+  .strict();
 
 /**
  * 后台文章列表查询参数。
  * 该 schema 只用于已鉴权的管理端列表接口，因此允许按文章状态筛选。
  */
-export const adminPostQuerySchema = publicPostQuerySchema.extend({
-  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
-}).strict();
+export const adminPostQuerySchema = publicPostQuerySchema
+  .extend({
+    status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
+  })
+  .strict();
 
 /** 后台分类创建接口约束。 */
 export const createCategorySchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
-  slug: z
-    .string()
-    .min(1)
-    .max(100)
-    .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
+  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
   description: z.string().max(500).nullable().optional(),
 });
 
@@ -96,11 +92,7 @@ export const updateCategorySchema = createCategorySchema.partial();
 /** 后台标签创建接口约束。 */
 export const createTagSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100),
-  slug: z
-    .string()
-    .min(1)
-    .max(100)
-    .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
+  slug: z.string().min(1).max(100).regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
 });
 
 /** 标签更新允许局部字段变更。 */
@@ -117,6 +109,20 @@ export const createFriendLinkSchema = z.object({
 
 /** 友链更新允许只提交调整过的字段。 */
 export const updateFriendLinkSchema = createFriendLinkSchema.partial();
+
+/** 后台单页创建接口约束。 */
+export const createPageSchema = z.object({
+  slug: z
+    .string()
+    .min(1, 'Slug 不能为空')
+    .max(100)
+    .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
+  title: z.string().min(1, '标题不能为空').max(100),
+  content: z.string().max(50000).default(''),
+});
+
+/** 单页更新允许局部字段变更。 */
+export const updatePageSchema = createPageSchema.partial();
 
 /** 管理员账号资料更新接口约束。 */
 export const updateAccountProfileSchema = z.object({
