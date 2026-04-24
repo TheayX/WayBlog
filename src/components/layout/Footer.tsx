@@ -1,5 +1,6 @@
 import { ArrowUpRight, Rss } from 'lucide-react';
 import Link from 'next/link';
+import { SITE_PROFILE } from '@/config/site';
 import { SITE_BRAND } from './site-config';
 
 /**
@@ -22,10 +23,10 @@ export function Footer() {
               <p className="eyebrow">{SITE_BRAND.fullName}</p>
               <div className="space-y-2">
                 <p className="editorial-title text-3xl font-semibold text-foreground">
-                  写代码，写文章，也写清楚自己在想什么。
+                  {SITE_PROFILE.footerHeadline}
                 </p>
                 <p className="max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
-                  这是一个偏内容优先的技术博客，记录开发实践、工程思考和持续整理后的经验。
+                  {SITE_PROFILE.footerDescription}
                 </p>
               </div>
             </div>
@@ -40,13 +41,13 @@ export function Footer() {
                   RSS
                 </Link>
                 <a
-                  href="https://github.com/wayblog"
+                  href={SITE_PROFILE.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 hover:border-border-strong hover:text-foreground"
                 >
                   <ArrowUpRight className="h-4 w-4" />
-                  GitHub
+                  {SITE_PROFILE.githubLabel}
                 </a>
               </div>
               <div className="space-y-1 sm:text-right">

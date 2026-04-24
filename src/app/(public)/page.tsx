@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, Compass, Newspaper, Search } from 'lucide-react';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
+import { SITE_PROFILE } from '@/config/site';
 import { getPublishedPostsPage } from '@/lib/posts/queries';
 import { toIsoString } from '@/lib/utils';
 
@@ -32,14 +33,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_20rem] lg:items-end">
           <div className="space-y-6">
-            <p className="eyebrow">Independent Notes</p>
+            <p className="eyebrow">{SITE_PROFILE.homeEyebrow}</p>
             <div className="space-y-4">
               <h1 className="editorial-title max-w-4xl text-5xl font-semibold leading-tight text-foreground sm:text-6xl lg:text-7xl">
-                记录开发实践，也把复杂问题写成能被反复阅读的文字。
+                {SITE_PROFILE.homeHeadline}
               </h1>
               <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                WayBlog
-                以技术写作和长期积累为主，不追求信息噪声，更强调可回看、可复用、可沉淀的内容结构。
+                {SITE_PROFILE.brandName}
+                {SITE_PROFILE.homeDescription}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">

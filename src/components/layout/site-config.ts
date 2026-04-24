@@ -7,11 +7,12 @@ import {
   UsersRound,
   type LucideIcon,
 } from 'lucide-react';
+import { SITE_PROFILE } from '@/config/site';
 
 export const SITE_BRAND = {
   mark: 'W',
-  shortName: 'Way.',
-  fullName: 'WayBlog',
+  shortName: SITE_PROFILE.shortBrandName,
+  fullName: SITE_PROFILE.brandName,
 } as const;
 
 export interface AdminNavItem {
