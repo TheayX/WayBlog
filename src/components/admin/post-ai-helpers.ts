@@ -20,6 +20,13 @@ type AiApplyResult =
   | { success: true }
   | { success: false; reason: 'category' | 'tags' };
 
+type AiApplyPayload = Partial<
+  Pick<
+    AiOptimizeResult,
+    'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
+  >
+>;
+
 /**
  * 将 AI 推荐分类映射到当前已存在分类。
  *
@@ -96,32 +103,29 @@ export function getAiFieldLabel(field: AiField) {
  */
 export function applyAiFieldValue(
   field: AiField,
-  result: Pick<
-    AiOptimizeResult,
-    'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
-  >,
+  result: AiApplyPayload,
   categories: NamedOption[],
   tags: NamedOption[],
   setters: PostAiFormSetters,
 ): AiApplyResult {
   switch (field) {
     case 'identity':
-      setters.setTitle(result.title);
-      setters.setSlug(result.slug);
+      setters.setTitle(result.title || '');
+      setters.setSlug(result.slug || '');
       setters.setSlugManuallyEdited(true);
       return { success: true as const };
     case 'title':
-      setters.setTitle(result.title);
+      setters.setTitle(result.title || '');
       return { success: true as const };
     case 'slug':
-      setters.setSlug(result.slug);
+      setters.setSlug(result.slug || '');
       setters.setSlugManuallyEdited(true);
       return { success: true as const };
     case 'content':
-      setters.setContent(result.content);
+      setters.setContent(result.content || '');
       return { success: true as const };
     case 'excerpt':
-      setters.setExcerpt(result.excerpt);
+      setters.setExcerpt(result.excerpt || '');
       return { success: true as const };
     case 'category': {
       const matchedCategoryId = getMatchedCategoryId(categories, result);
@@ -150,10 +154,7 @@ export function applyAiFieldValue(
  */
 export function applyAiFields(
   fields: AiField[],
-  result: Pick<
-    AiOptimizeResult,
-    'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
-  >,
+  result: AiApplyPayload,
   categories: NamedOption[],
   tags: NamedOption[],
   setters: PostAiFormSetters,

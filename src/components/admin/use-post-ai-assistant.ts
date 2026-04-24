@@ -131,9 +131,11 @@ export function usePostAiAssistant({
 
   function applyFieldSuggestion(
     field: AiField,
-    result: Pick<
-      AiOptimizeResult,
-      'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
+    result: Partial<
+      Pick<
+        AiOptimizeResult,
+        'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
+      >
     >,
   ) {
     const applyResult = applyAiFieldValue(field, result, categories, tags, {
