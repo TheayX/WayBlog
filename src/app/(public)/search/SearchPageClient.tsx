@@ -43,6 +43,7 @@ export function SearchPageClient() {
   const [page, setPage] = useState(initialPage);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const pageSize = 10;
   const totalPages = Math.ceil(total / pageSize);
@@ -53,6 +54,7 @@ export function SearchPageClient() {
 
       setLoading(true);
       setSearched(true);
+      setErrorMessage('');
 
       try {
         const res = await fetch(
@@ -64,10 +66,12 @@ export function SearchPageClient() {
           setTotal(json.total);
           setPage(json.page);
         } else {
+          setErrorMessage(res.status === 429 ? '搜索过于频繁，请稍后再试。' : '搜索服务暂时不可用，请稍后重试。');
           setResults([]);
           setTotal(0);
         }
       } catch {
+        setErrorMessage('搜索服务暂时不可用，请稍后重试。');
         setResults([]);
         setTotal(0);
       } finally {
@@ -137,7 +141,9 @@ export function SearchPageClient() {
           <p className="mb-4 text-sm text-muted-foreground">
             {loading
               ? '搜索中...'
-              : total > 0
+              : errorMessage
+                ? errorMessage
+                : total > 0
                 ? `找到 ${total} 条结果`
                 : '未找到相关文章，换个关键词试试？'}
           </p>
@@ -204,7 +210,7 @@ export function SearchPageClient() {
             </div>
           )}
 
-          {!loading && results.length === 0 && (
+          {!loading && !errorMessage && results.length === 0 && (
             <EmptyState
               title="没有找到匹配内容"
               description="可以尝试缩短关键词、换一个同义词，或者直接从标签页、归档页继续浏览。"

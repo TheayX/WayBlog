@@ -136,7 +136,7 @@ API Route Handler 保持轻量，主要负责：
 - `src/lib/posts/views-service.ts`：文章浏览量、PV/UV 聚合
 - `src/lib/taxonomies/admin-service.ts`：分类/标签后台 CRUD 和冲突检查
 - `src/lib/friend-links/admin-service.ts`：友链后台 CRUD
-- `src/lib/search/service.ts`：全文搜索 SQL、高亮和关系补充
+- `src/lib/search/service.ts`：站内搜索查询、高亮和结果组装
 - `src/lib/stats/service.ts`：后台仪表盘统计聚合
 
 ## Markdown 方案
@@ -156,10 +156,10 @@ API Route Handler 保持轻量，主要负责：
 
 ## 搜索方案
 
-- 使用 PostgreSQL 全文搜索
-- 通过 raw SQL 查询 `to_tsquery`、`ts_rank`、`ts_headline`
-- 目前只搜索已发布文章
-- 搜索摘要使用结构化高亮片段返回，前端不注入数据库生成的 HTML
+- 搜索范围覆盖已发布文章的标题、正文、分类和标签
+- 查询按关键词匹配实现，每个关键词都必须至少命中一个字段
+- 搜索摘要在应用层生成结构化高亮片段，前端不注入 HTML
+- 搜索结果按字段权重排序，再以发布时间倒序兜底
 - 搜索接口带有限流
 
 ## 统计方案
@@ -188,4 +188,4 @@ API Route Handler 保持轻量，主要负责：
 - 适合单机部署
 - 多实例部署需要共享 PostgreSQL 与 Redis，并通过 `REDIS_KEY_PREFIX` 隔离不同环境的运行期 key
 - 不适合大规模图片存储
-- 搜索精度受 PostgreSQL 当前配置限制
+- 搜索能力当前针对个人博客体量优化，不包含独立搜索引擎的高级召回能力

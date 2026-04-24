@@ -153,14 +153,12 @@ Redis 不承载主业务数据，只保存运行期状态：
 
 ## 搜索相关说明
 
-当前搜索接口使用 PostgreSQL 全文搜索，相关数据库能力在 `prisma/migrations/0_init/migration.sql` 中通过 SQL 显式维护。
+当前搜索接口使用应用层关键词匹配，不再依赖 PostgreSQL 专有搜索字段或触发器。
 
-搜索依赖包括：
+搜索边界包括：
 
-- `Post.search_vector`：`tsvector` 类型字段，用于保存文章标题和正文的搜索向量
-- `Post_search_vector_idx`：基于 `search_vector` 的 GIN 索引
-- `post_search_vector_update()`：在文章标题或正文变更时更新搜索向量的触发器函数
-- `post_search_vector_trigger`：挂载在 `Post` 表上的触发器
-- 初始化迁移末尾会对已有文章执行一次 `search_vector` 回填
+- 仅搜索已发布文章
+- 匹配范围覆盖标题、正文、分类名和标签名
+- 搜索摘要由服务层按命中位置生成结构化高亮片段
 
-注意：`search_vector` 没有写入 `schema.prisma`，因为 Prisma schema 当前不直接表达这类 PostgreSQL 专有字段和触发器逻辑。后续如果调整搜索字段、权重或分词策略，应通过新的 SQL migration 显式维护，并同步更新本文档。
+如果后续重新引入新的数据库搜索索引或独立搜索引擎，应同步补充新的索引、同步机制和迁移说明。

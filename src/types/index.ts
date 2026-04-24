@@ -1,6 +1,6 @@
 /**
  * 搜索命中摘要片段。
- * 后端把全文搜索命中位置解析成结构化片段，前端据此渲染强调样式，避免直接注入 HTML。
+ * 后端在应用层生成结构化高亮片段，前端据此渲染强调样式，避免直接注入 HTML。
  */
 export interface SearchHighlightSegment {
   text: string;
@@ -9,7 +9,7 @@ export interface SearchHighlightSegment {
 
 /**
  * 搜索结果结构。
- * `highlightSegments` 由全文搜索结果生成，用于在搜索页展示命中的摘要片段。
+ * `highlightSegments` 由关键词匹配结果生成，用于在搜索页展示命中的摘要片段。
  */
 export interface SearchResult {
   id: string;

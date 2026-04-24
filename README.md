@@ -1,12 +1,12 @@
 # WayBlog
 
-WayBlog 是一个基于 Next.js、Prisma 和 PostgreSQL 的个人博客系统，面向单管理员场景，包含公开前台、管理后台、全文搜索、浏览量统计和 AI 辅助写作。
+WayBlog 是一个基于 Next.js、Prisma 和 PostgreSQL 的个人博客系统，面向单管理员场景，包含公开前台、管理后台、站内搜索、浏览量统计和 AI 辅助写作。
 
 ## 功能特性
 
 - 文章、分类、标签、友链管理
 - Markdown 渲染、代码高亮、目录导航、上一篇/下一篇
-- PostgreSQL 全文搜索、RSS、sitemap、robots、JSON-LD
+- 站内关键词搜索、RSS、sitemap、robots、JSON-LD
 - NextAuth 登录鉴权、后台路由保护、Redis 限流
 - PV / UV 统计与后台仪表盘
 - 本地图片上传
