@@ -47,6 +47,7 @@ Prisma Client 输出到仓库根部 `generated/prisma`，不放在 `src/` 内，
 src/
 ├── app/               # Next.js App Router 页面和 API
 ├── components/        # 可复用 React 组件
+├── config/            # 站点固定公开资料配置
 ├── lib/               # 领域逻辑、基础设施、服务和工具
 ├── types/             # 全局共享类型
 └── proxy.ts           # 后台路由保护
@@ -87,7 +88,7 @@ API 位于 `src/app/api/`：
 - `api/posts/[id]/views`：公开浏览量记录
 - `api/admin/posts`：后台文章列表和创建
 - `api/admin/posts/[id]`：后台文章更新和删除
-- `api/categories`、`api/tags`、`api/friend-links`：分类、标签、友链接口
+- `api/categories`、`api/tags`、`api/friend-links`、`api/pages`：分类、标签、友链和单页接口
 - `api/search`：公开搜索
 - `api/stats`：后台统计
 - `api/upload`：后台上传
@@ -120,6 +121,7 @@ src/components/
 
 ```text
 src/lib/
+├── site.ts            # 站点环境相关配置读取
 ├── admin/             # 后台客户端请求辅助
 ├── ai/                # AI service、prompt、provider、normalizer
 ├── api/               # Route Handler 通用辅助
@@ -178,6 +180,14 @@ src/lib/search/query.test.ts
 - 新数据库写入逻辑：放对应领域的 `admin-service.ts` 或 `service.ts`
 - 新 AI 能力：按任务拆到 `src/lib/ai/prompts`、`providers`、`normalizers` 和 `service.ts`
 - 新通用组件：确认是否真的跨业务复用，再放 `components/ui/`
+
+## 配置放置约定
+
+- 环境变量和敏感配置：放 `.env` / `.env.example`
+- 全站固定公开资料：放 `src/config/site.ts`
+- 数据库内容：必须提供对应后台管理入口
+
+更完整说明见 [configuration-boundary.md](./configuration-boundary.md)。
 
 ## 不建议的做法
 

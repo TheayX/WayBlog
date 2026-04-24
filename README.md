@@ -72,22 +72,25 @@ pnpm dev
 
 - 运行环境和敏感信息放在 `.env` / `.env.example`，例如 `DATABASE_URL`、`REDIS_URL`、`NEXTAUTH_SECRET`、`SITE_URL`、AI Key。
 - 公开站点资料和文案放在 [src/config/site.ts](./src/config/site.ts)，例如品牌名、站点描述、公开邮箱、GitHub 链接、首页和页脚文案。
+- 数据库里的内容必须有对应后台入口维护，例如文章、分类、标签、友链和单页。
 - `SITE_URL` 继续保留在环境变量中，因为它会随本地、测试和正式部署地址变化。
+
+更详细的边界说明见 [docs/guides/configuration-boundary.md](./docs/guides/configuration-boundary.md)。
 
 ## 常用命令
 
-| Command | Description |
-| --- | --- |
-| `pnpm dev` | 启动开发服务器 |
-| `pnpm build` | 构建生产版本 |
-| `pnpm start` | 启动生产服务器 |
-| `pnpm lint` | 运行 ESLint |
-| `pnpm test` | 运行单元测试 |
-| `pnpm format` | 格式化源码 |
+| Command            | Description        |
+| ------------------ | ------------------ |
+| `pnpm dev`         | 启动开发服务器     |
+| `pnpm build`       | 构建生产版本       |
+| `pnpm start`       | 启动生产服务器     |
+| `pnpm lint`        | 运行 ESLint        |
+| `pnpm test`        | 运行单元测试       |
+| `pnpm format`      | 格式化源码         |
 | `pnpm db:generate` | 生成 Prisma Client |
-| `pnpm db:migrate` | 执行数据库迁移 |
-| `pnpm db:seed` | 写入种子数据 |
-| `pnpm db:studio` | 打开 Prisma Studio |
+| `pnpm db:migrate`  | 执行数据库迁移     |
+| `pnpm db:seed`     | 写入种子数据       |
+| `pnpm db:studio`   | 打开 Prisma Studio |
 
 ## 项目结构
 
@@ -112,6 +115,7 @@ WayBlog/
 - [数据库设计](./docs/core/database.md)
 - [任务清单](./docs/core/tasks.md)
 - [项目结构说明](./docs/guides/structure.md)
+- [配置边界说明](./docs/guides/configuration-boundary.md)
 
 配置项以 [.env.example](./.env.example) 为准；部署、数据库能力和运行边界见 `docs/`。
 
