@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AdminFormPanel } from '@/components/admin/AdminCrudLayout';
+import { PageIntro } from '@/components/ui/PageIntro';
 
 interface AccountProfile {
   id: string;
@@ -137,30 +138,29 @@ export default function AdminSettingsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">账号设置</h1>
-        <p className="text-muted-foreground">加载中...</p>
+        <PageIntro eyebrow="Account" title="账号设置" description="账号信息加载中，请稍候。" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_18rem]">
-        <div className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
-          <p className="eyebrow">Account</p>
-          <h1 className="mt-3 text-3xl font-semibold text-foreground">账号设置</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-            当前后台采用单管理员模型，设置页只负责维护当前账号资料与密码，不承担复杂权限管理。
-          </p>
-        </div>
-        <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
-          <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">Security</p>
-          <p className="mt-4 text-sm text-primary-foreground/80">建议</p>
-          <p className="mt-3 text-sm leading-7 text-primary-foreground/80">
-            修改密码后会立即清空表单，避免明文长期停留在页面状态中。
-          </p>
-        </div>
-      </section>
+      <PageIntro
+        eyebrow="Account"
+        title="账号设置"
+        description="当前后台采用单管理员模型，设置页只负责维护当前账号资料与密码，不承担复杂权限管理。"
+        aside={
+          <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
+            <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">
+              Security
+            </p>
+            <p className="mt-4 text-sm text-primary-foreground/80">建议</p>
+            <p className="mt-3 text-sm leading-7 text-primary-foreground/80">
+              修改密码后会立即清空表单，避免明文长期停留在页面状态中。
+            </p>
+          </div>
+        }
+      />
 
       <AdminFormPanel title="基础资料" description="维护当前管理员的基础公开信息。">
         <div className="grid gap-4 md:grid-cols-2">

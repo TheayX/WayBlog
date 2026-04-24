@@ -4,6 +4,8 @@ import { FilePlus2, Flame, PencilLine, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { deleteAdminResource, fetchAdminCollection } from '@/lib/admin/client';
 import { formatDateShort } from '@/lib/utils';
 import type { AdminPostListItem } from '@/types';
@@ -69,23 +71,23 @@ export default function AdminPostsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_18rem]">
-        <div className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
-          <p className="eyebrow">Posts</p>
-          <h1 className="mt-3 text-3xl font-semibold text-foreground">文章管理</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-            统一处理文章状态、编辑入口和发布节奏。列表页优先强调可读性与状态识别，而不是传统后台表格堆叠。
-          </p>
-        </div>
-        <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
-          <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">Current</p>
-          <p className="mt-4 text-sm text-primary-foreground/80">当前筛选结果</p>
-          <p className="editorial-title mt-2 text-5xl font-semibold">{total}</p>
-          <p className="mt-5 text-sm leading-7 text-primary-foreground/80">
-            支持按状态快速筛选和进入编辑工作台。
-          </p>
-        </div>
-      </section>
+      <PageIntro
+        eyebrow="Posts"
+        title="文章管理"
+        description="统一处理文章状态、编辑入口和发布节奏。列表页优先强调可读性与状态识别，而不是传统后台表格堆叠。"
+        aside={
+          <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
+            <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">
+              Current
+            </p>
+            <p className="mt-4 text-sm text-primary-foreground/80">当前筛选结果</p>
+            <p className="editorial-title mt-2 text-5xl font-semibold">{total}</p>
+            <p className="mt-5 text-sm leading-7 text-primary-foreground/80">
+              支持按状态快速筛选和进入编辑工作台。
+            </p>
+          </div>
+        }
+      />
 
       <section className="grid gap-4 md:grid-cols-3">
         <div className="page-frame px-5 py-5">
@@ -138,9 +140,20 @@ export default function AdminPostsPage() {
       </section>
 
       {loading ? (
-        <p className="text-muted-foreground">加载中...</p>
+        <EmptyState title="文章加载中" description="正在拉取文章列表，请稍候。" />
       ) : posts.length === 0 ? (
-        <div className="page-frame px-6 py-12 text-muted-foreground">暂无文章</div>
+        <EmptyState
+          title="暂无文章"
+          description="当前筛选条件下还没有文章，可以直接创建一篇新内容。"
+          action={
+            <Link
+              href="/admin/posts/new"
+              className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"
+            >
+              新建文章
+            </Link>
+          }
+        />
       ) : (
         <section className="page-frame overflow-hidden">
           <div className="grid border-b border-border bg-muted/40 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground md:grid-cols-[minmax(0,2.3fr)_9rem_8rem_7rem_8rem]">
