@@ -1,6 +1,8 @@
 'use client';
 
+import { LogOut, PanelLeft, Search, Sparkles } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 
 /**
@@ -13,25 +15,60 @@ import { ThemeToggle } from './ThemeToggle';
  */
 export function AdminHeader() {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const pageTitle =
+    (
+      {
+        '/admin/dashboard': '内容概览',
+        '/admin/posts': '文章管理',
+        '/admin/categories': '分类管理',
+        '/admin/tags': '标签管理',
+        '/admin/friend-links': '友链管理',
+        '/admin/settings': '账号设置',
+      } as Record<string, string>
+    )[pathname] || '后台管理';
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
-      <div />
-      <div className="flex items-center gap-4">
-        <ThemeToggle />
-        {session?.user && (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{session.user.name}</span>
+    <header className="px-4 pb-2 pt-4 md:px-6">
+      <div className="page-frame flex min-h-20 items-center justify-between px-5 py-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background text-primary md:flex xl:hidden">
+            <PanelLeft className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="eyebrow">Admin</p>
+            <h1 className="truncate text-xl font-semibold text-foreground">{pageTitle}</h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="hidden items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm text-muted-foreground lg:flex">
+            <Search className="h-4 w-4" />
+            全局检索稍后接入
+          </div>
+          <ThemeToggle />
+          {session?.user && (
+            <div className="hidden items-center gap-3 rounded-full border border-border bg-background px-3 py-2 md:flex">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="leading-tight">
+                <p className="text-sm font-medium text-foreground">{session.user.name}</p>
+                <p className="text-xs text-muted-foreground">内容维护中</p>
+              </div>
+            </div>
+          )}
+          {session?.user && (
             <button
               onClick={() => signOut({ callbackUrl: '/admin/login' })}
-              className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
             >
+              <LogOut className="h-4 w-4" />
               退出
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   );
 }
-

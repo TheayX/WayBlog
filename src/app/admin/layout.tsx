@@ -21,11 +21,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <SessionProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="min-h-screen bg-background">
         <AdminSidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="min-h-screen flex-1 xl:ml-72">
           <AdminHeader />
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <main className="px-4 pb-6 md:px-6">
+            <div className="page-frame min-h-[calc(100vh-8.5rem)] p-5 md:p-7">{children}</div>
+          </main>
         </div>
       </div>
     </SessionProvider>

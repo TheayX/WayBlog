@@ -1,13 +1,20 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { ThemeProvider } from "next-themes";
-import { Toaster } from "sonner";
-import { getSiteConfig } from "@/lib/site";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Inter, Newsreader } from 'next/font/google';
+import { ThemeProvider } from 'next-themes';
+import { Toaster } from 'sonner';
+import { getSiteConfig } from '@/lib/site';
+import './globals.css';
 
 const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+  variable: '--font-inter',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+const newsreader = Newsreader({
+  variable: '--font-newsreader',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 const siteConfig = getSiteConfig();
@@ -26,8 +33,8 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   metadataBase: new URL(siteConfig.url),
   openGraph: {
-    type: "website",
-    locale: "zh_CN",
+    type: 'website',
+    locale: 'zh_CN',
     siteName: siteConfig.name,
     title: {
       default: `${siteConfig.name} — ${siteConfig.description}`,
@@ -36,7 +43,7 @@ export const metadata: Metadata = {
     description: siteConfig.description,
   },
   twitter: {
-    card: "summary_large_image",
+    card: 'summary_large_image',
     title: {
       default: `${siteConfig.name} — ${siteConfig.description}`,
       template: `%s — ${siteConfig.name}`,
@@ -46,7 +53,7 @@ export const metadata: Metadata = {
   alternates: {
     types: {
       // 将 RSS 输出注册为全站可发现的订阅入口。
-      "application/rss+xml": "/feed.xml",
+      'application/rss+xml': '/feed.xml',
     },
   },
 };
@@ -58,7 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${newsreader.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

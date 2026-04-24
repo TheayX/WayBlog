@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 /**
  * 通用分页组件。
@@ -20,34 +21,38 @@ export function Pagination({ currentPage, totalPages, basePath }: PaginationProp
   const separator = basePath.includes('?') ? '&' : '?';
 
   return (
-    <div className="flex items-center justify-center gap-2 pt-8">
+    <div className="flex items-center justify-center gap-3 pt-8">
       {currentPage > 1 ? (
         <Link
           href={`${basePath}${separator}page=${currentPage - 1}`}
-          className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+          className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
         >
+          <ArrowLeft className="h-4 w-4" />
           上一页
         </Link>
       ) : (
-        <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">
+        <span className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground opacity-50">
+          <ArrowLeft className="h-4 w-4" />
           上一页
         </span>
       )}
 
-      <span className="text-sm text-muted-foreground">
-        {currentPage} / {totalPages}
+      <span className="inline-flex h-11 items-center rounded-full border border-border bg-muted/70 px-4 text-sm text-muted-foreground">
+        第 {currentPage} / {totalPages} 页
       </span>
 
       {currentPage < totalPages ? (
         <Link
           href={`${basePath}${separator}page=${currentPage + 1}`}
-          className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+          className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
         >
           下一页
+          <ArrowRight className="h-4 w-4" />
         </Link>
       ) : (
-        <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">
+        <span className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground opacity-50">
           下一页
+          <ArrowRight className="h-4 w-4" />
         </span>
       )}
     </div>

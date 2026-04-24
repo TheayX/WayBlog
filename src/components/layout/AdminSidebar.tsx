@@ -1,5 +1,14 @@
 'use client';
 
+import {
+  ArrowUpRight,
+  FolderTree,
+  LayoutDashboard,
+  PencilLine,
+  Settings,
+  Tags,
+  UsersRound,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -12,53 +21,76 @@ import { cn } from '@/lib/utils';
  * sidebarItems 是后台信息架构的唯一来源，新增管理模块时应优先在这里补入口。
  */
 const sidebarItems = [
-  { href: '/admin/dashboard', label: '仪表盘', icon: '📊' },
-  { href: '/admin/posts', label: '文章管理', icon: '📝' },
-  { href: '/admin/categories', label: '分类管理', icon: '📁' },
-  { href: '/admin/tags', label: '标签管理', icon: '🏷️' },
-  { href: '/admin/friend-links', label: '友链管理', icon: '🔗' },
-  { href: '/admin/settings', label: '账号设置', icon: '⚙️' },
+  { href: '/admin/dashboard', label: '仪表盘', icon: LayoutDashboard },
+  { href: '/admin/posts', label: '文章管理', icon: PencilLine },
+  { href: '/admin/categories', label: '分类管理', icon: FolderTree },
+  { href: '/admin/tags', label: '标签管理', icon: Tags },
+  { href: '/admin/friend-links', label: '友链管理', icon: UsersRound },
+  { href: '/admin/settings', label: '账号设置', icon: Settings },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-border bg-muted/30">
-      <div className="flex h-16 items-center border-b border-border px-6">
-        <Link href="/admin/dashboard" className="text-lg font-bold text-primary">
-          Way Admin
-        </Link>
-      </div>
-
-      <nav className="flex-1 space-y-1 p-3">
-        {sidebarItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors',
-              pathname.startsWith(item.href)
-                ? 'bg-primary/10 font-medium text-primary'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-            )}
-          >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
+    <aside className="fixed inset-y-0 left-0 hidden w-72 shrink-0 p-4 xl:block">
+      <div className="page-frame flex h-full flex-col px-4 py-5">
+        <div className="border-b border-border pb-5">
+          <Link href="/admin/dashboard" className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background text-lg font-semibold text-primary">
+              W
+            </div>
+            <div>
+              <p className="editorial-title text-2xl font-semibold text-foreground">Way.</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Admin Console
+              </p>
+            </div>
           </Link>
-        ))}
-      </nav>
+        </div>
 
-      <div className="border-t border-border p-3">
-        <Link
-          href="/"
-          className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <span>🏠</span>
-          <span>回到前台</span>
-        </Link>
+        <div className="px-2 pb-3 pt-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            Content Ops
+          </p>
+        </div>
+
+        <nav className="flex-1 space-y-1">
+          {sidebarItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm',
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255_/_0.12)]'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-4 border-t border-border pt-4">
+          <Link
+            href="/"
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ArrowUpRight className="h-4 w-4" />
+            <span>回到前台</span>
+          </Link>
+          <p className="px-4 pt-3 text-xs leading-6 text-muted-foreground">
+            管理端聚焦发布、整理与内容维护，不承担前台展示职责。
+          </p>
+        </div>
       </div>
     </aside>
   );
 }
-
