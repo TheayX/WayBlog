@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { getPublishedArchivePosts } from '@/lib/posts/queries';
+import { toDate, toIsoString } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,15 @@ interface ArchiveGroup {
     posts: {
       slug: string;
       title: string;
-      publishedAt: Date | null;
+      publishedDate: Date;
     }[];
   }[];
+}
+
+interface ArchivePostItem {
+  slug: string;
+  title: string;
+  publishedDate: Date;
 }
 
 /**
@@ -30,13 +37,24 @@ interface ArchiveGroup {
  */
 export default async function ArchivesPage() {
   const posts = await getPublishedArchivePosts();
+  const archivePosts: ArchivePostItem[] = posts
+    .map((post) => {
+      const publishedDate = toDate(post.publishedAt);
+      if (!publishedDate) return null;
 
-  const groupMap = new Map<number, Map<number, typeof posts>>();
+      return {
+        slug: post.slug,
+        title: post.title,
+        publishedDate,
+      };
+    })
+    .filter((post): post is ArchivePostItem => post !== null);
 
-  for (const post of posts) {
-    if (!post.publishedAt) continue;
-    const year = post.publishedAt.getFullYear();
-    const month = post.publishedAt.getMonth() + 1;
+  const groupMap = new Map<number, Map<number, ArchivePostItem[]>>();
+
+  for (const post of archivePosts) {
+    const year = post.publishedDate.getFullYear();
+    const month = post.publishedDate.getMonth() + 1;
 
     if (!groupMap.has(year)) groupMap.set(year, new Map());
     const yearMap = groupMap.get(year)!;
@@ -53,7 +71,7 @@ export default async function ArchivesPage() {
         .map(([month, monthPosts]) => ({ month, posts: monthPosts })),
     }));
 
-  const totalPosts = posts.length;
+  const totalPosts = archivePosts.length;
 
   return (
     <div className="space-y-8">
@@ -80,11 +98,11 @@ export default async function ArchivesPage() {
                       {monthPosts.map((post) => (
                         <li key={post.slug} className="flex items-baseline gap-4">
                           <time
-                            dateTime={post.publishedAt!.toISOString()}
+                            dateTime={toIsoString(post.publishedDate) || undefined}
                             className="shrink-0 text-sm tabular-nums text-muted-foreground"
                           >
-                            {String(post.publishedAt!.getMonth() + 1).padStart(2, '0')}-
-                            {String(post.publishedAt!.getDate()).padStart(2, '0')}
+                            {String(post.publishedDate.getMonth() + 1).padStart(2, '0')}-
+                            {String(post.publishedDate.getDate()).padStart(2, '0')}
                           </time>
                           <Link
                             href={`/posts/${post.slug}`}

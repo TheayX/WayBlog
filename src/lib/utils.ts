@@ -66,6 +66,17 @@ export function toIsoString(value: string | Date | null | undefined): string | n
 }
 
 /**
+ * 将日期值安全转换为 Date 实例。
+ * 适合需要继续读取年、月、日等结构化字段的页面，避免直接假设查询结果一定是原生 Date。
+ */
+export function toDate(value: string | Date | null | undefined): Date | null {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
  * 按指定长度截断文本，常用于列表摘要或搜索预览。
  */
 export function truncate(text: string, length: number = 200): string {
@@ -76,7 +87,8 @@ export function truncate(text: string, length: number = 200): string {
 /**
  * 去除文本中的 emoji 字符。
  * 用于不希望出现表情符号的页面文案收口，避免直接污染页面视觉风格。
+ * 这里不用 Unicode 属性类写法，优先兼容当前工具链对正则的解析能力。
  */
 export function stripEmoji(text: string): string {
-  return text.replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').trim();
+  return text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '').trim();
 }
