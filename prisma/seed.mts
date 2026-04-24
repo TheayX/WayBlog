@@ -63,6 +63,12 @@ const defaultFriendLinks = [
     description: '用于参考当前项目使用的样式体系和设计令牌组织方式。',
     sortOrder: 3,
   },
+  {
+    name: 'Vercel',
+    url: 'https://vercel.com',
+    description: '用于参考现代前端项目的部署、预览和发布体验。',
+    sortOrder: 4,
+  },
 ] as const;
 
 const defaultPages = [
@@ -72,6 +78,12 @@ const defaultPages = [
     content: `# 关于
 
 这里是一页默认的初始化单页，用于确认单页渲染、后台维护和公开展示链路都已经正常工作。
+
+## 这个站点适合写什么
+
+- 工程实践里的真实取舍
+- 学习过程中的整理型笔记
+- 阶段复盘和少量生活随笔
 
 ## 当前约定
 
@@ -114,6 +126,42 @@ const defaultPosts = [
     publishedAt: daysAgo(0),
   },
   {
+    title: '从零整理一个内容型项目时，我会先画哪几条边界',
+    slug: 'content-project-boundaries',
+    excerpt: '页面、配置、数据库和后台能力如果一开始就混在一起，后面几乎一定会越改越乱。',
+    content: `# 从零整理一个内容型项目时，我会先画哪几条边界
+
+内容型项目最怕的不是功能少，而是边界模糊。
+
+## 我通常最先确认三件事
+
+### 页面只是展示层
+
+页面负责渲染，不应该顺手承接数据约束、权限判断和初始化逻辑。
+
+### 固定站点资料和数据库内容分开
+
+品牌名、公开邮箱、GitHub 链接这类固定资料，和文章、关于页、友链这种可运营内容不是一回事。
+
+### 数据库内容必须有后台入口
+
+如果前台在读数据库，那后台就应该能维护它，否则改一次内容就要绕回 seed 或手改数据库。
+
+## 为什么这篇文章放在首页附近
+
+因为它很适合作为初始化站点的第一批内容：
+
+- 能解释项目方向
+- 能验证分类、标签和摘要展示
+- 能和关于页形成互补
+
+这类文章不一定很长，但要足够明确，让第一次打开站点的人知道这里会写什么。`,
+    categorySlug: 'engineering',
+    tagSlugs: ['typescript', 'writing'],
+    pinned: false,
+    publishedAt: daysAgo(2),
+  },
+  {
     title: '如何给项目建立清晰的配置边界',
     slug: 'configuration-boundary',
     excerpt: '环境变量、站点固定资料和数据库内容三者分开后，维护成本会显著下降。',
@@ -145,7 +193,39 @@ const defaultPosts = [
     categorySlug: 'engineering',
     tagSlugs: ['typescript', 'writing'],
     pinned: false,
-    publishedAt: daysAgo(3),
+    publishedAt: daysAgo(5),
+  },
+  {
+    title: '整理学习笔记时，先保留问题而不是急着写答案',
+    slug: 'notes-start-from-questions',
+    excerpt: '很多学习笔记写到最后会变成资料摘抄，真正有价值的往往是你当时卡住的问题。',
+    content: `# 整理学习笔记时，先保留问题而不是急着写答案
+
+学习笔记最容易走偏的地方，是把它写成一份平整但没有重点的抄录稿。
+
+## 我现在更倾向这样做
+
+### 先记录问题
+
+把当时真正卡住你的点写下来，比直接复制标准答案更重要。
+
+### 再记录自己的判断过程
+
+为什么一开始会理解错，后来又是怎么转过来的，这部分往往比结论本身更值得回看。
+
+### 最后才整理成稳定结论
+
+等一个问题反复出现几次之后，再把它收束成更适合长期保存的笔记。
+
+## 为什么这种写法更适合个人站点
+
+因为个人站点不只是知识库，它也应该保留思考轨迹。
+
+如果一篇笔记既有过程，也有结论，那么几个月后回头看时，你更容易重新进入当时的语境。`,
+    categorySlug: 'notes',
+    tagSlugs: ['writing', 'review'],
+    pinned: false,
+    publishedAt: daysAgo(9),
   },
   {
     title: '最近一轮后台重构后的取舍记录',
@@ -176,7 +256,41 @@ const defaultPosts = [
     categorySlug: 'life',
     tagSlugs: ['review', 'writing'],
     pinned: false,
-    publishedAt: daysAgo(8),
+    publishedAt: daysAgo(14),
+  },
+  {
+    title: '最近重新找回稳定写作节奏的一点体会',
+    slug: 'writing-rhythm-after-refactor',
+    excerpt: '写作节奏的恢复，很多时候不是靠自律，而是靠把表达门槛降下来。',
+    content: `# 最近重新找回稳定写作节奏的一点体会
+
+有一段时间，我总觉得要等到“准备充分”才能写。
+
+后来发现，这种想法通常只会让草稿越来越多，真正发出去的内容越来越少。
+
+## 后来我调整了几件事
+
+### 先允许文章不完整
+
+一篇文章只要有一个明确问题和一个可读结论，就已经值得发布。
+
+### 把后台流程尽量收短
+
+如果发布一篇内容要在多个入口之间来回切换，人就会自然拖延。
+
+### 让默认页面看起来像站点而不是空壳
+
+当首页、关于页和归档页都已经像一个真实站点时，写作本身也更容易进入状态。
+
+## 最后的结论
+
+写作节奏不只是内容问题，也和工具边界、后台流程、页面反馈有关。
+
+当这些地方顺了，输出会自然稳定很多。`,
+    categorySlug: 'life',
+    tagSlugs: ['writing', 'review'],
+    pinned: false,
+    publishedAt: daysAgo(21),
   },
 ] as const;
 
