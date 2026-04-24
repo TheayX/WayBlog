@@ -95,7 +95,7 @@ export function AdminSidebar() {
 
         <AdminSidebarNav />
 
-        <div className="mt-4 border-t border-border pt-4">
+        <div className="mt-4 border-t border-border pb-5 pt-4">
           <Link
             href="/"
             className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -123,7 +123,7 @@ export function AdminMobileNav({ onNavigate }: { onNavigate: () => void }) {
 
       <AdminSidebarNav compact onNavigate={onNavigate} />
 
-      <div className="mt-3 border-t border-border pt-3">
+      <div className="mt-3 border-t border-border pb-2 pt-3">
         <Link
           href="/"
           onClick={onNavigate}

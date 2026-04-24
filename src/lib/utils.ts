@@ -72,3 +72,11 @@ export function truncate(text: string, length: number = 200): string {
   if (text.length <= length) return text;
   return text.slice(0, length).trim() + '...';
 }
+
+/**
+ * 去除文本中的 emoji 字符。
+ * 用于不希望出现表情符号的页面文案收口，避免直接污染页面视觉风格。
+ */
+export function stripEmoji(text: string): string {
+  return text.replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').trim();
+}
