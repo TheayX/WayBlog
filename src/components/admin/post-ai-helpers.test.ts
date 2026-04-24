@@ -59,3 +59,22 @@ test('normalizeFieldResult maps single field values into full apply payload shap
     tagSuggestions: [],
   });
 });
+
+test('normalizeFieldResult maps identity result into combined title and slug payload', () => {
+  assert.deepEqual(
+    normalizeFieldResult({
+      field: 'identity',
+      title: '新的标题',
+      slug: 'new-title',
+      warnings: [],
+    }),
+    {
+      title: '新的标题',
+      slug: 'new-title',
+      content: '',
+      excerpt: '',
+      categorySuggestion: null,
+      tagSuggestions: [],
+    },
+  );
+});

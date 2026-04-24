@@ -176,6 +176,10 @@ export function usePostAiAssistant({
 
   function canRunFieldAi(field: AiField) {
     switch (field) {
+      case 'identity':
+        if (title.trim() || content.trim()) return true;
+        toast.warning('请先填写标题或正文，再生成标题与链接建议。');
+        return false;
       case 'title':
         if (title.trim() || content.trim()) return true;
         toast.warning('请先填写标题或正文，再优化标题。');
@@ -262,42 +266,7 @@ export function usePostAiAssistant({
   }
 
   async function requestIdentityAi() {
-    if (!canRunFieldAi('title') || !canRunFieldAi('slug')) return;
-
-    setAiLoading(true);
-
-    try {
-      const [titleResult, slugResult] = await Promise.all([fetchFieldAi('title'), fetchFieldAi('slug')]);
-      const titleNormalized = normalizeFieldResult(titleResult);
-      const slugNormalized = normalizeFieldResult(slugResult);
-      const warnings = Array.from(new Set([...titleResult.warnings, ...slugResult.warnings]));
-
-      applyAiFieldValue('title', titleNormalized, categories, tags, {
-        setTitle,
-        setSlug,
-        setContent,
-        setExcerpt,
-        setCategoryId,
-        setSelectedTagIds,
-        setSlugManuallyEdited,
-      });
-      applyAiFieldValue('slug', slugNormalized, categories, tags, {
-        setTitle,
-        setSlug,
-        setContent,
-        setExcerpt,
-        setCategoryId,
-        setSelectedTagIds,
-        setSlugManuallyEdited,
-      });
-      showFieldWarnings(warnings);
-      toast.success('已更新标题与链接建议');
-    } catch (error) {
-      console.error(error);
-      toast.error(error instanceof Error ? error.message : 'AI 服务调用失败，请稍后重试。');
-    } finally {
-      setAiLoading(false);
-    }
+    await requestFieldAi('identity');
   }
 
   async function requestContentSectionAi() {

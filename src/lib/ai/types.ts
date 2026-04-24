@@ -20,7 +20,7 @@ export interface AiOptimizeInput {
 }
 
 /** 可单独优化的字段范围。 */
-export type AiField = 'title' | 'slug' | 'content' | 'excerpt' | 'category' | 'tags';
+export type AiField = 'identity' | 'title' | 'slug' | 'content' | 'excerpt' | 'category' | 'tags';
 
 /** 单字段优化输入，在全文优化输入基础上追加目标字段。 */
 export interface AiFieldInput extends AiOptimizeInput {
@@ -57,6 +57,8 @@ export interface AiOptimizeResult {
 export interface AiFieldResult {
   field: AiField;
   value?: string;
+  title?: string;
+  slug?: string;
   categorySuggestion?: AiSuggestionCategory | null;
   tagSuggestions?: AiSuggestionTag[];
   warnings: string[];

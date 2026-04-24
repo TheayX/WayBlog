@@ -17,10 +17,13 @@ export function normalizeOptimizeFieldResult(
   parsed: Record<string, unknown>,
   input: AiFieldInput,
 ): AiFieldResult {
+  const normalizedIdentity = normalizeIdentityFields(parsed, input);
   const normalizedValue = normalizeFieldValue(parsed, input);
 
   return {
     field: input.field,
+    title: normalizedIdentity.title,
+    slug: normalizedIdentity.slug,
     value: normalizedValue || undefined,
     categorySuggestion: normalizeCategory(parsed.categorySuggestion, input),
     tagSuggestions: normalizeTags(parsed.tagSuggestions, input),
@@ -42,4 +45,22 @@ function normalizeFieldValue(parsed: Record<string, unknown>, input: AiFieldInpu
     default:
       return rawValue;
   }
+}
+
+/**
+ * 标题与 slug 合并按钮需要一次返回同一轮语义判断下的两个字段，
+ * 这里统一做兜底归一化，避免前端再把两个旧字段请求拼在一起。
+ */
+function normalizeIdentityFields(parsed: Record<string, unknown>, input: AiFieldInput) {
+  if (input.field !== 'identity') {
+    return { title: undefined, slug: undefined };
+  }
+
+  const title = getString(parsed.title) || input.title.trim() || '未命名文章';
+  const rawSlug = getString(parsed.slug) || title || input.slug;
+
+  return {
+    title,
+    slug: slugify(rawSlug).slice(0, 255),
+  };
 }

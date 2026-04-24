@@ -67,6 +67,8 @@ export function getMatchedTagIds(
  */
 export function getAiFieldLabel(field: AiField) {
   switch (field) {
+    case 'identity':
+      return '标题与链接';
     case 'title':
       return '标题';
     case 'slug':
@@ -99,6 +101,11 @@ export function applyAiFieldValue(
   setters: PostAiFormSetters,
 ) {
   switch (field) {
+    case 'identity':
+      setters.setTitle(result.title);
+      setters.setSlug(result.slug);
+      setters.setSlugManuallyEdited(true);
+      return { success: true as const };
     case 'title':
       setters.setTitle(result.title);
       return { success: true as const };
@@ -145,6 +152,12 @@ export function normalizeFieldResult(result: AiFieldResult) {
   };
 
   switch (result.field) {
+    case 'identity':
+      return {
+        ...emptyResult,
+        title: result.title || '',
+        slug: result.slug || '',
+      };
     case 'title':
       return {
         ...emptyResult,

@@ -165,5 +165,5 @@ export const aiOptimizeSchema = z.object({
  * 在全文优化载荷基础上追加目标字段名，供路由处理器决定生成哪类提示词。
  */
 export const aiFieldSchema = aiOptimizeSchema.extend({
-  field: z.enum(['title', 'slug', 'content', 'excerpt', 'category', 'tags']),
+  field: z.enum(['identity', 'title', 'slug', 'content', 'excerpt', 'category', 'tags']),
 });

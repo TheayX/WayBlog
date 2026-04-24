@@ -6,6 +6,11 @@ import { buildJsonOnlyPrompt, FIELD_RULES } from '@/lib/ai/prompts/shared';
  * 根据目标字段不同，约束模型返回的 JSON 结构，方便后续归一化逻辑稳定解析。
  */
 const FIELD_OUTPUTS = {
+  identity: `{
+  "title": "优化后的标题",
+  "slug": "optimized-slug",
+  "warnings": ["可选提醒"]
+}`,
   title: `{
   "value": "优化后的标题",
   "warnings": ["可选提醒"]
@@ -45,6 +50,7 @@ const FIELD_OUTPUTS = {
 
 /** 字段级优化的人类指令文本。 */
 const FIELD_INSTRUCTIONS = {
+  identity: '请统一优化文章标题与 slug，保证两者表达一致。',
   title: '请仅优化文章标题。',
   slug: '请仅生成更合适的 slug。',
   content: '请仅优化正文内容。',
