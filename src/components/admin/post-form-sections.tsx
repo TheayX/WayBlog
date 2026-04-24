@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Sparkles } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import type {
@@ -70,6 +71,12 @@ interface CategorySelectProps {
   onChange: (value: string) => void;
 }
 
+interface CategoryDropdownPosition {
+  top: number;
+  left: number;
+  width: number;
+}
+
 function FieldAiButton({ label, loading, onClick }: FieldAiButtonProps) {
   return (
     <button
@@ -83,13 +90,32 @@ function FieldAiButton({ label, loading, onClick }: FieldAiButtonProps) {
   );
 }
 
+/**
+ * 分类选择器。
+ *
+ * 展开面板通过 portal 挂到 body，避免被后台卡片的裁剪和层叠上下文截断；
+ * 同时在展开期间同步触发器位置，保证滚动页面后下拉仍能贴着输入框。
+ */
 function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const listboxId = useId();
+  const [dropdownPosition, setDropdownPosition] = useState<CategoryDropdownPosition | null>(null);
   const selectedCategory = categories.find((category) => category.id === value);
 
   useEffect(() => {
+    function updateDropdownPosition() {
+      if (!triggerRef.current) return;
+
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
     function handlePointerDown(event: PointerEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
@@ -102,19 +128,29 @@ function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
       }
     }
 
+    if (open) {
+      updateDropdownPosition();
+      // 面板挂到 body 后，需要同时监听滚动和窗口尺寸变化，保证位置始终跟随触发器。
+      window.addEventListener('resize', updateDropdownPosition);
+      window.addEventListener('scroll', updateDropdownPosition, true);
+    }
+
     // 下拉展开后统一由文档级事件兜底关闭，避免点击卡片空白区域时状态残留。
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
+      window.removeEventListener('resize', updateDropdownPosition);
+      window.removeEventListener('scroll', updateDropdownPosition, true);
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, []);
+  }, [open]);
 
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -131,50 +167,58 @@ function CategorySelect({ categories, value, onChange }: CategorySelectProps) {
         />
       </button>
 
-      {open ? (
-        <div
-          id={listboxId}
-          role="listbox"
-          aria-label="分类选择"
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-[1.25rem] border border-border bg-background shadow-[0_16px_40px_rgba(15,23,42,0.12)]"
-        >
-          <button
-            type="button"
-            role="option"
-            aria-selected={value === ''}
-            onClick={() => {
-              onChange('');
-              setOpen(false);
-            }}
-            className={`flex w-full items-center px-4 py-3 text-left text-sm transition-colors ${
-              value === ''
-                ? 'bg-primary/10 text-primary'
-                : 'text-foreground hover:bg-muted/60'
-            }`}
-          >
-            无分类
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              role="option"
-              aria-selected={value === category.id}
-              onClick={() => {
-                onChange(category.id);
-                setOpen(false);
+      {open && dropdownPosition
+        ? createPortal(
+            <div
+              id={listboxId}
+              role="listbox"
+              aria-label="分类选择"
+              className="fixed z-[9999] overflow-hidden rounded-[1.25rem] border border-border bg-background shadow-[0_16px_40px_rgba(15,23,42,0.12)]"
+              style={{
+                top: dropdownPosition.top,
+                left: dropdownPosition.left,
+                width: dropdownPosition.width,
               }}
-              className={`flex w-full items-center px-4 py-3 text-left text-sm transition-colors ${
-                value === category.id
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-foreground hover:bg-muted/60'
-              }`}
             >
-              {category.name}
-            </button>
-          ))}
-        </div>
-      ) : null}
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === ''}
+                onClick={() => {
+                  onChange('');
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center px-4 py-3 text-left text-sm transition-colors ${
+                  value === ''
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-foreground hover:bg-muted/60'
+                }`}
+              >
+                无分类
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  role="option"
+                  aria-selected={value === category.id}
+                  onClick={() => {
+                    onChange(category.id);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center px-4 py-3 text-left text-sm transition-colors ${
+                    value === category.id
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-foreground hover:bg-muted/60'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -214,6 +258,7 @@ export function TitleSlugSection({
       </div>
 
       <div className="mt-5 space-y-4">
+        {/* 标题 AI 贴在输入区右上角，减少独立标签行造成的视觉堆叠。 */}
         <div className="relative">
           <div className="absolute right-0 top-0 z-10">
             <FieldAiButton label="标题" loading={aiLoading} onClick={onOptimizeTitle} />
@@ -270,6 +315,7 @@ export function ContentEditorSection({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-2">
+          {/* 左右两列头部保留同一行高，避免编辑框与预览框出现视觉错位。 */}
           <div className="flex min-h-6 flex-wrap items-center justify-between gap-3">
             <label htmlFor="content-editor" className="ml-5 text-sm font-medium text-foreground">
               Markdown 编辑
@@ -369,7 +415,7 @@ export function TaxonomySection({
   onOptimizeTags,
 }: TaxonomySectionProps) {
   return (
-    <section className="page-frame z-10 overflow-visible px-5 py-5">
+    <section className="page-frame px-5 py-5">
       <div className="mb-4">
         <p className="eyebrow">Metadata</p>
         <h2 className="mt-2 text-xl font-semibold text-foreground">分类、标签与状态</h2>
@@ -380,9 +426,7 @@ export function TaxonomySection({
           <div className="mb-2 flex items-center justify-between gap-2">
             <FieldAiButton label="分类" loading={aiLoading} onClick={onOptimizeCategory} />
           </div>
-          <div className="relative z-20">
-            <CategorySelect categories={categories} value={categoryId} onChange={onCategoryChange} />
-          </div>
+          <CategorySelect categories={categories} value={categoryId} onChange={onCategoryChange} />
         </div>
 
         <div className="flex items-end gap-4">
