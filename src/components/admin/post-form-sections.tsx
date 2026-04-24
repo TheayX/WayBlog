@@ -426,8 +426,8 @@ export function SummaryCoverSection({
 /**
  * 分类、标签与置顶状态区。
  *
- * 这一组字段同时包含“直接可选值”和“需要人工判断的新建议”，
- * 因此区块级 AI 入口只负责打开建议弹窗，不直接覆盖当前选择。
+ * 区块内同时承载分类、标签和置顶状态，但当前 AI 只负责前两者；
+ * 因此按钮文案只强调分类与标签，避免把“置顶”误导成 AI 可判断项。
  */
 export function TaxonomySection({
   categories,
@@ -448,7 +448,7 @@ export function TaxonomySection({
           <p className="eyebrow">Metadata</p>
           <h2 className="mt-2 text-xl font-semibold text-foreground">分类、标签与状态</h2>
         </div>
-        <SectionAiButton label="分类、标签与状态" loading={aiLoading} onClick={onOpenAi} />
+        <SectionAiButton label="分类与标签" loading={aiLoading} onClick={onOpenAi} />
       </div>
 
       {/* 分类与置顶压成一行，让更多空间留给未来可能持续增长的标签区域。 */}

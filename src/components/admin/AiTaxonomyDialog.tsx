@@ -116,7 +116,7 @@ export function AiTaxonomyDialog({
                       <TagSuggestionChip
                         key={`${tag.id || tag.name}-existing`}
                         tag={tag}
-                        matched={matchedTagIds.length > 0}
+                        matched={isMatchedExistingTag(tag, matchedTagIds)}
                       />
                     ))
                   ) : (
@@ -189,4 +189,12 @@ function TagSuggestionChip({
       {tag.reason && <div className="mt-1 text-[11px] opacity-80">{tag.reason}</div>}
     </div>
   );
+}
+
+/**
+ * 标签命中提示需要按单个建议逐项判断，
+ * 不能因为命中了任意一个已有标签，就把整组建议都显示成“可直接应用”。
+ */
+function isMatchedExistingTag(tag: AiSuggestionTag, matchedTagIds: string[]) {
+  return Boolean(tag.id && matchedTagIds.includes(tag.id));
 }
