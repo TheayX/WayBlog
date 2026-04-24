@@ -8,6 +8,7 @@ import {
   AdminFormPanel,
   AdminResourceListState,
 } from '@/components/admin/AdminCrudLayout';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
@@ -82,10 +83,11 @@ export default function AdminTagsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
-        <p className="eyebrow">Tags</p>
-        <h1 className="mt-3 text-3xl font-semibold text-foreground">标签管理</h1>
-      </section>
+      <PageIntro
+        eyebrow="Tags"
+        title="标签管理"
+        description="标签用于补充主题交叉关系，保持轻量、稳定和可复用，能减少前后台语义漂移。"
+      />
 
       <AdminFormPanel
         title={editingId ? '编辑标签' : '新建标签'}

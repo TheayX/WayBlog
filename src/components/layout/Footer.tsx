@@ -1,5 +1,6 @@
 import { ArrowUpRight, Rss } from 'lucide-react';
 import Link from 'next/link';
+import { SITE_BRAND } from './site-config';
 
 /**
  * 站点页脚。
@@ -18,7 +19,7 @@ export function Footer() {
         <div className="page-frame px-6 py-8 sm:px-8">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
-              <p className="eyebrow">WayBlog</p>
+              <p className="eyebrow">{SITE_BRAND.fullName}</p>
               <div className="space-y-2">
                 <p className="editorial-title text-3xl font-semibold text-foreground">
                   写代码，写文章，也写清楚自己在想什么。
@@ -49,7 +50,7 @@ export function Footer() {
                 </a>
               </div>
               <div className="space-y-1 sm:text-right">
-                <p className="font-medium text-foreground">Way.</p>
+                <p className="font-medium text-foreground">{SITE_BRAND.shortName}</p>
                 <p>© {year} All rights reserved.</p>
               </div>
             </div>

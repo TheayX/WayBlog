@@ -8,6 +8,7 @@ import {
   AdminFormPanel,
   AdminResourceListState,
 } from '@/components/admin/AdminCrudLayout';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
@@ -85,10 +86,11 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
-        <p className="eyebrow">Categories</p>
-        <h1 className="mt-3 text-3xl font-semibold text-foreground">分类管理</h1>
-      </section>
+      <PageIntro
+        eyebrow="Categories"
+        title="分类管理"
+        description="分类承担公开页主题聚合职责，建议保持语义稳定，并避免频繁改名影响内容组织。"
+      />
 
       <AdminFormPanel
         title={editingId ? '编辑分类' : '新建分类'}

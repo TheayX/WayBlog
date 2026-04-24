@@ -5,6 +5,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { AdminMobileNav } from './AdminSidebar';
+import { ADMIN_PAGE_TITLES } from './site-config';
 import { ThemeToggle } from './ThemeToggle';
 
 /**
@@ -19,17 +20,7 @@ export function AdminHeader() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const pageTitle =
-    (
-      {
-        '/admin/dashboard': '内容概览',
-        '/admin/posts': '文章管理',
-        '/admin/categories': '分类管理',
-        '/admin/tags': '标签管理',
-        '/admin/friend-links': '友链管理',
-        '/admin/settings': '账号设置',
-      } as Record<string, string>
-    )[pathname] || '后台管理';
+  const pageTitle = ADMIN_PAGE_TITLES[pathname] || '后台管理';
 
   return (
     <header className="px-4 pb-2 pt-4 md:px-6">

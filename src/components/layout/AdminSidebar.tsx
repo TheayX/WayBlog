@@ -1,32 +1,10 @@
 'use client';
 
-import {
-  ArrowUpRight,
-  FolderTree,
-  LayoutDashboard,
-  PencilLine,
-  Settings,
-  Tags,
-  UsersRound,
-} from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-
-/**
- * 后台导航配置。
- *
- * 这里是后台信息架构的唯一来源，桌面侧栏和移动端导航都复用同一份数据，
- * 避免多端出现入口不一致。
- */
-export const adminSidebarItems = [
-  { href: '/admin/dashboard', label: '仪表盘', icon: LayoutDashboard },
-  { href: '/admin/posts', label: '文章管理', icon: PencilLine },
-  { href: '/admin/categories', label: '分类管理', icon: FolderTree },
-  { href: '/admin/tags', label: '标签管理', icon: Tags },
-  { href: '/admin/friend-links', label: '友链管理', icon: UsersRound },
-  { href: '/admin/settings', label: '账号设置', icon: Settings },
-];
+import { ADMIN_NAV_ITEMS, SITE_BRAND } from './site-config';
 
 interface AdminSidebarNavProps {
   compact?: boolean;
@@ -38,7 +16,7 @@ function AdminSidebarNav({ compact = false, onNavigate }: AdminSidebarNavProps) 
 
   return (
     <nav className={cn('space-y-1', compact ? '' : 'flex-1')}>
-      {adminSidebarItems.map((item) => {
+      {ADMIN_NAV_ITEMS.map((item) => {
         const isActive = pathname.startsWith(item.href);
         const Icon = item.icon;
 
@@ -76,10 +54,12 @@ export function AdminSidebar() {
         <div className="border-b border-border pb-5">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background text-lg font-semibold text-primary">
-              W
+              {SITE_BRAND.mark}
             </div>
             <div>
-              <p className="editorial-title text-2xl font-semibold text-foreground">Way.</p>
+              <p className="editorial-title text-2xl font-semibold text-foreground">
+                {SITE_BRAND.shortName}
+              </p>
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Admin Console
               </p>

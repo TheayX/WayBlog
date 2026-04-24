@@ -8,6 +8,7 @@ import {
   AdminFormPanel,
   AdminResourceListState,
 } from '@/components/admin/AdminCrudLayout';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { deleteAdminResource, saveAdminResource } from '@/lib/admin/client';
 import type { AdminFriendLinkItem } from '@/types';
@@ -97,10 +98,11 @@ export default function AdminFriendLinksPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
-        <p className="eyebrow">Friend Links</p>
-        <h1 className="mt-3 text-3xl font-semibold text-foreground">友链管理</h1>
-      </section>
+      <PageIntro
+        eyebrow="Friend Links"
+        title="友链管理"
+        description="友链页更接近推荐列表，除了名称和地址，也要维护描述和排序权重，便于前台统一呈现。"
+      />
 
       <AdminFormPanel
         title={editingId ? '编辑友链' : '新建友链'}

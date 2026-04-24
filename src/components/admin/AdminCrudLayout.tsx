@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface AdminFormPanelProps {
   title: string;
@@ -79,11 +80,13 @@ export function AdminResourceListState({
   children,
 }: AdminResourceListStateProps) {
   if (loading) {
-    return <p className="text-sm text-muted-foreground">加载中...</p>;
+    return <EmptyState title="内容加载中" description="正在拉取当前资源列表，请稍候。" />;
   }
 
   if (empty) {
-    return <div className="page-frame px-6 py-12 text-sm text-muted-foreground">{emptyText}</div>;
+    return (
+      <EmptyState title={emptyText} description="当前还没有可展示的数据，可以先创建第一条内容。" />
+    );
   }
 
   return <>{children}</>;

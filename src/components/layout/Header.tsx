@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
+import { SITE_BRAND } from './site-config';
 import { cn } from '@/lib/utils';
 
 /**
@@ -36,11 +37,11 @@ export function Header() {
             onClick={() => setMenuOpen(false)}
           >
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background-elevated text-lg font-semibold text-primary">
-              W
+              {SITE_BRAND.mark}
             </div>
             <div className="flex flex-col">
               <span className="editorial-title text-2xl font-semibold leading-none text-foreground">
-                Way.
+                {SITE_BRAND.shortName}
               </span>
               <span className="hidden text-xs uppercase tracking-[0.18em] text-muted-foreground sm:block">
                 Notes on code and thought
