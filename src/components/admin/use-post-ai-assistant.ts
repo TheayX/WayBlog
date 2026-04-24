@@ -8,6 +8,8 @@ import {
   applyAiFields,
   applyAiFieldValue,
   getAiFieldLabel,
+  getMatchedCategoryId,
+  getMatchedTagIds,
   normalizeFieldResult,
 } from '@/components/admin/post-ai-helpers';
 
