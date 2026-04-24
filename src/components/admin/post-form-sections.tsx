@@ -80,10 +80,13 @@ function SectionAiButton({ label, loading, onClick }: FieldAiButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      disabled={loading}
-      aria-label={`${label} AI`}
-      title={`${label} AI`}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:border-border-strong hover:text-foreground disabled:opacity-50"
+      aria-label={loading ? '取消 AI 请求' : `${label} AI`}
+      title={loading ? '取消 AI 请求' : `${label} AI`}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full border bg-background ${
+        loading
+          ? 'border-primary text-primary'
+          : 'border-border text-muted-foreground hover:border-border-strong hover:text-foreground'
+      }`}
     >
       <Sparkles className="h-4 w-4" />
     </button>
@@ -250,11 +253,14 @@ export function PostAiToolbar({
       <button
         type="button"
         onClick={onOptimizeAll}
-        disabled={aiLoading}
-        className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className={`inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-medium ${
+          aiLoading
+            ? 'border border-primary bg-background text-primary'
+            : 'bg-primary text-primary-foreground'
+        }`}
       >
         <Sparkles className="h-4 w-4" />
-        {aiLoading ? 'AI 处理中...' : 'AI 优化整篇'}
+        {aiLoading ? '取消 AI' : 'AI 优化整篇'}
       </button>
     </div>
   );

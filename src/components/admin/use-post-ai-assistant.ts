@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { Dispatch, SetStateAction } from 'react';
 import type { AiField, AiFieldResult, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
@@ -76,6 +76,14 @@ export function usePostAiAssistant({
   const [aiResult, setAiResult] = useState<AiOptimizeResult | null>(null);
   const [taxonomyAiOpen, setTaxonomyAiOpen] = useState(false);
   const [taxonomyAiState, setTaxonomyAiState] = useState<TaxonomyAiState | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
+    };
+  }, []);
 
   function buildAiPayload() {
     // 统一在 Hook 内收敛请求体形状，避免表单与不同 AI 入口各自拼装导致字段漂移。
@@ -94,6 +102,30 @@ export function usePostAiAssistant({
   function showFieldWarnings(warnings: string[]) {
     if (warnings.length > 0) {
       toast.warning(warnings[0]);
+    }
+  }
+
+  function cancelAiRequest() {
+    if (!abortControllerRef.current) return false;
+
+    abortControllerRef.current.abort();
+    abortControllerRef.current = null;
+    setAiLoading(false);
+    toast.message('AI 请求已取消');
+    return true;
+  }
+
+  function startAiRequest() {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setAiLoading(true);
+    return controller;
+  }
+
+  function finishAiRequest(controller: AbortController) {
+    if (abortControllerRef.current === controller) {
+      abortControllerRef.current = null;
+      setAiLoading(false);
     }
   }
 
@@ -210,10 +242,11 @@ export function usePostAiAssistant({
     }
   }
 
-  async function fetchFieldAi(field: AiField) {
+  async function fetchFieldAi(field: AiField, signal: AbortSignal) {
     const res = await fetch('/api/ai/field', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal,
       body: JSON.stringify({
         field,
         ...buildAiPayload(),
@@ -229,17 +262,23 @@ export function usePostAiAssistant({
   }
 
   async function requestAiSuggestions() {
+    if (aiLoading) {
+      cancelAiRequest();
+      return;
+    }
+
     if (!content.trim()) {
       toast.warning('请先填写正文后再使用 AI 优化。');
       return;
     }
 
-    setAiLoading(true);
+    const controller = startAiRequest();
 
     try {
       const res = await fetch('/api/ai/optimize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify(buildAiPayload()),
       });
 
@@ -253,26 +292,39 @@ export function usePostAiAssistant({
       setAiOpen(true);
       toast.success('AI 建议已生成');
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
+
       console.error(error);
       toast.error('AI 服务调用失败，请稍后重试。');
     } finally {
-      setAiLoading(false);
+      finishAiRequest(controller);
     }
   }
 
   async function requestFieldAi(field: AiField) {
+    if (aiLoading) {
+      cancelAiRequest();
+      return;
+    }
+
     if (!canRunFieldAi(field)) return;
 
-    setAiLoading(true);
+    const controller = startAiRequest();
 
     try {
-      const result = await fetchFieldAi(field);
+      const result = await fetchFieldAi(field, controller.signal);
       applyFieldResult(result);
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
+
       console.error(error);
       toast.error(error instanceof Error ? error.message : 'AI 服务调用失败，请稍后重试。');
     } finally {
-      setAiLoading(false);
+      finishAiRequest(controller);
     }
   }
 
@@ -299,14 +351,19 @@ export function usePostAiAssistant({
   }
 
   async function requestTaxonomyAi() {
+    if (aiLoading) {
+      cancelAiRequest();
+      return;
+    }
+
     if (!canRunFieldAi('category') || !canRunFieldAi('tags')) return;
 
-    setAiLoading(true);
+    const controller = startAiRequest();
 
     try {
       const [categoryResult, tagsResult] = await Promise.all([
-        fetchFieldAi('category'),
-        fetchFieldAi('tags'),
+        fetchFieldAi('category', controller.signal),
+        fetchFieldAi('tags', controller.signal),
       ]);
 
       const warnings = Array.from(new Set([...categoryResult.warnings, ...tagsResult.warnings]));
@@ -318,10 +375,14 @@ export function usePostAiAssistant({
       });
       setTaxonomyAiOpen(true);
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
+
       console.error(error);
       toast.error(error instanceof Error ? error.message : 'AI 服务调用失败，请稍后重试。');
     } finally {
-      setAiLoading(false);
+      finishAiRequest(controller);
     }
   }
 
@@ -349,5 +410,6 @@ export function usePostAiAssistant({
     requestContentSectionAi,
     requestSummarySectionAi,
     requestTaxonomyAi,
+    cancelAiRequest,
   };
 }
