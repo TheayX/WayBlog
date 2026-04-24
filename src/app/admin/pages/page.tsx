@@ -51,21 +51,21 @@ export default function AdminPagesPage() {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
+      <section className="grid gap-4 md:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="page-frame px-5 py-5">
           <p className="text-sm text-muted-foreground">维护建议</p>
           <p className="mt-2 text-base font-medium text-foreground">
             路由稳定优先，避免频繁改动 slug 影响前台入口。
           </p>
         </div>
-        <div className="page-frame flex items-center justify-between gap-4 px-5 py-5">
-          <div>
+        <div className="page-frame flex items-center justify-between gap-5 px-5 py-5">
+          <div className="min-w-0">
             <p className="text-sm text-muted-foreground">快速操作</p>
             <p className="mt-2 text-base font-medium text-foreground">创建一页新内容</p>
           </div>
           <Link
             href="/admin/pages/new"
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+            className="shrink-0 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
           >
             <FilePlus2 className="h-4 w-4" />
             新建单页

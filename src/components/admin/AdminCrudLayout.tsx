@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 interface AdminFormPanelProps {
   title: string;
   description?: string;
+  headerAction?: ReactNode;
   children: ReactNode;
 }
 
@@ -29,12 +30,20 @@ interface AdminResourceListStateProps {
  * 分类、标签和友链管理页都使用同一套“标题 + 输入区 + 操作区”结构；
  * 抽成小组件后，各页面仍保留自己的字段和业务校验，不引入过重的配置式 CRUD。
  */
-export function AdminFormPanel({ title, description, children }: AdminFormPanelProps) {
+export function AdminFormPanel({
+  title,
+  description,
+  headerAction,
+  children,
+}: AdminFormPanelProps) {
   return (
     <section className="page-frame px-5 py-5">
-      <div className="mb-4 space-y-1">
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        {description && <p className="text-sm leading-7 text-muted-foreground">{description}</p>}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          {description && <p className="text-sm leading-7 text-muted-foreground">{description}</p>}
+        </div>
+        {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
       </div>
       {children}
     </section>

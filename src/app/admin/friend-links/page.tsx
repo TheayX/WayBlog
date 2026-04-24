@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink, PencilLine, Trash2, Waypoints } from 'lucide-react';
+import { ExternalLink, PencilLine, Plus, Trash2, Waypoints, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -31,6 +31,7 @@ export default function AdminFriendLinksPage() {
   const [description, setDescription] = useState('');
   const [sortOrder, setSortOrder] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
@@ -40,10 +41,12 @@ export default function AdminFriendLinksPage() {
     setDescription('');
     setSortOrder(0);
     setEditingId(null);
+    setComposerOpen(false);
   }
 
   function startEdit(link: AdminFriendLinkItem) {
     setEditingId(link.id);
+    setComposerOpen(true);
     setName(link.name);
     setUrl(link.url);
     setAvatar(link.avatar || '');
@@ -107,46 +110,66 @@ export default function AdminFriendLinksPage() {
       <AdminFormPanel
         title={editingId ? '编辑友链' : '新建友链'}
         description="友链页更接近推荐列表，除了名称和地址，也要维护描述和排序权重。"
+        headerAction={
+          !editingId ? (
+            <button
+              type="button"
+              onClick={() => setComposerOpen((open) => !open)}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+            >
+              {composerOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {composerOpen ? '收起表单' : '创建友链'}
+            </button>
+          ) : null
+        }
       >
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="站点名称"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={avatar}
-            onChange={(e) => setAvatar(e.target.value)}
-            placeholder="图标 URL（可选）"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="描述（可选）"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
-          <input
-            type="number"
-            value={sortOrder}
-            onChange={(e) => setSortOrder(Number(e.target.value))}
-            placeholder="排序权重"
-            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-          />
+        <div
+          className={`grid overflow-hidden transition-all duration-300 ease-out ${
+            editingId || composerOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="min-h-0">
+            <div className="grid gap-3 pt-1 md:grid-cols-2">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="站点名称"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={avatar}
+                onChange={(e) => setAvatar(e.target.value)}
+                placeholder="图标 URL（可选）"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="描述（可选）"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+              <input
+                type="number"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value))}
+                placeholder="排序权重"
+                className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            <AdminFormActions
+              editing={Boolean(editingId)}
+              saving={saving}
+              onSave={handleSave}
+              onCancel={resetForm}
+            />
+          </div>
         </div>
-        <AdminFormActions
-          editing={Boolean(editingId)}
-          saving={saving}
-          onSave={handleSave}
-          onCancel={resetForm}
-        />
       </AdminFormPanel>
 
       <AdminResourceListState loading={loading} empty={links.length === 0} emptyText="暂无友链">

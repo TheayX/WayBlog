@@ -1,6 +1,6 @@
 'use client';
 
-import { Hash, PencilLine, Trash2 } from 'lucide-react';
+import { Hash, PencilLine, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -92,6 +92,19 @@ export default function AdminTagsPage() {
       <AdminFormPanel
         title={editingId ? '编辑标签' : '新建标签'}
         description="标签用于补充主题交叉关系，建议保持轻量且可复用。"
+        headerAction={
+          !editingId ? (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" />
+              {saving ? '创建中...' : '创建'}
+            </button>
+          ) : null
+        }
       >
         <div className="grid gap-3 md:grid-cols-2">
           <input

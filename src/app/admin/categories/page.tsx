@@ -1,6 +1,6 @@
 'use client';
 
-import { FolderTree, PencilLine, Trash2 } from 'lucide-react';
+import { FolderTree, PencilLine, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -95,6 +95,19 @@ export default function AdminCategoriesPage() {
       <AdminFormPanel
         title={editingId ? '编辑分类' : '新建分类'}
         description="分类承担公开页主题聚合职责，建议保持语义稳定。"
+        headerAction={
+          !editingId ? (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" />
+              {saving ? '创建中...' : '创建'}
+            </button>
+          ) : null
+        }
       >
         <div className="grid gap-3 md:grid-cols-3">
           <input
