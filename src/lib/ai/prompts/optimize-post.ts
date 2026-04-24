@@ -15,6 +15,7 @@ export function buildOptimizePostPrompt(input: AiOptimizeInput) {
       '优化标题、slug、摘要、正文',
       '正文只做必要整理和表达优化',
       '保持原有信息边界，不扩写新事实',
+      '分类和标签以稳定归纳为主，不为凑覆盖面强行推荐',
       ...profile.rules,
     ],
     `{

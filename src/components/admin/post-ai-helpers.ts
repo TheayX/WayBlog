@@ -16,6 +16,10 @@ interface PostAiFormSetters {
   setSlugManuallyEdited: Dispatch<SetStateAction<boolean>>;
 }
 
+type AiApplyResult =
+  | { success: true }
+  | { success: false; reason: 'category' | 'tags' };
+
 /**
  * 将 AI 推荐分类映射到当前已存在分类。
  *
@@ -99,7 +103,7 @@ export function applyAiFieldValue(
   categories: NamedOption[],
   tags: NamedOption[],
   setters: PostAiFormSetters,
-) {
+): AiApplyResult {
   switch (field) {
     case 'identity':
       setters.setTitle(result.title);
@@ -136,6 +140,37 @@ export function applyAiFieldValue(
       return { success: true as const };
     }
   }
+}
+
+/**
+ * 将整篇优化结果按字段列表批量应用到表单。
+ *
+ * 总按钮仍然保持单次整篇 AI 请求，但具体回填动作复用字段级应用器，
+ * 避免“全部应用”和单字段应用逐渐演化出两套不一致逻辑。
+ */
+export function applyAiFields(
+  fields: AiField[],
+  result: Pick<
+    AiOptimizeResult,
+    'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
+  >,
+  categories: NamedOption[],
+  tags: NamedOption[],
+  setters: PostAiFormSetters,
+) {
+  const failures: Array<'category' | 'tags'> = [];
+
+  for (const field of fields) {
+    const applyResult = applyAiFieldValue(field, result, categories, tags, setters);
+    if (!applyResult.success) {
+      failures.push(applyResult.reason);
+    }
+  }
+
+  return {
+    success: failures.length === 0,
+    failures: Array.from(new Set(failures)),
+  };
 }
 
 /**

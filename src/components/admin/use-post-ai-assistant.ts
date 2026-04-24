@@ -5,10 +5,9 @@ import { toast } from 'sonner';
 import type { Dispatch, SetStateAction } from 'react';
 import type { AiField, AiFieldResult, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
 import {
+  applyAiFields,
   applyAiFieldValue,
   getAiFieldLabel,
-  getMatchedCategoryId,
-  getMatchedTagIds,
   normalizeFieldResult,
 } from '@/components/admin/post-ai-helpers';
 
@@ -159,23 +158,28 @@ export function usePostAiAssistant({
     if (!aiResult) return;
 
     // 全量应用会覆盖当前表单内容，因此只在用户显式确认后从抽屉触发。
-    setTitle(aiResult.title);
-    setSlug(aiResult.slug);
-    setSlugManuallyEdited(true);
-    setContent(aiResult.content);
-    setExcerpt(aiResult.excerpt);
-
-    const matchedCategoryId = getMatchedCategoryId(categories, aiResult);
-    if (matchedCategoryId) {
-      setCategoryId(matchedCategoryId);
-    }
-
-    const matchedTagIds = getMatchedTagIds(tags, aiResult);
-    if (matchedTagIds.length > 0) {
-      setSelectedTagIds(matchedTagIds);
-    }
+    const applyResult = applyAiFields(
+      ['title', 'slug', 'content', 'excerpt', 'category', 'tags'],
+      aiResult,
+      categories,
+      tags,
+      {
+        setTitle,
+        setSlug,
+        setContent,
+        setExcerpt,
+        setCategoryId,
+        setSelectedTagIds,
+        setSlugManuallyEdited,
+      },
+    );
 
     showFieldWarnings(aiResult.warnings);
+    if (!applyResult.success) {
+      toast.success('已应用主要 AI 建议，未命中的分类或标签请手动确认。');
+      return;
+    }
+
     toast.success('已应用全部 AI 建议');
   }
 
