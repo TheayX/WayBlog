@@ -1,5 +1,6 @@
 'use client';
 
+import { Hash, PencilLine, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -81,9 +82,15 @@ export default function AdminTagsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">标签管理</h1>
+      <section className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
+        <p className="eyebrow">Tags</p>
+        <h1 className="mt-3 text-3xl font-semibold text-foreground">标签管理</h1>
+      </section>
 
-      <AdminFormPanel title={editingId ? '编辑标签' : '新建标签'}>
+      <AdminFormPanel
+        title={editingId ? '编辑标签' : '新建标签'}
+        description="标签用于补充主题交叉关系，建议保持轻量且可复用。"
+      >
         <div className="grid gap-3 md:grid-cols-2">
           <input
             value={name}
@@ -92,7 +99,7 @@ export default function AdminTagsPage() {
               if (!editingId) setSlug(slugify(e.target.value));
             }}
             placeholder="标签名称"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
           />
           <input
             value={slug}
@@ -105,7 +112,7 @@ export default function AdminTagsPage() {
               }
             }}
             placeholder="slug"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
           />
         </div>
         <AdminFormActions
@@ -117,21 +124,41 @@ export default function AdminTagsPage() {
       </AdminFormPanel>
 
       <AdminResourceListState loading={loading} empty={tags.length === 0} emptyText="暂无标签">
-        <div className="flex flex-wrap gap-2">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {tags.map((tag) => (
             <div
               key={tag.id}
-              className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5"
+              className="page-frame flex items-center justify-between gap-3 px-4 py-4"
             >
-              <span className="text-sm">{tag.name}</span>
-              <span className="text-xs text-muted-foreground">({tag.postCount})</span>
-              <button onClick={() => startEdit(tag)} className="text-xs text-primary hover:underline">编辑</button>
-              <button onClick={() => handleDelete(tag.id, tag.name)} className="text-xs text-destructive hover:underline">×</button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-accent" />
+                  <span className="font-medium text-foreground">{tag.name}</span>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  /{tag.slug} · {tag.postCount} 篇文章
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => startEdit(tag)}
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  <PencilLine className="h-4 w-4" />
+                  编辑
+                </button>
+                <button
+                  onClick={() => handleDelete(tag.id, tag.name)}
+                  className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  删除
+                </button>
+              </div>
             </div>
           ))}
-        </div>
+        </section>
       </AdminResourceListState>
     </div>
   );
 }
-

@@ -1,7 +1,8 @@
 'use client';
 
+import { FilePlus2, Flame, PencilLine, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { deleteAdminResource, fetchAdminCollection } from '@/lib/admin/client';
 import { formatDateShort } from '@/lib/utils';
@@ -27,7 +28,9 @@ export default function AdminPostsPage() {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (statusFilter) params.set('status', statusFilter);
 
-    fetchAdminCollection<{ data?: AdminPostListItem[]; total?: number }>(`/api/admin/posts?${params}`)
+    fetchAdminCollection<{ data?: AdminPostListItem[]; total?: number }>(
+      `/api/admin/posts?${params}`,
+    )
       .then((res) => {
         if (!res.ok) {
           toast.error(res.error);
@@ -61,126 +64,168 @@ export default function AdminPostsPage() {
   }
 
   const totalPages = Math.ceil(total / pageSize);
+  const publishedCount = posts.filter((post) => post.status === 'PUBLISHED').length;
+  const draftCount = posts.filter((post) => post.status === 'DRAFT').length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">文章管理</h1>
-        <Link
-          href="/admin/posts/new"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-        >
-          + 新建文章
-        </Link>
-      </div>
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_18rem]">
+        <div className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
+          <p className="eyebrow">Posts</p>
+          <h1 className="mt-3 text-3xl font-semibold text-foreground">文章管理</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+            统一处理文章状态、编辑入口和发布节奏。列表页优先强调可读性与状态识别，而不是传统后台表格堆叠。
+          </p>
+        </div>
+        <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
+          <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">Current</p>
+          <p className="mt-4 text-sm text-primary-foreground/80">当前筛选结果</p>
+          <p className="editorial-title mt-2 text-5xl font-semibold">{total}</p>
+          <p className="mt-5 text-sm leading-7 text-primary-foreground/80">
+            支持按状态快速筛选和进入编辑工作台。
+          </p>
+        </div>
+      </section>
 
-      {/* 筛选 */}
-      <div className="flex gap-2">
-        {['', 'PUBLISHED', 'DRAFT'].map((s) => (
-          <button
-            key={s}
-            onClick={() => { setStatusFilter(s); setPage(1); }}
-            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-              statusFilter === s
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border text-muted-foreground hover:bg-muted'
-            }`}
+      <section className="grid gap-4 md:grid-cols-3">
+        <div className="page-frame px-5 py-5">
+          <p className="text-sm text-muted-foreground">当前列表已发布</p>
+          <p className="editorial-title mt-4 text-4xl font-semibold text-foreground">
+            {publishedCount}
+          </p>
+        </div>
+        <div className="page-frame px-5 py-5">
+          <p className="text-sm text-muted-foreground">当前列表草稿</p>
+          <p className="editorial-title mt-4 text-4xl font-semibold text-foreground">
+            {draftCount}
+          </p>
+        </div>
+        <div className="page-frame flex items-center justify-between gap-4 px-5 py-5">
+          <div>
+            <p className="text-sm text-muted-foreground">快速操作</p>
+            <p className="mt-2 text-base font-medium text-foreground">创建一篇新文章</p>
+          </div>
+          <Link
+            href="/admin/posts/new"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
           >
-            {s === '' ? '全部' : s === 'PUBLISHED' ? '已发布' : '草稿'}
-          </button>
-        ))}
-        <span className="ml-auto text-sm text-muted-foreground">
-          共 {total} 篇
-        </span>
-      </div>
+            <FilePlus2 className="h-4 w-4" />
+            新建文章
+          </Link>
+        </div>
+      </section>
 
-      {/* 文章表格 */}
+      <section className="page-frame px-5 py-5">
+        <div className="flex flex-wrap items-center gap-2">
+          {['', 'PUBLISHED', 'DRAFT'].map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(1);
+              }}
+              className={`inline-flex h-10 items-center rounded-full border px-4 text-sm ${
+                statusFilter === s
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-background text-muted-foreground hover:border-border-strong hover:text-foreground'
+              }`}
+            >
+              {s === '' ? '全部' : s === 'PUBLISHED' ? '已发布' : '草稿'}
+            </button>
+          ))}
+          <span className="ml-auto text-sm text-muted-foreground">共 {total} 篇</span>
+        </div>
+      </section>
+
       {loading ? (
         <p className="text-muted-foreground">加载中...</p>
       ) : posts.length === 0 ? (
-        <p className="text-muted-foreground">暂无文章</p>
+        <div className="page-frame px-6 py-12 text-muted-foreground">暂无文章</div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">标题</th>
-                <th className="px-4 py-3 text-left font-medium">状态</th>
-                <th className="px-4 py-3 text-left font-medium">分类</th>
-                <th className="px-4 py-3 text-left font-medium">浏览量</th>
-                <th className="px-4 py-3 text-left font-medium">日期</th>
-                <th className="px-4 py-3 text-right font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {posts.map((post) => (
-                <tr key={post.id} className="border-t border-border">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {post.pinned && <span title="置顶">📌</span>}
-                      <span className="font-medium">{post.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        post.status === 'PUBLISHED'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      }`}
-                    >
-                      {post.status === 'PUBLISHED' ? '已发布' : '草稿'}
+        <section className="page-frame overflow-hidden">
+          <div className="grid border-b border-border bg-muted/40 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground md:grid-cols-[minmax(0,2.3fr)_9rem_8rem_7rem_8rem]">
+            <span>文章</span>
+            <span>状态</span>
+            <span>分类</span>
+            <span>浏览量</span>
+            <span className="text-right">操作</span>
+          </div>
+          <div className="divide-y divide-border">
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                className="grid gap-4 px-5 py-5 md:grid-cols-[minmax(0,2.3fr)_9rem_8rem_7rem_8rem] md:items-center"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    {post.pinned && <Flame className="h-4 w-4 text-accent" />}
+                    <span className="truncate text-base font-medium text-foreground">
+                      {post.title}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {post.category?.name || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{post.viewCount}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  </div>
+                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                    /posts/{post.slug} ·{' '}
                     {post.publishedAt
                       ? formatDateShort(post.publishedAt)
                       : formatDateShort(post.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/admin/posts/${post.id}/edit`}
-                        className="text-primary hover:underline"
-                      >
-                        编辑
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(post.id, post.title)}
-                        className="text-destructive hover:underline"
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </p>
+                </div>
+
+                <div>
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                      post.status === 'PUBLISHED'
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-accent/10 text-accent'
+                    }`}
+                  >
+                    {post.status === 'PUBLISHED' ? '已发布' : '草稿'}
+                  </span>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  {post.category?.name || '未分类'}
+                </div>
+                <div className="text-sm text-muted-foreground">{post.viewCount}</div>
+
+                <div className="flex items-center justify-end gap-3">
+                  <Link
+                    href={`/admin/posts/${post.id}/edit`}
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    <PencilLine className="h-4 w-4" />
+                    编辑
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(post.id, post.title)}
+                    className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    删除
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* 分页 */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+            className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground disabled:opacity-50"
           >
             上一页
           </button>
-          <span className="text-sm text-muted-foreground">
-            {page} / {totalPages}
+          <span className="inline-flex h-11 items-center rounded-full border border-border bg-muted/70 px-4 text-sm text-muted-foreground">
+            第 {page} / {totalPages} 页
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+            className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground disabled:opacity-50"
           >
             下一页
           </button>
@@ -189,4 +234,3 @@ export default function AdminPostsPage() {
     </div>
   );
 }
-

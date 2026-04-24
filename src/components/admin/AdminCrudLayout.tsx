@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 interface AdminFormPanelProps {
   title: string;
+  description?: string;
   children: ReactNode;
 }
 
@@ -27,12 +28,15 @@ interface AdminResourceListStateProps {
  * 分类、标签和友链管理页都使用同一套“标题 + 输入区 + 操作区”结构；
  * 抽成小组件后，各页面仍保留自己的字段和业务校验，不引入过重的配置式 CRUD。
  */
-export function AdminFormPanel({ title, children }: AdminFormPanelProps) {
+export function AdminFormPanel({ title, description, children }: AdminFormPanelProps) {
   return (
-    <div className="space-y-3 rounded-lg border border-border p-4">
-      <h2 className="text-sm font-medium">{title}</h2>
+    <section className="page-frame px-5 py-5">
+      <div className="mb-4 space-y-1">
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        {description && <p className="text-sm leading-7 text-muted-foreground">{description}</p>}
+      </div>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -41,25 +45,20 @@ export function AdminFormPanel({ title, children }: AdminFormPanelProps) {
  *
  * 保存按钮文案由编辑态决定，取消按钮只在编辑态展示，保持三个资源管理页交互一致。
  */
-export function AdminFormActions({
-  editing,
-  saving,
-  onSave,
-  onCancel,
-}: AdminFormActionsProps) {
+export function AdminFormActions({ editing, saving, onSave, onCancel }: AdminFormActionsProps) {
   return (
-    <div className="flex gap-2">
+    <div className="mt-5 flex flex-wrap gap-3">
       <button
         onClick={onSave}
         disabled={saving}
-        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {editing ? '更新' : '创建'}
+        {saving ? '处理中...' : editing ? '更新' : '创建'}
       </button>
       {editing && (
         <button
           onClick={onCancel}
-          className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
+          className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
         >
           取消
         </button>
@@ -80,11 +79,11 @@ export function AdminResourceListState({
   children,
 }: AdminResourceListStateProps) {
   if (loading) {
-    return <p className="text-muted-foreground">加载中...</p>;
+    return <p className="text-sm text-muted-foreground">加载中...</p>;
   }
 
   if (empty) {
-    return <p className="text-muted-foreground">{emptyText}</p>;
+    return <div className="page-frame px-6 py-12 text-sm text-muted-foreground">{emptyText}</div>;
   }
 
   return <>{children}</>;

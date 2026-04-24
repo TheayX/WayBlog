@@ -1,5 +1,6 @@
 'use client';
 
+import { Sparkles } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import type {
   PostCategoryOption,
@@ -68,7 +69,7 @@ function FieldAiButton({ label, loading, onClick }: FieldAiButtonProps) {
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+      className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-xs text-muted-foreground hover:border-border-strong hover:text-foreground disabled:opacity-50"
     >
       {loading ? '处理中...' : `${label} AI`}
     </button>
@@ -92,38 +93,50 @@ export function TitleSlugSection({
   onOptimizeSlug,
 }: TitleSlugSectionProps) {
   return (
-    <>
-      <div className="flex items-center gap-3">
+    <section className="page-frame px-5 py-5">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <p className="eyebrow">Identity</p>
+          <h2 className="mt-2 text-xl font-semibold text-foreground">标题与链接</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onOptimizeAll}
+          disabled={aiLoading}
+          className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          <Sparkles className="h-4 w-4" />
+          {aiLoading ? 'AI 处理中...' : 'AI 优化整篇'}
+        </button>
+      </div>
+
+      <div className="mt-5 space-y-4">
         <input
           type="text"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="文章标题"
-          className="w-full border-b border-border bg-transparent pb-2 text-2xl font-bold outline-none focus:border-primary"
+          className="editorial-title w-full border-b border-border bg-transparent pb-3 text-3xl font-semibold outline-none focus:border-primary"
         />
-        <button
-          type="button"
-          onClick={onOptimizeAll}
-          disabled={aiLoading}
-          className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {aiLoading ? 'AI 处理中...' : 'AI 优化'}
-        </button>
-      </div>
 
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">/posts/</span>
-        <input
-          type="text"
-          value={slug}
-          onChange={(e) => onSlugChange(e.target.value)}
-          placeholder="article-slug"
-          className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-        />
-        <FieldAiButton label="标题" loading={aiLoading} onClick={onOptimizeTitle} />
-        <FieldAiButton label="Slug" loading={aiLoading} onClick={onOptimizeSlug} />
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-background px-4">
+            <span className="text-sm text-muted-foreground">/posts/</span>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => onSlugChange(e.target.value)}
+              placeholder="article-slug"
+              className="h-12 flex-1 bg-transparent text-sm outline-none"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <FieldAiButton label="标题" loading={aiLoading} onClick={onOptimizeTitle} />
+            <FieldAiButton label="Slug" loading={aiLoading} onClick={onOptimizeSlug} />
+          </div>
+        </div>
       </div>
-    </>
+    </section>
   );
 }
 
@@ -141,40 +154,47 @@ export function ContentEditorSection({
   onOptimizeContent,
 }: ContentEditorSectionProps) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Markdown 编辑</label>
-            <FieldAiButton label="正文" loading={aiLoading} onClick={onOptimizeContent} />
-          </div>
+    <section className="page-frame px-5 py-5">
+      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <p className="eyebrow">Content</p>
+          <h2 className="mt-2 text-xl font-semibold text-foreground">正文编辑</h2>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <FieldAiButton label="正文" loading={aiLoading} onClick={onOptimizeContent} />
           <button
             type="button"
             onClick={onUploadImage}
-            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
+            className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-xs text-muted-foreground hover:border-border-strong hover:text-foreground"
           >
             插入图片
           </button>
         </div>
-        <textarea
-          id="content-editor"
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
-          placeholder="在此编写 Markdown 内容..."
-          className="h-125 w-full resize-none rounded-md border border-border bg-background p-4 font-mono text-sm outline-none focus:border-primary"
-        />
       </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium">预览</label>
-        <div className="h-125 overflow-y-auto rounded-md border border-border p-4">
-          {content ? (
-            <MarkdownRenderer content={content} />
-          ) : (
-            <p className="text-sm text-muted-foreground">开始编写内容以预览...</p>
-          )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Markdown 编辑</label>
+          <textarea
+            id="content-editor"
+            value={content}
+            onChange={(e) => onContentChange(e.target.value)}
+            placeholder="在此编写 Markdown 内容..."
+            className="h-[38rem] w-full resize-none rounded-[1.5rem] border border-border bg-background p-4 font-mono text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">预览</label>
+          <div className="h-[38rem] overflow-y-auto rounded-[1.5rem] border border-border bg-background p-4">
+            {content ? (
+              <MarkdownRenderer content={content} />
+            ) : (
+              <p className="text-sm text-muted-foreground">开始编写内容以预览...</p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -190,31 +210,37 @@ export function SummaryCoverSection({
   onOptimizeExcerpt,
 }: SummaryCoverSectionProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div>
-        <div className="mb-1 flex items-center justify-between gap-2">
-          <label className="block text-sm font-medium">摘要</label>
-          <FieldAiButton label="摘要" loading={aiLoading} onClick={onOptimizeExcerpt} />
+    <section className="page-frame px-5 py-5">
+      <div className="mb-4">
+        <p className="eyebrow">Summary</p>
+        <h2 className="mt-2 text-xl font-semibold text-foreground">摘要与封面</h2>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <label className="text-sm font-medium text-foreground">摘要</label>
+            <FieldAiButton label="摘要" loading={aiLoading} onClick={onOptimizeExcerpt} />
+          </div>
+          <textarea
+            value={excerpt}
+            onChange={(e) => onExcerptChange(e.target.value)}
+            placeholder="文章摘要（可选，留空时可通过 AI 生成）"
+            rows={4}
+            className="w-full rounded-[1.5rem] border border-border bg-background p-4 text-sm outline-none focus:border-primary"
+          />
         </div>
-        <textarea
-          value={excerpt}
-          onChange={(e) => onExcerptChange(e.target.value)}
-          placeholder="文章摘要（可选，留空时可通过 AI 生成）"
-          rows={3}
-          className="w-full rounded-md border border-border bg-background p-3 text-sm outline-none focus:border-primary"
-        />
+        <div>
+          <label className="mb-2 block text-sm font-medium text-foreground">封面图 URL</label>
+          <input
+            type="text"
+            value={coverImage}
+            onChange={(e) => onCoverImageChange(e.target.value)}
+            placeholder="/uploads/2026-02/cover.webp"
+            className="h-12 w-full rounded-[1.5rem] border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+          />
+        </div>
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">封面图 URL</label>
-        <input
-          type="text"
-          value={coverImage}
-          onChange={(e) => onCoverImageChange(e.target.value)}
-          placeholder="/uploads/2026-02/cover.webp"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -235,17 +261,22 @@ export function TaxonomySection({
   onOptimizeTags,
 }: TaxonomySectionProps) {
   return (
-    <>
+    <section className="page-frame px-5 py-5">
+      <div className="mb-4">
+        <p className="eyebrow">Metadata</p>
+        <h2 className="mt-2 text-xl font-semibold text-foreground">分类、标签与状态</h2>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <label className="block text-sm font-medium">分类</label>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <label className="text-sm font-medium text-foreground">分类</label>
             <FieldAiButton label="分类" loading={aiLoading} onClick={onOptimizeCategory} />
           </div>
           <select
             value={categoryId}
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            className="h-12 w-full rounded-[1.5rem] border border-border bg-background px-4 text-sm outline-none focus:border-primary"
           >
             <option value="">无分类</option>
             {categories.map((category) => (
@@ -257,7 +288,7 @@ export function TaxonomySection({
         </div>
 
         <div className="flex items-end gap-4">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="inline-flex h-12 items-center gap-2 rounded-[1.5rem] border border-border bg-background px-4 text-sm text-foreground">
             <input
               type="checkbox"
               checked={pinned}
@@ -269,9 +300,9 @@ export function TaxonomySection({
         </div>
       </div>
 
-      <div>
+      <div className="mt-4">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <label className="block text-sm font-medium">标签</label>
+          <label className="text-sm font-medium text-foreground">标签</label>
           <FieldAiButton label="标签" loading={aiLoading} onClick={onOptimizeTags} />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -280,10 +311,10 @@ export function TaxonomySection({
               key={tag.id}
               type="button"
               onClick={() => onToggleTag(tag.id)}
-              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              className={`rounded-full border px-3 py-2 text-xs transition-colors ${
                 selectedTagIds.includes(tag.id)
                   ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border text-muted-foreground hover:bg-muted'
+                  : 'border-border bg-background text-muted-foreground hover:border-border-strong hover:text-foreground'
               }`}
             >
               {tag.name}
@@ -294,7 +325,7 @@ export function TaxonomySection({
           )}
         </div>
       </div>
-    </>
+    </section>
   );
 }
 
@@ -309,18 +340,18 @@ export function PostFormActionBar({
   onCancel,
 }: ActionBarProps) {
   return (
-    <div className="flex items-center gap-3 border-t border-border pt-6">
+    <div className="page-frame flex flex-wrap items-center gap-3 px-5 py-4">
       <button
         onClick={onSaveDraft}
         disabled={saving}
-        className="rounded-md border border-border px-4 py-2 text-sm transition-colors hover:bg-muted disabled:opacity-50"
+        className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground disabled:opacity-50"
       >
         保存草稿
       </button>
       <button
         onClick={onPublish}
         disabled={saving}
-        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
       >
         {publishButtonLabel}
       </button>

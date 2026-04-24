@@ -1,5 +1,6 @@
 'use client';
 
+import { FolderTree, PencilLine, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -84,9 +85,15 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">分类管理</h1>
+      <section className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
+        <p className="eyebrow">Categories</p>
+        <h1 className="mt-3 text-3xl font-semibold text-foreground">分类管理</h1>
+      </section>
 
-      <AdminFormPanel title={editingId ? '编辑分类' : '新建分类'}>
+      <AdminFormPanel
+        title={editingId ? '编辑分类' : '新建分类'}
+        description="分类承担公开页主题聚合职责，建议保持语义稳定。"
+      >
         <div className="grid gap-3 md:grid-cols-3">
           <input
             value={name}
@@ -95,7 +102,7 @@ export default function AdminCategoriesPage() {
               if (!editingId) setSlug(slugify(e.target.value));
             }}
             placeholder="分类名称"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
           />
           <input
             value={slug}
@@ -108,13 +115,13 @@ export default function AdminCategoriesPage() {
               }
             }}
             placeholder="slug"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
           />
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="描述（可选）"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
           />
         </div>
         <AdminFormActions
@@ -125,25 +132,47 @@ export default function AdminCategoriesPage() {
         />
       </AdminFormPanel>
 
-      <AdminResourceListState loading={loading} empty={categories.length === 0} emptyText="暂无分类">
-        <div className="rounded-lg border border-border">
+      <AdminResourceListState
+        loading={loading}
+        empty={categories.length === 0}
+        emptyText="暂无分类"
+      >
+        <section className="page-frame divide-y divide-border">
           {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center justify-between border-b border-border px-4 py-3 last:border-0">
-              <div>
-                <span className="font-medium">{cat.name}</span>
-                <span className="ml-2 text-xs text-muted-foreground">/{cat.slug}</span>
-                {cat.description && <span className="ml-2 text-xs text-muted-foreground">— {cat.description}</span>}
-                <span className="ml-2 text-xs text-muted-foreground">({cat.postCount} 篇)</span>
+            <div
+              key={cat.id}
+              className="flex flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <FolderTree className="h-4 w-4 text-accent" />
+                  <span className="text-base font-medium text-foreground">{cat.name}</span>
+                  <span className="text-xs text-muted-foreground">/{cat.slug}</span>
+                </div>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {cat.description || '暂无描述'} · {cat.postCount} 篇文章
+                </p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => startEdit(cat)} className="text-sm text-primary hover:underline">编辑</button>
-                <button onClick={() => handleDelete(cat.id, cat.name)} className="text-sm text-destructive hover:underline">删除</button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => startEdit(cat)}
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  <PencilLine className="h-4 w-4" />
+                  编辑
+                </button>
+                <button
+                  onClick={() => handleDelete(cat.id, cat.name)}
+                  className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  删除
+                </button>
               </div>
             </div>
           ))}
-        </div>
+        </section>
       </AdminResourceListState>
     </div>
   );
 }
-

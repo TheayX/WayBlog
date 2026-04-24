@@ -1,5 +1,6 @@
 'use client';
 
+import { ExternalLink, PencilLine, Trash2, Waypoints } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -32,7 +33,12 @@ export default function AdminFriendLinksPage() {
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
-    setName(''); setUrl(''); setAvatar(''); setDescription(''); setSortOrder(0); setEditingId(null);
+    setName('');
+    setUrl('');
+    setAvatar('');
+    setDescription('');
+    setSortOrder(0);
+    setEditingId(null);
   }
 
   function startEdit(link: AdminFriendLinkItem) {
@@ -91,15 +97,47 @@ export default function AdminFriendLinksPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">友链管理</h1>
+      <section className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
+        <p className="eyebrow">Friend Links</p>
+        <h1 className="mt-3 text-3xl font-semibold text-foreground">友链管理</h1>
+      </section>
 
-      <AdminFormPanel title={editingId ? '编辑友链' : '新建友链'}>
+      <AdminFormPanel
+        title={editingId ? '编辑友链' : '新建友链'}
+        description="友链页更接近推荐列表，除了名称和地址，也要维护描述和排序权重。"
+      >
         <div className="grid gap-3 md:grid-cols-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="站点名称" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-          <input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="图标 URL（可选）" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="描述（可选）" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-          <input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} placeholder="排序权重" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="站点名称"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+          />
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+          />
+          <input
+            value={avatar}
+            onChange={(e) => setAvatar(e.target.value)}
+            placeholder="图标 URL（可选）"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+          />
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="描述（可选）"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+          />
+          <input
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(Number(e.target.value))}
+            placeholder="排序权重"
+            className="h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+          />
         </div>
         <AdminFormActions
           editing={Boolean(editingId)}
@@ -110,25 +148,49 @@ export default function AdminFriendLinksPage() {
       </AdminFormPanel>
 
       <AdminResourceListState loading={loading} empty={links.length === 0} emptyText="暂无友链">
-        <div className="rounded-lg border border-border">
+        <section className="page-frame divide-y divide-border">
           {links.map((link) => (
-            <div key={link.id} className="flex items-center justify-between border-b border-border px-4 py-3 last:border-0">
-              <div>
-                <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
-                  {link.name}
-                </a>
-                {link.description && <span className="ml-2 text-xs text-muted-foreground">— {link.description}</span>}
-                <span className="ml-2 text-xs text-muted-foreground">(排序: {link.sortOrder})</span>
+            <div
+              key={link.id}
+              className="flex flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Waypoints className="h-4 w-4 text-accent" />
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-foreground hover:text-primary"
+                  >
+                    {link.name}
+                  </a>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {link.description || '暂无描述'} · 排序 {link.sortOrder}
+                </p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => startEdit(link)} className="text-sm text-primary hover:underline">编辑</button>
-                <button onClick={() => handleDelete(link.id, link.name)} className="text-sm text-destructive hover:underline">删除</button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => startEdit(link)}
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  <PencilLine className="h-4 w-4" />
+                  编辑
+                </button>
+                <button
+                  onClick={() => handleDelete(link.id, link.name)}
+                  className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  删除
+                </button>
               </div>
             </div>
           ))}
-        </div>
+        </section>
       </AdminResourceListState>
     </div>
   );
 }
-

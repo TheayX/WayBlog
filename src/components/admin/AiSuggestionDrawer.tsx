@@ -33,25 +33,30 @@ export function AiSuggestionDrawer({
   const newTags = result.tagSuggestions.filter((tag) => tag.isNew);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/35 backdrop-blur-sm">
       <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-background shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold">AI 优化建议</h2>
-            <p className="text-sm text-muted-foreground">先查看建议内容，再决定是否应用到表单。</p>
+        <div className="border-b border-border px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="eyebrow">AI Review</p>
+              <h2 className="mt-2 text-xl font-semibold text-foreground">AI 优化建议</h2>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                先查看建议内容，再决定是否应用到表单。
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              关闭
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            关闭
-          </button>
         </div>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
           {result.warnings.length > 0 && (
-            <section className="rounded-md border border-amber-500/30 bg-amber-500/10 p-4">
+            <section className="rounded-[1.25rem] border border-amber-500/30 bg-amber-500/10 p-4">
               <h3 className="mb-2 text-sm font-medium text-amber-700">提醒</h3>
               <ul className="space-y-1 text-sm text-amber-700">
                 {result.warnings.map((warning) => (
@@ -61,28 +66,50 @@ export function AiSuggestionDrawer({
             </section>
           )}
 
-          <SuggestionSection title="标题建议" actionLabel="应用标题" onApply={() => onApplyField('title')}>
+          <SuggestionSection
+            title="标题建议"
+            actionLabel="应用标题"
+            onApply={() => onApplyField('title')}
+          >
             <p className="text-sm leading-6">{result.title}</p>
           </SuggestionSection>
 
-          <SuggestionSection title="Slug 建议" actionLabel="应用 Slug" onApply={() => onApplyField('slug')}>
+          <SuggestionSection
+            title="Slug 建议"
+            actionLabel="应用 Slug"
+            onApply={() => onApplyField('slug')}
+          >
             <p className="font-mono text-sm leading-6">{result.slug}</p>
           </SuggestionSection>
 
-          <SuggestionSection title="摘要建议" actionLabel="应用摘要" onApply={() => onApplyField('excerpt')}>
+          <SuggestionSection
+            title="摘要建议"
+            actionLabel="应用摘要"
+            onApply={() => onApplyField('excerpt')}
+          >
             <p className="text-sm leading-6">{result.excerpt || 'AI 未生成摘要建议'}</p>
             {result.excerpt && (
-              <p className="text-xs text-muted-foreground">当前摘要长度：{result.excerpt.length} 字</p>
+              <p className="text-xs text-muted-foreground">
+                当前摘要长度：{result.excerpt.length} 字
+              </p>
             )}
           </SuggestionSection>
 
-          <SuggestionSection title="正文建议" actionLabel="应用正文" onApply={() => onApplyField('content')}>
-            <div className="rounded-md border border-border p-4">
+          <SuggestionSection
+            title="正文建议"
+            actionLabel="应用正文"
+            onApply={() => onApplyField('content')}
+          >
+            <div className="rounded-[1.25rem] border border-border bg-background p-4">
               <MarkdownRenderer content={result.content} />
             </div>
           </SuggestionSection>
 
-          <SuggestionSection title="分类建议" actionLabel="应用分类" onApply={() => onApplyField('category')}>
+          <SuggestionSection
+            title="分类建议"
+            actionLabel="应用分类"
+            onApply={() => onApplyField('category')}
+          >
             {result.categorySuggestion ? (
               <div className="space-y-2 text-sm leading-6">
                 <div className="flex flex-wrap items-center gap-2">
@@ -102,7 +129,11 @@ export function AiSuggestionDrawer({
             )}
           </SuggestionSection>
 
-          <SuggestionSection title="标签建议" actionLabel="应用标签" onApply={() => onApplyField('tags')}>
+          <SuggestionSection
+            title="标签建议"
+            actionLabel="应用标签"
+            onApply={() => onApplyField('tags')}
+          >
             <div className="space-y-4">
               <div>
                 <p className="mb-2 text-sm font-medium">推荐现有标签</p>
@@ -135,14 +166,14 @@ export function AiSuggestionDrawer({
           <button
             type="button"
             onClick={onApplyAll}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"
           >
             全部应用
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
+            className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
           >
             稍后再说
           </button>
@@ -164,13 +195,13 @@ function SuggestionSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-medium">{title}</h3>
+    <section className="page-frame px-4 py-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-base font-medium text-foreground">{title}</h3>
         <button
           type="button"
           onClick={onApply}
-          className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+          className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
         >
           {actionLabel}
         </button>
@@ -183,7 +214,7 @@ function SuggestionSection({
 function TagSuggestionChip({ tag }: { tag: AiSuggestionTag }) {
   return (
     <div
-      className={`rounded-lg border px-3 py-2 text-xs ${
+      className={`rounded-[1rem] border px-3 py-2 text-xs ${
         tag.isNew
           ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
           : 'border-primary/30 bg-primary/10 text-primary'

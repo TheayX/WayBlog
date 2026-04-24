@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { KeyRound, UserRound } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AdminFormPanel } from '@/components/admin/AdminCrudLayout';
 
@@ -144,85 +145,106 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">账号设置</h1>
+      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_18rem]">
+        <div className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
+          <p className="eyebrow">Account</p>
+          <h1 className="mt-3 text-3xl font-semibold text-foreground">账号设置</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+            当前后台采用单管理员模型，设置页只负责维护当前账号资料与密码，不承担复杂权限管理。
+          </p>
+        </div>
+        <div className="rounded-[1.75rem] border border-border bg-primary px-6 py-6 text-primary-foreground">
+          <p className="text-xs uppercase tracking-[0.24em] text-primary-foreground/70">Security</p>
+          <p className="mt-4 text-sm text-primary-foreground/80">建议</p>
+          <p className="mt-3 text-sm leading-7 text-primary-foreground/80">
+            修改密码后会立即清空表单，避免明文长期停留在页面状态中。
+          </p>
+        </div>
+      </section>
 
-      <AdminFormPanel title="基础资料">
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="space-y-1">
-            <span className="text-sm font-medium">邮箱</span>
+      <AdminFormPanel title="基础资料" description="维护当前管理员的基础公开信息。">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+              <UserRound className="h-4 w-4 text-accent" />
+              邮箱
+            </span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
             />
           </label>
-          <label className="space-y-1">
-            <span className="text-sm font-medium">昵称</span>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-foreground">昵称</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
             />
           </label>
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium">头像 URL</span>
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-foreground">头像 URL</span>
             <input
               value={avatar}
               onChange={(event) => setAvatar(event.target.value)}
               placeholder="https://..."
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
             />
           </label>
         </div>
-        <div className="mt-4 flex justify-end">
+        <div className="mt-5 flex justify-end">
           <button
             type="button"
             onClick={handleProfileSave}
             disabled={profileSaving}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {profileSaving ? '保存中...' : '保存资料'}
           </button>
         </div>
       </AdminFormPanel>
 
-      <AdminFormPanel title="修改密码">
-        <div className="grid gap-3 md:grid-cols-3">
-          <label className="space-y-1">
-            <span className="text-sm font-medium">当前密码</span>
+      <AdminFormPanel title="修改密码" description="密码修改成功后会立即清空输入框。">
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="space-y-2">
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+              <KeyRound className="h-4 w-4 text-accent" />
+              当前密码
+            </span>
             <input
               type="password"
               value={currentPassword}
               onChange={(event) => setCurrentPassword(event.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
             />
           </label>
-          <label className="space-y-1">
-            <span className="text-sm font-medium">新密码</span>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-foreground">新密码</span>
             <input
               type="password"
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
             />
           </label>
-          <label className="space-y-1">
-            <span className="text-sm font-medium">确认新密码</span>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-foreground">确认新密码</span>
             <input
               type="password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
             />
           </label>
         </div>
-        <div className="mt-4 flex justify-end">
+        <div className="mt-5 flex justify-end">
           <button
             type="button"
             onClick={handlePasswordSave}
             disabled={passwordSaving}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {passwordSaving ? '更新中...' : '更新密码'}
           </button>

@@ -21,10 +21,18 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
   }
 
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold">编辑文章</h1>
+    <div className="space-y-6">
+      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_18rem]">
+        <div className="rounded-[1.75rem] border border-border bg-background px-6 py-6">
+          <p className="eyebrow">Editor</p>
+          <h1 className="mt-3 text-3xl font-semibold text-foreground">编辑文章</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+            编辑模式保留与新建页一致的工作台结构，但会直接回填现有数据，便于快速修订和再发布。
+          </p>
+        </div>
+      </section>
+
       <PostForm initialData={postData} isEdit />
     </div>
   );
 }
-
