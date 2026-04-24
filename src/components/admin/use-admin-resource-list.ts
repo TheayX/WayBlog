@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { fetchAdminCollection } from '@/lib/admin/client';
 
 /**
@@ -21,6 +22,7 @@ export function useAdminResourceList<T>(endpoint: string) {
       .then((result) => {
         if (!result.ok) {
           console.error(result.error);
+          toast.error(result.error);
           setItems([]);
           return;
         }

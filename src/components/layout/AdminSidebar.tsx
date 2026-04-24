@@ -14,13 +14,12 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 /**
- * 管理后台侧边导航。
+ * 后台导航配置。
  *
- * 通过 pathname 高亮当前模块，并集中维护后台主要入口，
- * 让文章、分类、标签和友链管理在同一套导航语义下切换。
- * sidebarItems 是后台信息架构的唯一来源，新增管理模块时应优先在这里补入口。
+ * 这里是后台信息架构的唯一来源，桌面侧栏和移动端导航都复用同一份数据，
+ * 避免多端出现入口不一致。
  */
-const sidebarItems = [
+export const adminSidebarItems = [
   { href: '/admin/dashboard', label: '仪表盘', icon: LayoutDashboard },
   { href: '/admin/posts', label: '文章管理', icon: PencilLine },
   { href: '/admin/categories', label: '分类管理', icon: FolderTree },
@@ -29,9 +28,48 @@ const sidebarItems = [
   { href: '/admin/settings', label: '账号设置', icon: Settings },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarNavProps {
+  compact?: boolean;
+  onNavigate?: () => void;
+}
+
+function AdminSidebarNav({ compact = false, onNavigate }: AdminSidebarNavProps) {
   const pathname = usePathname();
 
+  return (
+    <nav className={cn('space-y-1', compact ? '' : 'flex-1')}>
+      {adminSidebarItems.map((item) => {
+        const isActive = pathname.startsWith(item.href);
+        const Icon = item.icon;
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={cn(
+              'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm',
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255_/_0.12)]'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * 管理后台侧边导航。
+ *
+ * 通过 pathname 高亮当前模块，并集中维护后台主要入口，
+ * 让文章、分类、标签和友链管理在同一套导航语义下切换。
+ */
+export function AdminSidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 hidden w-72 shrink-0 p-4 xl:block">
       <div className="page-frame flex h-full flex-col px-4 py-5">
@@ -55,28 +93,7 @@ export function AdminSidebar() {
           </p>
         </div>
 
-        <nav className="flex-1 space-y-1">
-          {sidebarItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            const Icon = item.icon;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255_/_0.12)]'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <AdminSidebarNav />
 
         <div className="mt-4 border-t border-border pt-4">
           <Link
@@ -92,5 +109,30 @@ export function AdminSidebar() {
         </div>
       </div>
     </aside>
+  );
+}
+
+export function AdminMobileNav({ onNavigate }: { onNavigate: () => void }) {
+  return (
+    <div className="page-frame mt-3 px-3 py-3 xl:hidden">
+      <div className="px-2 pb-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          Content Ops
+        </p>
+      </div>
+
+      <AdminSidebarNav compact onNavigate={onNavigate} />
+
+      <div className="mt-3 border-t border-border pt-3">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <ArrowUpRight className="h-4 w-4" />
+          <span>回到前台</span>
+        </Link>
+      </div>
+    </div>
   );
 }
