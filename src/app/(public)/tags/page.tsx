@@ -18,24 +18,31 @@ export default async function TagsPage() {
   const tags = await getPublicTagsWithPostCount();
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">标签</h1>
-        <p className="text-muted-foreground">共 {tags.length} 个标签</p>
+    <div className="space-y-8">
+      <header className="page-frame px-6 py-8 sm:px-8">
+        <p className="eyebrow">Tags</p>
+        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
+          标签索引
+        </h1>
+        <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
+          共 {tags.length} 个标签。标签页承担主题聚合入口，应该比普通标签云更有秩序。
+        </p>
       </header>
 
       {tags.length === 0 ? (
-        <p className="text-muted-foreground">暂无标签。</p>
+        <div className="page-frame px-6 py-12 text-muted-foreground">暂无标签。</div>
       ) : (
-        <div className="flex flex-wrap gap-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tags.map((tag) => (
             <Link
               key={tag.id}
               href={`/tags/${tag.slug}`}
-              className="group flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary"
+              className="page-frame group flex items-center justify-between gap-3 px-5 py-4 text-sm hover:border-border-strong"
             >
-              <span>#{tag.name}</span>
-              <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary">
+              <span className="font-medium text-foreground group-hover:text-primary">
+                #{tag.name}
+              </span>
+              <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary">
                 {tag._count.posts}
               </span>
             </Link>

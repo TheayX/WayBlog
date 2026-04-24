@@ -1,5 +1,5 @@
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { getPublishedPostsPageByCategory } from '@/lib/posts/queries';
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 /**
  * 前台分类聚合页。
  *
- * 负责分页展示某个分类下的已发布文章，并在分类不存在时回落到 404，
+ * 负责分页展示某个分类下的已发布文章，并在分类不存在时回落到 404；
  * 草稿不会通过这个公开入口暴露。
  */
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
@@ -46,21 +46,27 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   if (!category) notFound();
 
   const { data: posts, total } = await getPublishedPostsPageByCategory(category.id, page, pageSize);
-
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">{category.name}</h1>
-        {category.description && <p className="text-muted-foreground">{category.description}</p>}
-        <p className="mt-1 text-sm text-muted-foreground">共 {total} 篇文章</p>
+    <div className="space-y-8">
+      <header className="page-frame px-6 py-8 sm:px-8">
+        <p className="eyebrow">Category</p>
+        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
+          {category.name}
+        </h1>
+        {category.description && (
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+            {category.description}
+          </p>
+        )}
+        <p className="mt-4 text-sm text-muted-foreground">共 {total} 篇文章</p>
       </header>
 
       {posts.length === 0 ? (
-        <p className="text-muted-foreground">该分类下暂无文章。</p>
+        <div className="page-frame px-6 py-12 text-muted-foreground">该分类下暂无文章。</div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {posts.map((post) => (
             <PostCard
               key={post.id}

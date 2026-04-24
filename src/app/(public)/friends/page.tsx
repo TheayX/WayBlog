@@ -18,23 +18,28 @@ export default async function FriendsPage() {
   const links = await getPublicFriendLinks();
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">友链</h1>
-        <p className="text-muted-foreground">一些有趣的朋友们</p>
+    <div className="space-y-8">
+      <header className="page-frame px-6 py-8 sm:px-8">
+        <p className="eyebrow">Friends</p>
+        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
+          友链
+        </h1>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+          这里收录长期关注或值得推荐的站点，展示方式更偏名片与索引，而不是普通链接列表。
+        </p>
       </header>
 
       {links.length === 0 ? (
-        <p className="text-muted-foreground">暂无友链。</p>
+        <div className="page-frame px-6 py-12 text-muted-foreground">暂无友链。</div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {links.map((link) => (
             <a
               key={link.id}
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-start gap-3 rounded-lg border border-border p-4 transition-colors hover:border-primary/30 hover:bg-muted/30"
+              className="group page-frame flex items-start gap-4 p-5"
             >
               {link.avatar ? (
                 <Image
@@ -51,11 +56,11 @@ export default async function FriendsPage() {
               )}
 
               <div className="min-w-0">
-                <p className="font-medium transition-colors group-hover:text-primary">
+                <p className="text-base font-medium text-foreground transition-colors group-hover:text-primary">
                   {link.name}
                 </p>
                 {link.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                  <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">
                     {link.description}
                   </p>
                 )}

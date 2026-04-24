@@ -1,5 +1,5 @@
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { PostCard } from '@/components/post/PostCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { getPublishedPostsPageByTag } from '@/lib/posts/queries';
@@ -46,20 +46,22 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   if (!tag) notFound();
 
   const { data: posts, total } = await getPublishedPostsPageByTag(tag.id, page, pageSize);
-
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">#{tag.name}</h1>
-        <p className="text-sm text-muted-foreground">共 {total} 篇文章</p>
+    <div className="space-y-8">
+      <header className="page-frame px-6 py-8 sm:px-8">
+        <p className="eyebrow">Tag</p>
+        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
+          #{tag.name}
+        </h1>
+        <p className="mt-4 text-sm text-muted-foreground">共 {total} 篇文章</p>
       </header>
 
       {posts.length === 0 ? (
-        <p className="text-muted-foreground">该标签下暂无文章。</p>
+        <div className="page-frame px-6 py-12 text-muted-foreground">该标签下暂无文章。</div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {posts.map((post) => (
             <PostCard
               key={post.id}

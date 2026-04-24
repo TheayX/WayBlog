@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, Search, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 import { formatDate } from '@/lib/utils';
 
 interface SearchResult {
@@ -91,23 +92,46 @@ export function SearchPageClient() {
   };
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="mb-4 text-3xl font-bold">搜索</h1>
-        <form onSubmit={handleSubmit} className="flex gap-2">
+    <div className="space-y-8">
+      <header className="page-frame px-6 py-8 sm:px-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
+          <div className="space-y-4">
+            <p className="eyebrow">Search</p>
+            <div className="space-y-3">
+              <h1 className="editorial-title text-4xl font-semibold text-foreground sm:text-5xl">
+                按关键词检索文章内容
+              </h1>
+              <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+                搜索页应当是高效入口，而不是一个空白输入框。这里会保留标题、结构化摘要和标签路径，方便快速定位内容。
+              </p>
+            </div>
+          </div>
+
+          <div className="surface-panel rounded-[1.5rem] p-5">
+            <p className="eyebrow">Tips</p>
+            <ul className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
+              <li>可直接搜索技术关键词、文章标题或标签。</li>
+              <li>结果摘要会高亮匹配片段。</li>
+              <li>无结果时建议更换更短或更具体的词。</li>
+            </ul>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3 sm:flex-row">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="输入关键词搜索文章..."
-            className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="h-12 flex-1 rounded-full border border-border bg-background px-5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             autoFocus
           />
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
+            <Search className="h-4 w-4" />
             {loading ? '搜索中...' : '搜索'}
           </button>
         </form>
@@ -126,15 +150,10 @@ export function SearchPageClient() {
           {results.length > 0 && (
             <div className="space-y-4">
               {results.map((result) => (
-                <article
-                  key={result.id}
-                  className="rounded-lg border border-border p-5 transition-colors hover:border-primary/30 hover:bg-muted/30"
-                >
+                <article key={result.id} className="page-frame p-5 sm:p-6">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     {result.publishedAt && (
-                      <time dateTime={result.publishedAt}>
-                        {formatDate(result.publishedAt)}
-                      </time>
+                      <time dateTime={result.publishedAt}>{formatDate(result.publishedAt)}</time>
                     )}
                     {result.category && (
                       <Link
@@ -146,17 +165,17 @@ export function SearchPageClient() {
                     )}
                   </div>
 
-                  <h2 className="mt-2 text-lg font-semibold">
+                  <h2 className="mt-2">
                     <Link
                       href={`/posts/${result.slug}`}
-                      className="transition-colors hover:text-primary"
+                      className="editorial-title text-2xl font-semibold transition-colors hover:text-primary"
                     >
                       {result.title}
                     </Link>
                   </h2>
 
                   {result.highlightSegments.length > 0 && (
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                       {result.highlightSegments.map((segment, index) =>
                         segment.highlighted ? (
                           <mark
@@ -173,12 +192,12 @@ export function SearchPageClient() {
                   )}
 
                   {result.tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-4 flex flex-wrap gap-1.5">
                       {result.tags.map((tag) => (
                         <Link
                           key={tag.slug}
                           href={`/tags/${tag.slug}`}
-                          className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                          className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                         >
                           #{tag.name}
                         </Link>
@@ -190,35 +209,65 @@ export function SearchPageClient() {
             </div>
           )}
 
+          {!loading && results.length === 0 && (
+            <div className="page-frame px-6 py-12 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted text-accent">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <h2 className="mt-5 text-2xl font-semibold text-foreground">没有找到匹配内容</h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
+                可以尝试缩短关键词、换一个同义词，或者直接从标签页、归档页继续浏览。
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Link
+                  href="/tags"
+                  className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                >
+                  浏览标签
+                </Link>
+                <Link
+                  href="/archives"
+                  className="inline-flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                >
+                  浏览归档
+                </Link>
+              </div>
+            </div>
+          )}
+
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-8">
+            <div className="flex items-center justify-center gap-3 pt-8">
               {page > 1 ? (
                 <button
                   onClick={() => handlePageChange(page - 1)}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
                 >
+                  <ArrowLeft className="h-4 w-4" />
                   上一页
                 </button>
               ) : (
-                <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">
+                <span className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground opacity-50">
+                  <ArrowLeft className="h-4 w-4" />
                   上一页
                 </span>
               )}
 
-              <span className="text-sm text-muted-foreground">
-                {page} / {totalPages}
+              <span className="inline-flex h-11 items-center rounded-full border border-border bg-muted/70 px-4 text-sm text-muted-foreground">
+                第 {page} / {totalPages} 页
               </span>
 
               {page < totalPages ? (
                 <button
                   onClick={() => handlePageChange(page + 1)}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
                 >
                   下一页
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
-                <span className="rounded-md border border-border px-3 py-1.5 text-sm opacity-50">
+                <span className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm text-muted-foreground opacity-50">
                   下一页
+                  <ArrowRight className="h-4 w-4" />
                 </span>
               )}
             </div>

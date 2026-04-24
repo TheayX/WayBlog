@@ -1,19 +1,20 @@
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
+import { CalendarDays, FolderTree, PenSquare, Tag } from 'lucide-react';
 import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
-import { TableOfContents } from '@/components/post/TableOfContents';
 import { PostNavigation } from '@/components/post/PostNavigation';
+import { TableOfContents } from '@/components/post/TableOfContents';
 import { ViewCounter } from '@/components/post/ViewCounter';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { getSiteConfig } from '@/lib/site';
 import {
   getPublishedPostDetail,
   getPublishedPostMetadata,
   getPublishedPostNavigation,
 } from '@/lib/posts/queries';
 import { formatDate } from '@/lib/utils';
-import { getSiteConfig } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,6 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
  */
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
-
   const post = await getPublishedPostDetail(slug);
 
   if (!post) notFound();
@@ -97,90 +97,105 @@ export default async function PostPage({ params }: PostPageProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative space-y-8">
       <JsonLd data={jsonLd} />
-      <div className="xl:grid xl:grid-cols-[1fr_200px] xl:gap-8">
-        <article className="min-w-0">
-          <header className="mb-10 lg:mb-14">
-            <h1 className="mb-6 text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-foreground">
-              {post.title}
-            </h1>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground/80">
+      <section className="page-frame px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:items-end">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <p className="eyebrow">Article</p>
+              <h1 className="editorial-title text-4xl font-semibold leading-tight text-foreground sm:text-5xl lg:text-6xl">
+                {post.title}
+              </h1>
+              {post.excerpt && (
+                <p className="max-w-3xl text-base leading-8 text-muted-foreground sm:text-lg">
+                  {post.excerpt}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               {post.author.name && (
-                <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
-                    {post.author.name.charAt(0).toUpperCase()}
-                  </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2">
+                  <PenSquare className="h-4 w-4 text-accent" />
                   {post.author.name}
                 </span>
               )}
               {post.publishedAt && (
                 <time
                   dateTime={post.publishedAt.toISOString()}
-                  className="flex items-center gap-1.5"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
+                  <CalendarDays className="h-4 w-4 text-accent" />
                   {formatDate(post.publishedAt)}
                 </time>
               )}
               {post.category && (
                 <Link
                   href={`/categories/${post.category.slug}`}
-                  className="flex items-center gap-1.5 transition-colors hover:text-primary"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 hover:border-border-strong hover:text-foreground"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                    />
-                  </svg>
+                  <FolderTree className="h-4 w-4 text-accent" />
                   {post.category.name}
                 </Link>
               )}
-              <div className="flex items-center gap-1.5">
+            </div>
+          </div>
+
+          <div className="surface-panel rounded-[1.75rem] p-5">
+            <p className="eyebrow">Reading Info</p>
+            <div className="mt-4 space-y-4 text-sm">
+              <div className="flex items-center justify-between gap-4 border-b border-border/70 pb-4">
+                <span className="text-muted-foreground">阅读状态</span>
+                <span className="font-medium text-foreground">已发布</span>
+              </div>
+              <div className="flex items-center justify-between gap-4 border-b border-border/70 pb-4">
+                <span className="text-muted-foreground">更新时间</span>
+                <span className="font-medium text-foreground">{formatDate(post.updatedAt)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">访问情况</span>
                 <ViewCounter postId={post.id} initialCount={post.viewCount} />
               </div>
             </div>
+          </div>
+        </div>
 
-            {post.tags.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
-                {post.tags.map((tag) => (
-                  <Link
-                    key={tag.slug}
-                    href={`/tags/${tag.slug}`}
-                    className="inline-flex items-center rounded-full bg-muted/50 px-3 py-1 text-xs font-semibold text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-105 active:scale-95"
-                  >
-                    #{tag.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </header>
+        {post.tags.length > 0 && (
+          <div className="mt-8 flex flex-wrap gap-2">
+            {post.tags.map((tag) => (
+              <Link
+                key={tag.slug}
+                href={`/tags/${tag.slug}`}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+              >
+                <Tag className="h-3.5 w-3.5" />
+                {tag.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
-          {post.coverImage && (
-            <div className="mb-8 overflow-hidden rounded-lg">
-              <Image
-                src={post.coverImage}
-                alt={post.title}
-                width={1200}
-                height={630}
-                className="w-full object-cover"
-                priority
-              />
-            </div>
-          )}
+      {post.coverImage && (
+        <div className="page-frame overflow-hidden">
+          <Image
+            src={post.coverImage}
+            alt={post.title}
+            width={1200}
+            height={630}
+            className="aspect-[16/8] w-full object-cover"
+            priority
+          />
+        </div>
+      )}
 
-          <MarkdownRenderer content={post.content} />
+      <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_17rem] xl:gap-8">
+        <article className="min-w-0">
+          <div className="page-frame p-6 sm:p-8 lg:p-10">
+            <MarkdownRenderer content={post.content} />
+          </div>
           <PostNavigation prevPost={prevPost} nextPost={nextPost} />
         </article>
 

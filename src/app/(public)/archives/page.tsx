@@ -54,26 +54,33 @@ export default async function ArchivesPage() {
   const totalPosts = posts.length;
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">归档</h1>
-        <p className="text-muted-foreground">共 {totalPosts} 篇文章</p>
+    <div className="space-y-8">
+      <header className="page-frame px-6 py-8 sm:px-8">
+        <p className="eyebrow">Archive</p>
+        <h1 className="editorial-title mt-3 text-4xl font-semibold text-foreground sm:text-5xl">
+          按时间线回看内容更新
+        </h1>
+        <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
+          共 {totalPosts} 篇文章。归档页强调时间秩序，方便从长期积累里回看主题变化与写作节奏。
+        </p>
       </header>
 
       {groups.length === 0 ? (
-        <p className="text-muted-foreground">暂无文章。</p>
+        <div className="page-frame px-6 py-12 text-muted-foreground">暂无文章。</div>
       ) : (
         <div className="space-y-10">
           {groups.map((group) => (
-            <section key={group.year}>
-              <h2 className="mb-4 text-2xl font-bold">{group.year}</h2>
+            <section key={group.year} className="page-frame px-6 py-6 sm:px-8">
+              <h2 className="editorial-title mb-6 text-4xl font-semibold text-foreground">
+                {group.year}
+              </h2>
               <div className="space-y-6">
                 {group.months.map(({ month, posts: monthPosts }) => (
                   <div key={month}>
-                    <h3 className="mb-3 text-lg font-semibold text-muted-foreground">{month} 月</h3>
-                    <ul className="space-y-2 border-l-2 border-border pl-4">
+                    <h3 className="mb-4 text-lg font-semibold text-muted-foreground">{month} 月</h3>
+                    <ul className="space-y-3 border-l border-border pl-5">
                       {monthPosts.map((post) => (
-                        <li key={post.slug} className="flex items-baseline gap-3">
+                        <li key={post.slug} className="flex items-baseline gap-4">
                           <time
                             dateTime={post.publishedAt!.toISOString()}
                             className="shrink-0 text-sm tabular-nums text-muted-foreground"
@@ -83,7 +90,7 @@ export default async function ArchivesPage() {
                           </time>
                           <Link
                             href={`/posts/${post.slug}`}
-                            className="text-sm transition-colors hover:text-primary"
+                            className="text-sm text-foreground transition-colors hover:text-primary sm:text-base"
                           >
                             {post.title}
                           </Link>

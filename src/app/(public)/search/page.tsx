@@ -9,10 +9,11 @@ import { SearchPageClient } from './SearchPageClient';
  */
 function SearchPageFallback() {
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="mb-4 text-3xl font-bold">搜索</h1>
-        <div className="h-10 rounded-md border border-border bg-muted/30" />
+    <div className="space-y-8">
+      <header className="page-frame px-6 py-8 sm:px-8">
+        <p className="eyebrow">Search</p>
+        <h1 className="mt-3 text-3xl font-semibold text-foreground sm:text-4xl">搜索文章</h1>
+        <div className="mt-5 h-12 rounded-full border border-border bg-muted/30" />
       </header>
       <p className="text-sm text-muted-foreground">加载中...</p>
     </div>
