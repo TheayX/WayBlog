@@ -11,7 +11,7 @@ import {
 import { SITE_PROFILE } from '@/config/site';
 
 export const SITE_BRAND = {
-  mark: 'W',
+  logoSrc: '/brand/wayblog-mark.svg',
   shortName: SITE_PROFILE.shortBrandName,
   fullName: SITE_PROFILE.brandName,
 } as const;

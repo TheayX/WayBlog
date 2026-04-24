@@ -32,6 +32,11 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   metadataBase: new URL(siteConfig.url),
+  icons: {
+    icon: '/brand/wayblog-mark.svg',
+    shortcut: '/brand/wayblog-mark.svg',
+    apple: '/brand/wayblog-mark.svg',
+  },
   openGraph: {
     type: 'website',
     locale: 'zh_CN',

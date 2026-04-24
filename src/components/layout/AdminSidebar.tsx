@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpRight } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -53,8 +54,15 @@ export function AdminSidebar() {
       <div className="page-frame flex h-full flex-col px-4 py-5">
         <div className="border-b border-border pb-5">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background text-lg font-semibold text-primary">
-              {SITE_BRAND.mark}
+            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl">
+              <Image
+                src={SITE_BRAND.logoSrc}
+                alt={`${SITE_BRAND.fullName} logo`}
+                width={44}
+                height={44}
+                className="h-full w-full object-cover"
+                priority
+              />
             </div>
             <div>
               <p className="editorial-title text-2xl font-semibold text-foreground">
