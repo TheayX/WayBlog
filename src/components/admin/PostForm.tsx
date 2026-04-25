@@ -95,7 +95,6 @@ export function PostForm({
     applyAllAi,
     setAiOpen,
     setTaxonomyAiOpen,
-    getMatchedCategoryId,
   } = usePostAiAssistant({
     title,
     slug,
@@ -362,7 +361,6 @@ export function PostForm({
         ),
       }
     : null;
-  const matchedCategoryId = filteredAiResult ? getMatchedCategoryId(filteredAiResult) : '';
   const clientReady = useSyncExternalStore(subscribeClientReady, () => true, () => false);
   const toolbarPortalTarget =
     clientReady && toolbarPortalTargetId
@@ -431,7 +429,8 @@ export function PostForm({
       <AiSuggestionDrawer
         open={aiOpen}
         result={filteredAiResult}
-        matchedCategoryId={matchedCategoryId}
+        currentCategoryId={categoryId}
+        currentSelectedTagIds={selectedTagIds}
         creatingCategoryNames={creatingCategoryNames}
         creatingTagNames={creatingTagNames}
         onClose={() => setAiOpen(false)}
@@ -448,6 +447,9 @@ export function PostForm({
         }}
         onCreateAllTagsAndSelect={(names) => {
           void createAllTagsAndSelect(names);
+        }}
+        onToggleSelectedTag={(tagId) => {
+          toggleTag(tagId);
         }}
       />
 

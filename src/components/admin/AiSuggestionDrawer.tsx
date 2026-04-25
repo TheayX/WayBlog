@@ -1,33 +1,27 @@
 'use client';
 
-import { CircleHelp } from 'lucide-react';
+import type { ReactNode } from 'react';
 import {
   adminCompactSecondaryActionClassName,
   adminPrimarySubmitClassName,
   adminSecondaryActionClassName,
 } from '@/components/admin/AdminCrudLayout';
-import {
-  getTaxonomyLevelHint,
-  getTaxonomyLevelLabel,
-} from '@/components/admin/post-ai-helpers';
+import { AiTaxonomyPanel } from '@/components/admin/AiTaxonomyPanel';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
-import type {
-  AiField,
-  AiOptimizeResult,
-  AiSelectedTagSuggestion,
-  AiSuggestedTagCandidate,
-} from '@/lib/ai/types';
+import type { AiField, AiOptimizeResult } from '@/lib/ai/types';
 
 interface AiSuggestionDrawerProps {
   open: boolean;
   result: AiOptimizeResult | null;
-  matchedCategoryId: string;
+  currentCategoryId: string;
+  currentSelectedTagIds: string[];
   onClose: () => void;
   onApplyField: (field: AiField) => void;
   onApplyAll: () => void;
   onCreateCategoryAndApply: (suggestionName: string) => void;
   onCreateTagAndSelect: (tagName: string) => void;
   onCreateAllTagsAndSelect: (tagNames: string[]) => void;
+  onToggleSelectedTag: (tagId: string) => void;
   creatingCategoryNames: string[];
   creatingTagNames: string[];
 }
@@ -35,33 +29,33 @@ interface AiSuggestionDrawerProps {
 export function AiSuggestionDrawer({
   open,
   result,
-  matchedCategoryId,
+  currentCategoryId,
+  currentSelectedTagIds,
   onClose,
   onApplyField,
   onApplyAll,
   onCreateCategoryAndApply,
   onCreateTagAndSelect,
   onCreateAllTagsAndSelect,
+  onToggleSelectedTag,
   creatingCategoryNames,
   creatingTagNames,
 }: AiSuggestionDrawerProps) {
   if (!open || !result) return null;
 
+  const categorySuggestionName = result.betterCategorySuggestion?.name || '';
   const quickCreateTagNames = result.newTagSuggestions
     .filter((tag) => tag.level !== 'weak')
     .map((tag) => tag.name);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/35 backdrop-blur-sm">
-      <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-background shadow-2xl">
+    <div className="fixed inset-0 z-50 flex justify-end bg-[rgb(22_21_20/0.32)] backdrop-blur-[6px]">
+      <div className="flex h-full w-full max-w-[54rem] flex-col overflow-hidden border-l border-[color:color-mix(in_srgb,var(--border)_72%,transparent)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--background-elevated)_94%,white_6%),color-mix(in_srgb,var(--background)_96%,transparent))] shadow-[0_24px_80px_-40px_rgba(37,31,24,0.4)]">
         <div className="border-b border-border px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="eyebrow">AI Review</p>
               <h2 className="mt-2 text-xl font-semibold text-foreground">AI 优化建议</h2>
-              <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                先看建议内容，再决定应用哪些修改。
-              </p>
             </div>
             <button
               type="button"
@@ -74,17 +68,6 @@ export function AiSuggestionDrawer({
         </div>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-          {result.warnings.length > 0 && (
-            <section className="rounded-[1.25rem] border border-amber-500/30 bg-amber-500/10 p-4">
-              <h3 className="mb-2 text-sm font-medium text-amber-700">提醒</h3>
-              <ul className="space-y-1 text-sm text-amber-700">
-                {result.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-
           <SuggestionSection
             title="标题建议"
             actionLabel="应用标题"
@@ -107,9 +90,6 @@ export function AiSuggestionDrawer({
             onApply={() => onApplyField('excerpt')}
           >
             <p className="text-sm leading-6">{result.excerpt || 'AI 未生成摘要建议'}</p>
-            {result.excerpt && (
-              <p className="text-xs text-muted-foreground">当前摘要长度：{result.excerpt.length} 字</p>
-            )}
           </SuggestionSection>
 
           <SuggestionSection
@@ -123,111 +103,38 @@ export function AiSuggestionDrawer({
           </SuggestionSection>
 
           <SuggestionSection
-            title="分类建议"
-            actionLabel="应用分类"
-            onApply={() => onApplyField('category')}
+            title="分类与标签"
+            actionLabel="应用分类和标签"
+            onApply={() => {
+              onApplyField('category');
+              onApplyField('tags');
+            }}
           >
-            <div className="space-y-3">
-              <div>
-                <p className="mb-2 text-sm font-medium">可直接应用的现有分类</p>
-                {result.selectedCategory ? (
-                  <TaxonomyChip
-                    title={result.selectedCategory.name}
-                    level={result.selectedCategory.level}
-                    reason={result.selectedCategory.reason}
-                    tone="existing"
-                    extraMeta={matchedCategoryId ? '已命中现有分类' : '需要人工确认映射'}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">没有适合直接应用的现有分类。</p>
-                )}
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-medium">更贴切的新分类建议</p>
-                {result.betterCategorySuggestion ? (
-                  <div className="space-y-2">
-                    <TaxonomyChip
-                      title={result.betterCategorySuggestion.name}
-                      level={result.betterCategorySuggestion.level}
-                      reason={result.betterCategorySuggestion.reason}
-                      tone="new"
-                      extraMeta="建议新增"
-                    />
-                    {result.betterCategorySuggestion.level !== 'weak' ? (
-                      <button
-                        type="button"
-                        onClick={() => onCreateCategoryAndApply(result.betterCategorySuggestion!.name)}
-                        disabled={creatingCategoryNames.includes(result.betterCategorySuggestion.name)}
-                        className={adminCompactSecondaryActionClassName}
-                      >
-                        {creatingCategoryNames.includes(result.betterCategorySuggestion.name)
-                          ? '创建中...'
-                          : '创建并应用'}
-                      </button>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">一般推荐的新分类建议需手动确认后再创建。</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">当前没有更贴切的新分类建议。</p>
-                )}
-              </div>
-            </div>
-          </SuggestionSection>
-
-          <SuggestionSection
-            title="标签建议"
-            actionLabel="应用标签"
-            onApply={() => onApplyField('tags')}
-          >
-            <div className="space-y-4">
-              <div>
-                <p className="mb-2 text-sm font-medium">推荐应用的现有标签</p>
-                <div className="flex flex-wrap gap-2">
-                  {result.selectedTags.length > 0 ? (
-                    result.selectedTags.map((tag) => (
-                      <TagSuggestionChip key={`${tag.id || tag.name}-existing`} tag={tag} />
-                    ))
-                  ) : (
-                  <p className="text-sm text-muted-foreground">没有适合直接应用的现有标签。</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">建议新增的标签</p>
-                  {quickCreateTagNames.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => onCreateAllTagsAndSelect(quickCreateTagNames)}
-                      disabled={quickCreateTagNames.every((name) => creatingTagNames.includes(name))}
-                      className={adminCompactSecondaryActionClassName}
-                    >
-                      全部创建并选中
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {result.newTagSuggestions.length > 0 ? (
-                    result.newTagSuggestions.map((tag) => (
-                      <TagSuggestionChip
-                        key={`${tag.name}-new`}
-                        tag={tag}
-                        actionLabel={tag.level !== 'weak' ? '创建并选中' : undefined}
-                        actionPending={creatingTagNames.includes(tag.name)}
-                        onAction={
-                          tag.level !== 'weak' ? () => onCreateTagAndSelect(tag.name) : undefined
-                        }
-                      />
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">当前没有新增标签建议。</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <AiTaxonomyPanel
+              selectedCategory={result.selectedCategory}
+              betterCategorySuggestion={result.betterCategorySuggestion}
+              selectedTags={result.selectedTags}
+              newTagSuggestions={result.newTagSuggestions}
+              currentCategoryId={currentCategoryId}
+              currentSelectedTagIds={currentSelectedTagIds}
+              warnings={result.warnings}
+              onApplyCategory={() => onApplyField('category')}
+              onCreateCategoryAndApply={() => {
+                if (!categorySuggestionName) return;
+                onCreateCategoryAndApply(categorySuggestionName);
+              }}
+              onToggleSelectedTag={onToggleSelectedTag}
+              onCreateTagAndSelect={onCreateTagAndSelect}
+              onCreateAllTagsAndSelect={() => onCreateAllTagsAndSelect(quickCreateTagNames)}
+              creatingCategory={Boolean(
+                categorySuggestionName && creatingCategoryNames.includes(categorySuggestionName),
+              )}
+              creatingTagNames={creatingTagNames}
+              canQuickCreateCategory={Boolean(
+                result.betterCategorySuggestion && result.betterCategorySuggestion.level !== 'weak',
+              )}
+              canQuickCreateTagNames={quickCreateTagNames}
+            />
           </SuggestionSection>
         </div>
 
@@ -253,7 +160,7 @@ function SuggestionSection({
   title: string;
   actionLabel: string;
   onApply: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="page-frame px-4 py-4">
@@ -265,93 +172,5 @@ function SuggestionSection({
       </div>
       {children}
     </section>
-  );
-}
-
-function TaxonomyChip({
-  title,
-  level,
-  reason,
-  tone,
-  extraMeta,
-}: {
-  title: string;
-  level: AiSelectedTagSuggestion['level'] | AiSuggestedTagCandidate['level'];
-  reason?: string;
-  tone: 'existing' | 'new';
-  extraMeta: string;
-}) {
-  const className =
-    tone === 'new'
-      ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
-      : 'border-primary/30 bg-primary/10 text-primary';
-  const detailText = [getTaxonomyLevelHint(level), reason].filter(Boolean).join('\n');
-
-  return (
-    <div className={`rounded-[1rem] border px-3 py-2 text-xs ${className}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="font-medium">{title}</div>
-        {detailText ? <InfoHint text={detailText} /> : null}
-      </div>
-      <div className="mt-1 text-[11px] opacity-80">
-        {getTaxonomyLevelLabel(level)} · {extraMeta}
-      </div>
-    </div>
-  );
-}
-
-function TagSuggestionChip({
-  tag,
-  actionLabel,
-  actionPending,
-  onAction,
-}: {
-  tag: AiSelectedTagSuggestion | AiSuggestedTagCandidate;
-  actionLabel?: string;
-  actionPending?: boolean;
-  onAction?: () => void;
-}) {
-  const isNew = 'isNew' in tag && Boolean(tag.isNew);
-  const detailText = [getTaxonomyLevelHint(tag.level), tag.reason].filter(Boolean).join('\n');
-
-  return (
-    <div
-      className={`rounded-[1rem] border px-3 py-2 text-xs ${
-        isNew
-          ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
-          : 'border-primary/30 bg-primary/10 text-primary'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="font-medium">
-          {tag.name}
-          {isNew ? '（建议新增）' : ''}
-        </div>
-        {detailText ? <InfoHint text={detailText} /> : null}
-      </div>
-      <div className="mt-1 text-[11px] opacity-80">{getTaxonomyLevelLabel(tag.level)}</div>
-      {onAction && (
-        <button
-          type="button"
-          onClick={onAction}
-          disabled={actionPending}
-          className="mt-2 rounded-full border border-current/20 px-2 py-1 text-[11px] transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {actionPending ? '创建中...' : actionLabel}
-        </button>
-      )}
-    </div>
-  );
-}
-
-function InfoHint({ text }: { text: string }) {
-  return (
-    <span
-      title={text}
-      className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center text-muted-foreground opacity-70 transition hover:opacity-100"
-      aria-label="查看详情"
-    >
-      <CircleHelp className="h-3.5 w-3.5" />
-    </span>
   );
 }
