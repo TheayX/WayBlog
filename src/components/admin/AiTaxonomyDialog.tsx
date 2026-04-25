@@ -1,19 +1,11 @@
 'use client';
 
-import { CircleHelp } from 'lucide-react';
-import {
-  adminCompactSecondaryActionClassName,
-  adminPrimarySubmitClassName,
-  adminSecondaryActionClassName,
-} from '@/components/admin/AdminCrudLayout';
-import {
-  getTaxonomyLevelHint,
-  getTaxonomyLevelLabel,
-} from '@/components/admin/post-ai-helpers';
+import { adminSecondaryActionClassName } from '@/components/admin/AdminCrudLayout';
 import type {
   AiOptimizeResult,
   AiSelectedTagSuggestion,
   AiSuggestedTagCandidate,
+  AiTaxonomySuggestionLevel,
 } from '@/lib/ai/types';
 
 interface AiTaxonomyDialogProps {
@@ -24,12 +16,13 @@ interface AiTaxonomyDialogProps {
   newTagSuggestions: AiSuggestedTagCandidate[];
   matchedCategoryId: string;
   matchedTagIds: string[];
+  currentCategoryId: string;
+  currentSelectedTagIds: string[];
   warnings: string[];
   onClose: () => void;
   onApplyCategory: () => void;
-  onApplyTags: () => void;
-  onApplyAll: () => void;
   onCreateCategoryAndApply: () => void;
+  onToggleSelectedTag: (tagId: string) => void;
   onCreateTagAndSelect: (tagName: string) => void;
   onCreateAllTagsAndSelect: () => void;
   creatingCategory: boolean;
@@ -40,7 +33,10 @@ interface AiTaxonomyDialogProps {
 
 /**
  * 分类与标签建议弹窗。
- * 把可直接应用结果和新增建议分开展示，避免信息混在一起。
+ *
+ * 这个面板按“选择器”思路设计：
+ * 分类通过卡片直接选择，标签通过卡片直接切换选中状态，
+ * 新标签点击后原地创建并进入已选中区域，减少额外按钮和说明文本。
  */
 export function AiTaxonomyDialog({
   open,
@@ -50,12 +46,13 @@ export function AiTaxonomyDialog({
   newTagSuggestions,
   matchedCategoryId,
   matchedTagIds,
+  currentCategoryId,
+  currentSelectedTagIds,
   warnings,
   onClose,
   onApplyCategory,
-  onApplyTags,
-  onApplyAll,
   onCreateCategoryAndApply,
+  onToggleSelectedTag,
   onCreateTagAndSelect,
   onCreateAllTagsAndSelect,
   creatingCategory,
@@ -65,16 +62,20 @@ export function AiTaxonomyDialog({
 }: AiTaxonomyDialogProps) {
   if (!open) return null;
 
+  const selectedTagCards = selectedTags.filter(
+    (tag) => tag.id && currentSelectedTagIds.includes(tag.id),
+  );
+  const suggestedExistingTagCards = selectedTags.filter(
+    (tag) => !tag.id || !currentSelectedTagIds.includes(tag.id),
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm">
-      <div className="page-frame w-full max-w-3xl px-5 py-5">
+      <div className="page-frame w-full max-w-4xl px-5 py-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="eyebrow">AI Select</p>
             <h2 className="mt-2 text-xl font-semibold text-foreground">分类与标签建议</h2>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">
-              先看建议，再决定应用哪些内容。
-            </p>
           </div>
           <button
             type="button"
@@ -91,144 +92,111 @@ export function AiTaxonomyDialog({
           </div>
         )}
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <section className="rounded-[1.25rem] border border-border bg-background px-4 py-4">
+        <div className="mt-5 grid gap-4 xl:grid-cols-[0.95fr_1.35fr]">
+          <section className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
+            <p className="text-sm font-medium text-foreground">分类</p>
+            <div className="mt-3 grid gap-3">
+              {selectedCategory ? (
+                <CategoryCard
+                  title={selectedCategory.name}
+                  level={selectedCategory.level}
+                  active={Boolean(matchedCategoryId && currentCategoryId === matchedCategoryId)}
+                  onClick={onApplyCategory}
+                />
+              ) : (
+                <EmptyHint text="没有合适的现有分类" />
+              )}
+
+              {betterCategorySuggestion ? (
+                <CategoryCard
+                  title={betterCategorySuggestion.name}
+                  level={betterCategorySuggestion.level}
+                  active={false}
+                  disabled={!canQuickCreateCategory || creatingCategory}
+                  pending={creatingCategory}
+                  onClick={canQuickCreateCategory ? onCreateCategoryAndApply : undefined}
+                />
+              ) : (
+                <EmptyHint text="没有新的分类建议" />
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-[1.5rem] border border-border bg-background px-4 py-4">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-medium text-foreground">分类建议</h3>
-              <button
-                type="button"
-                onClick={onApplyCategory}
-                className={adminCompactSecondaryActionClassName}
-              >
-                应用分类
-              </button>
+              <p className="text-sm font-medium text-foreground">标签</p>
+              {canQuickCreateTagNames.length > 1 && (
+                <button
+                  type="button"
+                  onClick={onCreateAllTagsAndSelect}
+                  disabled={canQuickCreateTagNames.every((name) => creatingTagNames.includes(name))}
+                  className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  一键加入
+                </button>
+              )}
             </div>
 
-            <div className="mt-3 space-y-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">可直接应用的现有分类</p>
-                {selectedCategory ? (
-                  <TaxonomyCard
-                    className="mt-2 border-primary/30 bg-primary/10 text-primary"
-                    title={selectedCategory.name}
-                    meta={[
-                      getTaxonomyLevelLabel(selectedCategory.level),
-                      matchedCategoryId ? '已命中现有分类' : '需要人工确认映射',
-                    ]}
-                    reason={selectedCategory.reason}
-                    footer={getTaxonomyLevelHint(selectedCategory.level)}
-                  />
-                ) : (
-                    <p className="mt-2 text-sm text-muted-foreground">没有适合直接应用的现有分类。</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-foreground">更贴切的新分类建议</p>
-                {betterCategorySuggestion ? (
-                  <div className="mt-2 space-y-2">
-                    <TaxonomyCard
-                      className="border-amber-500/40 bg-amber-500/10 text-amber-700"
-                      title={betterCategorySuggestion.name}
-                      meta={[getTaxonomyLevelLabel(betterCategorySuggestion.level), '建议新增']}
-                      reason={betterCategorySuggestion.reason}
-                      footer={getTaxonomyLevelHint(betterCategorySuggestion.level)}
+            <div className="mt-4 space-y-4">
+              <TagGroup title="已选中" count={selectedTagCards.length}>
+                {selectedTagCards.length > 0 ? (
+                  selectedTagCards.map((tag) => (
+                    <SelectableTagCard
+                      key={`${tag.id || tag.name}-selected`}
+                      tag={tag}
+                      selected
+                      animated
+                      onClick={tag.id ? () => onToggleSelectedTag(tag.id!) : undefined}
                     />
-                    {canQuickCreateCategory ? (
-                      <button
-                        type="button"
-                        onClick={onCreateCategoryAndApply}
-                        disabled={creatingCategory}
-                        className={adminCompactSecondaryActionClassName}
-                      >
-                        {creatingCategory ? '创建中...' : '创建并应用'}
-                      </button>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">一般推荐的新分类建议需手动确认后再创建。</p>
-                    )}
-                  </div>
+                  ))
                 ) : (
-                    <p className="mt-2 text-sm text-muted-foreground">当前没有更合适的新分类建议。</p>
+                  <EmptyHint text="还没有选中标签" />
                 )}
-              </div>
-            </div>
-          </section>
+              </TagGroup>
 
-          <section className="rounded-[1.25rem] border border-border bg-background px-4 py-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-medium text-foreground">标签建议</h3>
-              <button
-                type="button"
-                onClick={onApplyTags}
-                className={adminCompactSecondaryActionClassName}
-              >
-                应用标签
-              </button>
-            </div>
+              <TagGroup title="推荐标签" count={suggestedExistingTagCards.length}>
+                {suggestedExistingTagCards.length > 0 ? (
+                  suggestedExistingTagCards.map((tag) => (
+                    <SelectableTagCard
+                      key={`${tag.id || tag.name}-suggested`}
+                      tag={tag}
+                      selected={Boolean(tag.id && currentSelectedTagIds.includes(tag.id))}
+                      hinted={Boolean(tag.id && matchedTagIds.includes(tag.id))}
+                      onClick={tag.id ? () => onToggleSelectedTag(tag.id!) : undefined}
+                    />
+                  ))
+                ) : (
+                  <EmptyHint text="没有可直接选中的现有标签" />
+                )}
+              </TagGroup>
 
-            <div className="mt-3 space-y-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">推荐应用的现有标签</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedTags.length > 0 ? (
-                    selectedTags.map((tag) => (
-                      <TagSuggestionChip
-                        key={`${tag.id || tag.name}-selected`}
-                        tag={tag}
-                        matched={isMatchedExistingTag(tag, matchedTagIds)}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">没有适合直接应用的现有标签。</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-foreground">建议新增的标签</p>
-                  {canQuickCreateTagNames.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={onCreateAllTagsAndSelect}
-                      disabled={canQuickCreateTagNames.every((name) => creatingTagNames.includes(name))}
-                      className={adminCompactSecondaryActionClassName}
-                    >
-                      全部创建并选中
-                    </button>
-                  )}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {newTagSuggestions.length > 0 ? (
-                    newTagSuggestions.map((tag) => (
-                      <TagSuggestionChip
-                        key={`${tag.name}-new`}
-                        tag={tag}
-                        matched={false}
-                        actionLabel={canQuickCreateTagNames.includes(tag.name) ? '创建并选中' : undefined}
-                        actionPending={creatingTagNames.includes(tag.name)}
-                        onAction={
-                          canQuickCreateTagNames.includes(tag.name)
-                            ? () => onCreateTagAndSelect(tag.name)
-                            : undefined
-                        }
-                      />
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">当前没有新增标签建议。</p>
-                  )}
-                </div>
-              </div>
+              <TagGroup title="新建建议" count={newTagSuggestions.length}>
+                {newTagSuggestions.length > 0 ? (
+                  newTagSuggestions.map((tag) => (
+                    <SelectableTagCard
+                      key={`${tag.name}-new`}
+                      tag={tag}
+                      selected={false}
+                      disabled={!canQuickCreateTagNames.includes(tag.name)}
+                      pending={creatingTagNames.includes(tag.name)}
+                      onClick={
+                        canQuickCreateTagNames.includes(tag.name)
+                          ? () => onCreateTagAndSelect(tag.name)
+                          : undefined
+                      }
+                    />
+                  ))
+                ) : (
+                  <EmptyHint text="没有新的标签建议" />
+                )}
+              </TagGroup>
             </div>
           </section>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={onApplyAll} className={adminPrimarySubmitClassName}>
-            全部应用
-          </button>
+        <div className="mt-5 flex justify-end">
           <button type="button" onClick={onClose} className={adminSecondaryActionClassName}>
-            稍后再说
+            关闭
           </button>
         </div>
       </div>
@@ -236,107 +204,127 @@ export function AiTaxonomyDialog({
   );
 }
 
-function TaxonomyCard({
-  className,
+function CategoryCard({
   title,
-  meta,
-  reason,
-  footer,
+  level,
+  active,
+  disabled = false,
+  pending = false,
+  onClick,
 }: {
-  className: string;
   title: string;
-  meta: string[];
-  reason?: string;
-  footer: string;
+  level: AiTaxonomySuggestionLevel;
+  active: boolean;
+  disabled?: boolean;
+  pending?: boolean;
+  onClick?: () => void;
 }) {
-  const detailText = [reason, footer].filter(Boolean).join('\n');
-
   return (
-    <div className={`rounded-[1rem] border px-3 py-3 text-xs ${className}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="font-medium">{title}</div>
-        {detailText ? (
-          <InfoHint text={detailText} />
-        ) : null}
-      </div>
-      <div className="mt-1 flex flex-wrap gap-2 text-[11px] opacity-80">
-        {meta.map((item) => (
-          <span key={item}>{item}</span>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || !onClick}
+      className={`${getLevelCardClassName(level, active)} min-h-[5.25rem] w-full cursor-pointer rounded-[1.35rem] border px-4 py-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-24px_rgba(15,23,42,0.45)] disabled:cursor-not-allowed disabled:opacity-55`}
+    >
+      <div className="text-sm font-medium">{title}</div>
+      <div className="mt-2 text-[11px] opacity-80">{pending ? '创建中...' : '\u00A0'}</div>
+    </button>
   );
 }
 
-function TagSuggestionChip({
+function TagGroup({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <span className="rounded-full border border-border px-2.5 py-0.5 text-[11px] text-muted-foreground">
+          {count}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2.5">{children}</div>
+    </section>
+  );
+}
+
+function SelectableTagCard({
   tag,
-  matched,
-  actionLabel,
-  actionPending,
-  onAction,
+  selected,
+  hinted = false,
+  disabled = false,
+  pending = false,
+  animated = false,
+  onClick,
 }: {
   tag: AiSelectedTagSuggestion | AiSuggestedTagCandidate;
-  matched: boolean;
-  actionLabel?: string;
-  actionPending?: boolean;
-  onAction?: () => void;
+  selected: boolean;
+  hinted?: boolean;
+  disabled?: boolean;
+  pending?: boolean;
+  animated?: boolean;
+  onClick?: () => void;
 }) {
-  const isNew = 'isNew' in tag && Boolean(tag.isNew);
-  const detailParts = [getTaxonomyLevelHint(tag.level)];
-
-  if (!isNew) {
-    detailParts.push(matched ? '已命中现有标签' : '需要人工确认映射');
-  }
-
-  if (tag.reason) {
-    detailParts.push(tag.reason);
-  }
+  const interactive = Boolean(onClick) && !disabled;
 
   return (
-    <div
-      className={`rounded-[1rem] border px-3 py-2 text-xs ${
-        isNew
-          ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
-          : 'border-primary/30 bg-primary/10 text-primary'
-      }`}
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!interactive || pending}
+      className={`${getTagCardClassName(tag.level, selected, hinted)} ${
+        animated ? 'translate-y-0 opacity-100' : ''
+      } inline-flex min-h-[3rem] cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-20px_rgba(15,23,42,0.4)] disabled:cursor-not-allowed disabled:opacity-60`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="font-medium">
-          {tag.name}
-          {isNew ? '（建议新增）' : ''}
-        </div>
-        <InfoHint text={detailParts.join('\n')} />
-      </div>
-      <div className="mt-1 text-[11px] opacity-80">
-        {getTaxonomyLevelLabel(tag.level)}
-      </div>
-      {onAction && (
-        <button
-          type="button"
-          onClick={onAction}
-          disabled={actionPending}
-          className="mt-2 rounded-full border border-current/20 px-2 py-1 text-[11px] transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {actionPending ? '创建中...' : actionLabel}
-        </button>
-      )}
-    </div>
+      {pending ? '创建中...' : tag.name}
+    </button>
   );
 }
 
-/** 逐项判断单个现有标签是否已命中。 */
-function isMatchedExistingTag(tag: AiSelectedTagSuggestion, matchedTagIds: string[]) {
-  return Boolean(tag.id && matchedTagIds.includes(tag.id));
+function EmptyHint({ text }: { text: string }) {
+  return <p className="text-sm text-muted-foreground">{text}</p>;
 }
 
-function InfoHint({ text }: { text: string }) {
-  return (
-    <span
-      title={text}
-      className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center opacity-70 transition hover:opacity-100"
-      aria-label="查看详情"
-    >
-      <CircleHelp className="h-3.5 w-3.5" />
-    </span>
-  );
+function getLevelCardClassName(level: AiTaxonomySuggestionLevel, active: boolean) {
+  if (active) {
+    return 'border-emerald-600 bg-emerald-600 text-white shadow-[0_18px_36px_-28px_rgba(5,150,105,0.75)]';
+  }
+
+  switch (level) {
+    case 'strong':
+      return 'border-emerald-300 bg-emerald-50 text-emerald-900';
+    case 'medium':
+      return 'border-amber-300 bg-amber-50 text-amber-900';
+    case 'weak':
+      return 'border-slate-200 bg-slate-50 text-slate-700';
+  }
+}
+
+function getTagCardClassName(
+  level: AiTaxonomySuggestionLevel,
+  selected: boolean,
+  hinted: boolean,
+) {
+  if (selected) {
+    return 'border-emerald-600 bg-emerald-600 text-white shadow-[0_16px_28px_-24px_rgba(5,150,105,0.7)]';
+  }
+
+  if (hinted) {
+    return 'border-sky-300 bg-sky-50 text-sky-900';
+  }
+
+  switch (level) {
+    case 'strong':
+      return 'border-emerald-300 bg-emerald-50 text-emerald-900';
+    case 'medium':
+      return 'border-amber-300 bg-amber-50 text-amber-900';
+    case 'weak':
+      return 'border-slate-200 bg-slate-50 text-slate-700';
+  }
 }

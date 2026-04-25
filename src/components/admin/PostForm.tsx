@@ -47,11 +47,11 @@ export function PostForm({
 }: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [pendingTaxonomyAutoClose, setPendingTaxonomyAutoClose] = useState(false);
   const [creatingCategoryNames, setCreatingCategoryNames] = useState<string[]>([]);
   const [creatingTagNames, setCreatingTagNames] = useState<string[]>([]);
   const [dismissedCategorySuggestionNames, setDismissedCategorySuggestionNames] = useState<string[]>([]);
   const [dismissedTagSuggestionNames, setDismissedTagSuggestionNames] = useState<string[]>([]);
+  const [promotedTagSuggestionNames, setPromotedTagSuggestionNames] = useState<string[]>([]);
   const { categories, tags, mergeCategory, mergeTag } = usePostEditorMetadata();
   const {
     title,
@@ -120,9 +120,9 @@ export function PostForm({
    * 这样旧建议的关闭行为不会污染下一轮结果展示。
    */
   useEffect(() => {
-    setPendingTaxonomyAutoClose(false);
     setDismissedCategorySuggestionNames([]);
     setDismissedTagSuggestionNames([]);
+    setPromotedTagSuggestionNames([]);
   }, [aiResult, taxonomyAiState]);
 
   async function handleUploadImage() {
@@ -229,6 +229,7 @@ export function PostForm({
     const existing = findExistingCategoryByName(name);
     if (existing) {
       setCategoryId(existing.id);
+      setDismissedCategorySuggestionNames((prev) => Array.from(new Set([...prev, name])));
       toast.success(`已应用现有分类「${existing.name}」`);
       return;
     }
@@ -271,6 +272,8 @@ export function PostForm({
     const existing = findExistingTagByName(name);
     if (existing) {
       setSelectedTagIds((prev) => Array.from(new Set([...prev, existing.id])));
+      setDismissedTagSuggestionNames((prev) => Array.from(new Set([...prev, name])));
+      setPromotedTagSuggestionNames((prev) => Array.from(new Set([...prev, name])));
       toast.success(`已选中现有标签「${existing.name}」`);
       return;
     }
@@ -298,6 +301,7 @@ export function PostForm({
       mergeTag(created);
       setSelectedTagIds((prev) => Array.from(new Set([...prev, created.id])));
       setDismissedTagSuggestionNames((prev) => Array.from(new Set([...prev, name])));
+      setPromotedTagSuggestionNames((prev) => Array.from(new Set([...prev, name])));
       toast.success(`已创建并选中标签「${created.name}」`);
     } finally {
       setCreatingTagNames((prev) => prev.filter((item) => item !== name));
@@ -330,6 +334,25 @@ export function PostForm({
   const filteredTaxonomyAiState = taxonomyAiState
     ? {
         ...taxonomyAiState,
+        selectedTags: [
+          ...taxonomyAiState.selectedTags,
+          ...taxonomyAiState.newTagSuggestions
+            .filter((tag) => promotedTagSuggestionNames.includes(tag.name))
+            .map((tag) => {
+              const existing = findExistingTagByName(tag.name);
+
+              return {
+                id: existing?.id,
+                name: tag.name,
+                level: tag.level,
+                reason: tag.reason,
+              };
+            }),
+        ].filter(
+          (tag, index, array) =>
+            array.findIndex((item) => item.name.trim().toLowerCase() === tag.name.trim().toLowerCase()) ===
+            index,
+        ),
         betterCategorySuggestion:
           taxonomyAiState.betterCategorySuggestion &&
           !dismissedCategorySuggestionNames.includes(taxonomyAiState.betterCategorySuggestion.name)
@@ -354,34 +377,6 @@ export function PostForm({
     showToolbar || toolbarPortalTarget ? (
       <PostAiToolbar aiLoading={aiLoading} onOptimizeAll={requestAiSuggestions} />
     ) : null;
-
-  /**
-   * taxonomy 弹窗里的新增建议处理完后自动关闭，避免用户继续面对已清空的建议区块。
-   */
-  useEffect(() => {
-    if (!pendingTaxonomyAutoClose || !taxonomyAiOpen || !taxonomyAiState) return;
-
-    const remainingCategorySuggestion =
-      taxonomyAiState.betterCategorySuggestion &&
-      !dismissedCategorySuggestionNames.includes(taxonomyAiState.betterCategorySuggestion.name)
-        ? taxonomyAiState.betterCategorySuggestion
-        : null;
-    const remainingNewTags = taxonomyAiState.newTagSuggestions.filter(
-      (tag) => !dismissedTagSuggestionNames.includes(tag.name),
-    );
-
-    if (!remainingCategorySuggestion && remainingNewTags.length === 0) {
-      setTaxonomyAiOpen(false);
-      setPendingTaxonomyAutoClose(false);
-    }
-  }, [
-    dismissedCategorySuggestionNames,
-    dismissedTagSuggestionNames,
-    pendingTaxonomyAutoClose,
-    setTaxonomyAiOpen,
-    taxonomyAiOpen,
-    taxonomyAiState,
-  ]);
 
   return (
     <>
@@ -469,6 +464,8 @@ export function PostForm({
         newTagSuggestions={filteredTaxonomyAiState?.newTagSuggestions || []}
         matchedCategoryId={taxonomyMatchedCategoryId}
         matchedTagIds={taxonomyMatchedTagIds}
+        currentCategoryId={categoryId}
+        currentSelectedTagIds={selectedTagIds}
         warnings={filteredTaxonomyAiState?.warnings || []}
         creatingCategory={Boolean(
           filteredTaxonomyAiState?.betterCategorySuggestion &&
@@ -482,32 +479,20 @@ export function PostForm({
         canQuickCreateTagNames={(filteredTaxonomyAiState?.newTagSuggestions || [])
           .filter((tag) => tag.level !== 'weak')
           .map((tag) => tag.name)}
-        onClose={() => {
-          setPendingTaxonomyAutoClose(false);
-          setTaxonomyAiOpen(false);
-        }}
+        onClose={() => setTaxonomyAiOpen(false)}
         onApplyCategory={() => {
           if (!filteredTaxonomyAiState) return;
           applyFieldSuggestion('category', filteredTaxonomyAiState);
         }}
-        onApplyTags={() => {
-          if (!filteredTaxonomyAiState) return;
-          applyFieldSuggestion('tags', filteredTaxonomyAiState);
-        }}
-        onApplyAll={() => {
-          if (!filteredTaxonomyAiState) return;
-          applyFieldSuggestion('category', filteredTaxonomyAiState);
-          applyFieldSuggestion('tags', filteredTaxonomyAiState);
-          setTaxonomyAiOpen(false);
-        }}
         onCreateCategoryAndApply={() => {
           const suggestion = filteredTaxonomyAiState?.betterCategorySuggestion;
           if (!suggestion) return;
-          setPendingTaxonomyAutoClose(true);
           void createCategoryAndApply(suggestion.name);
         }}
+        onToggleSelectedTag={(tagId) => {
+          toggleTag(tagId);
+        }}
         onCreateTagAndSelect={(name) => {
-          setPendingTaxonomyAutoClose(true);
           void createTagAndSelect(name);
         }}
         onCreateAllTagsAndSelect={() => {
@@ -515,7 +500,6 @@ export function PostForm({
             .filter((tag) => tag.level !== 'weak')
             .map((tag) => tag.name);
 
-          setPendingTaxonomyAutoClose(true);
           void createAllTagsAndSelect(names);
         }}
       />
