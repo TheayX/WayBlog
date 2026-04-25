@@ -156,12 +156,12 @@ export default function AdminPostsPage() {
         />
       ) : (
         <section className="page-frame overflow-hidden">
-          <div className="grid border-b border-border bg-muted/40 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground md:grid-cols-[minmax(0,2.3fr)_9rem_8rem_7rem_8rem]">
-            <span>文章</span>
-            <span>状态</span>
-            <span>分类</span>
-            <span>浏览量</span>
-            <span className="text-right">操作</span>
+          <div className="grid gap-4 border-b border-border bg-muted/40 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground md:grid-cols-[minmax(0,2.3fr)_9rem_8rem_7rem_8rem]">
+            <span className="pl-5">文章</span>
+            <span className="w-full text-center">状态</span>
+            <span className="w-full text-center">分类</span>
+            <span className="w-full text-center">浏览量</span>
+            <span className="w-full text-center">操作</span>
           </div>
           <div className="divide-y divide-border">
             {posts.map((post) => (
@@ -184,7 +184,7 @@ export default function AdminPostsPage() {
                   </p>
                 </div>
 
-                <div>
+                <div className="flex w-full justify-center">
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
                       post.status === 'PUBLISHED'
@@ -196,12 +196,14 @@ export default function AdminPostsPage() {
                   </span>
                 </div>
 
-                <div className="text-sm text-muted-foreground">
+                <div className="w-full text-center text-sm text-muted-foreground">
                   {post.category?.name || '未分类'}
                 </div>
-                <div className="text-sm text-muted-foreground">{post.viewCount}</div>
+                <div className="w-full text-center text-sm text-muted-foreground">
+                  {post.viewCount}
+                </div>
 
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex w-full items-center justify-center gap-3">
                   <Link
                     href={`/admin/posts/${post.id}/edit`}
                     className="inline-flex items-center gap-1 text-sm text-primary hover:underline"

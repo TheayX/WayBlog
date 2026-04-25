@@ -75,11 +75,11 @@ export default function AdminPagesPage() {
 
       <AdminResourceListState loading={loading} empty={pages.length === 0} emptyText="暂无单页">
         <section className="page-frame overflow-hidden">
-          <div className="grid border-b border-border bg-muted/40 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground md:grid-cols-[minmax(0,2fr)_10rem_10rem_8rem]">
-            <span>单页</span>
-            <span>Slug</span>
-            <span>更新时间</span>
-            <span className="text-right">操作</span>
+          <div className="grid gap-4 border-b border-border bg-muted/40 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground md:grid-cols-[minmax(0,2fr)_10rem_10rem_8rem]">
+            <span className="pl-5">单页</span>
+            <span className="w-full text-center">Slug</span>
+            <span className="w-full text-center">更新时间</span>
+            <span className="w-full text-center">操作</span>
           </div>
           <div className="divide-y divide-border">
             {pages.map((page) => (
@@ -95,11 +95,13 @@ export default function AdminPagesPage() {
                     </span>
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground">/{page.slug}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="w-full text-center text-sm text-muted-foreground">
+                  /{page.slug}
+                </div>
+                <div className="w-full text-center text-sm text-muted-foreground">
                   {formatDateShort(page.updatedAt)}
                 </div>
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex w-full items-center justify-center gap-3">
                   <Link
                     href={`/admin/pages/${page.id}/edit`}
                     className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
