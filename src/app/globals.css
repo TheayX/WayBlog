@@ -1,9 +1,13 @@
 @import 'tailwindcss';
 @plugin "../../node_modules/@tailwindcss/typography";
+@import 'highlight.js/styles/github.css' layer(base);
+@import 'highlight.js/styles/github-dark.css' layer(base) supports(selector(.dark *));
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --font-inter: 'Inter';
+  --font-newsreader: 'Newsreader';
   --background: #f6f3ee;
   --background-elevated: #fbf9f5;
   --foreground: #161514;
@@ -173,6 +177,29 @@ button,
   background: color-mix(in srgb, var(--background-elevated) 92%, transparent);
 }
 
-/* Markdown 代码高亮 */
-@import 'highlight.js/styles/github.css' layer(base);
-@import 'highlight.js/styles/github-dark.css' layer(base) supports(selector(.dark *));
+@keyframes taxonomy-tag-arrive {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+
+  65% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.015);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.taxonomy-tag-arrive {
+  animation: taxonomy-tag-arrive 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taxonomy-tag-arrive {
+    animation: none;
+  }
+}

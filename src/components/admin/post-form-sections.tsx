@@ -238,18 +238,18 @@ function CategorySelect({ categories, value, onChange, fullWidth = true }: Categ
  */
 export function PostAiToolbar({
   aiLoading,
-  onOptimizeAll,
+  onOptimizeAllAction,
   className,
 }: {
   aiLoading: boolean;
-  onOptimizeAll: () => void;
+  onOptimizeAllAction: () => void;
   className?: string;
 }) {
   return (
     <div className={className ? `flex justify-end ${className}` : 'flex justify-end'}>
       <button
         type="button"
-        onClick={onOptimizeAll}
+        onClick={onOptimizeAllAction}
         className={`inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-medium ${
           aiLoading
             ? 'border border-primary bg-background text-primary'

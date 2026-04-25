@@ -9,10 +9,10 @@ import { ADMIN_NAV_ITEMS, SITE_BRAND } from './site-config';
 
 interface AdminSidebarNavProps {
   compact?: boolean;
-  onNavigate?: () => void;
+  onNavigateAction?: () => void;
 }
 
-function AdminSidebarNav({ compact = false, onNavigate }: AdminSidebarNavProps) {
+function AdminSidebarNav({ compact = false, onNavigateAction }: AdminSidebarNavProps) {
   const pathname = usePathname();
 
   return (
@@ -25,7 +25,7 @@ function AdminSidebarNav({ compact = false, onNavigate }: AdminSidebarNavProps) 
           <Link
             key={item.href}
             href={item.href}
-            onClick={onNavigate}
+            onClick={onNavigateAction}
             className={cn(
               'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm',
               isActive
@@ -100,7 +100,7 @@ export function AdminSidebar() {
   );
 }
 
-export function AdminMobileNav({ onNavigate }: { onNavigate: () => void }) {
+export function AdminMobileNav({ onNavigateAction }: { onNavigateAction: () => void }) {
   return (
     <div className="page-frame mt-3 px-3 py-3 xl:hidden">
       <div className="px-2 pb-3">
@@ -109,12 +109,12 @@ export function AdminMobileNav({ onNavigate }: { onNavigate: () => void }) {
         </p>
       </div>
 
-      <AdminSidebarNav compact onNavigate={onNavigate} />
+      <AdminSidebarNav compact onNavigateAction={onNavigateAction} />
 
       <div className="mt-3 border-t border-border pb-2 pt-3">
         <Link
           href="/"
-          onClick={onNavigate}
+          onClick={onNavigateAction}
           className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <ArrowUpRight className="h-4 w-4" />

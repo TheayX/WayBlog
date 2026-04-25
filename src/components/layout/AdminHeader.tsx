@@ -70,7 +70,7 @@ export function AdminHeader() {
         </div>
       </div>
 
-      {mobileNavOpen && <AdminMobileNav onNavigate={() => setMobileNavOpen(false)} />}
+      {mobileNavOpen && <AdminMobileNav onNavigateAction={() => setMobileNavOpen(false)} />}
     </header>
   );
 }

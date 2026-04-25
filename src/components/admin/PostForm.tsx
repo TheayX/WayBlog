@@ -96,7 +96,6 @@ export function PostForm({
     setAiOpen,
     setTaxonomyAiOpen,
     getMatchedCategoryId,
-    getMatchedTagIds,
   } = usePostAiAssistant({
     title,
     slug,
@@ -364,10 +363,6 @@ export function PostForm({
       }
     : null;
   const matchedCategoryId = filteredAiResult ? getMatchedCategoryId(filteredAiResult) : '';
-  const taxonomyMatchedCategoryId = filteredTaxonomyAiState
-    ? getMatchedCategoryId(filteredTaxonomyAiState)
-    : '';
-  const taxonomyMatchedTagIds = filteredTaxonomyAiState ? getMatchedTagIds(filteredTaxonomyAiState) : [];
   const clientReady = useSyncExternalStore(subscribeClientReady, () => true, () => false);
   const toolbarPortalTarget =
     clientReady && toolbarPortalTargetId
@@ -375,7 +370,7 @@ export function PostForm({
       : null;
   const toolbarNode =
     showToolbar || toolbarPortalTarget ? (
-      <PostAiToolbar aiLoading={aiLoading} onOptimizeAll={requestAiSuggestions} />
+      <PostAiToolbar aiLoading={aiLoading} onOptimizeAllAction={requestAiSuggestions} />
     ) : null;
 
   return (
@@ -462,8 +457,6 @@ export function PostForm({
         betterCategorySuggestion={filteredTaxonomyAiState?.betterCategorySuggestion || null}
         selectedTags={filteredTaxonomyAiState?.selectedTags || []}
         newTagSuggestions={filteredTaxonomyAiState?.newTagSuggestions || []}
-        matchedCategoryId={taxonomyMatchedCategoryId}
-        matchedTagIds={taxonomyMatchedTagIds}
         currentCategoryId={categoryId}
         currentSelectedTagIds={selectedTagIds}
         warnings={filteredTaxonomyAiState?.warnings || []}
