@@ -107,6 +107,7 @@ function CategorySelect({ categories, value, onChange, fullWidth = true }: Categ
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const listboxId = useId();
   const [dropdownPosition, setDropdownPosition] = useState<CategoryDropdownPosition | null>(null);
   const selectedCategory = categories.find((category) => category.id === value);
@@ -124,7 +125,13 @@ function CategorySelect({ categories, value, onChange, fullWidth = true }: Categ
     }
 
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+
+      if (rootRef.current?.contains(target) || dropdownRef.current?.contains(target)) {
+        return;
+      }
+
+      if (!rootRef.current?.contains(target)) {
         setOpen(false);
       }
     }
@@ -179,6 +186,7 @@ function CategorySelect({ categories, value, onChange, fullWidth = true }: Categ
       {open && dropdownPosition
         ? createPortal(
             <div
+              ref={dropdownRef}
               id={listboxId}
               role="listbox"
               aria-label="分类选择"

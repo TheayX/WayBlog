@@ -51,6 +51,7 @@ export function PostForm({
   const [creatingTagNames, setCreatingTagNames] = useState<string[]>([]);
   const [dismissedCategorySuggestionNames, setDismissedCategorySuggestionNames] = useState<string[]>([]);
   const [dismissedTagSuggestionNames, setDismissedTagSuggestionNames] = useState<string[]>([]);
+  const [promotedCategorySuggestionName, setPromotedCategorySuggestionName] = useState('');
   const [promotedTagSuggestionNames, setPromotedTagSuggestionNames] = useState<string[]>([]);
   const { categories, tags, mergeCategory, mergeTag } = usePostEditorMetadata();
   const {
@@ -120,6 +121,7 @@ export function PostForm({
   useEffect(() => {
     setDismissedCategorySuggestionNames([]);
     setDismissedTagSuggestionNames([]);
+    setPromotedCategorySuggestionName('');
     setPromotedTagSuggestionNames([]);
   }, [aiResult, taxonomyAiState]);
 
@@ -228,6 +230,7 @@ export function PostForm({
     if (existing) {
       setCategoryId(existing.id);
       setDismissedCategorySuggestionNames((prev) => Array.from(new Set([...prev, name])));
+      setPromotedCategorySuggestionName(name);
       toast.success(`已应用现有分类「${existing.name}」`);
       return;
     }
@@ -256,6 +259,7 @@ export function PostForm({
       mergeCategory(created);
       setCategoryId(created.id);
       setDismissedCategorySuggestionNames((prev) => Array.from(new Set([...prev, name])));
+      setPromotedCategorySuggestionName(created.name);
       toast.success(`已创建并应用分类「${created.name}」`);
     } finally {
       setCreatingCategoryNames((prev) => prev.filter((item) => item !== name));
@@ -316,9 +320,61 @@ export function PostForm({
   }
 
   const publishButtonLabel = isEdit && status === 'PUBLISHED' ? '更新发布' : '发布文章';
+  const promotedAiCategory =
+    aiResult?.betterCategorySuggestion &&
+    promotedCategorySuggestionName &&
+    aiResult.betterCategorySuggestion.name.trim().toLowerCase() ===
+      promotedCategorySuggestionName.trim().toLowerCase()
+      ? (() => {
+          const existing = findExistingCategoryByName(aiResult.betterCategorySuggestion.name);
+
+          return {
+            id: existing?.id,
+            name: aiResult.betterCategorySuggestion.name,
+            level: aiResult.betterCategorySuggestion.level,
+            reason: aiResult.betterCategorySuggestion.reason,
+          };
+        })()
+      : null;
+  const promotedTaxonomyCategory =
+    taxonomyAiState?.betterCategorySuggestion &&
+    promotedCategorySuggestionName &&
+    taxonomyAiState.betterCategorySuggestion.name.trim().toLowerCase() ===
+      promotedCategorySuggestionName.trim().toLowerCase()
+      ? (() => {
+          const existing = findExistingCategoryByName(taxonomyAiState.betterCategorySuggestion.name);
+
+          return {
+            id: existing?.id,
+            name: taxonomyAiState.betterCategorySuggestion.name,
+            level: taxonomyAiState.betterCategorySuggestion.level,
+            reason: taxonomyAiState.betterCategorySuggestion.reason,
+          };
+        })()
+      : null;
   const filteredAiResult = aiResult
     ? {
         ...aiResult,
+        selectedCategory: promotedAiCategory || aiResult.selectedCategory,
+        selectedTags: [
+          ...aiResult.selectedTags,
+          ...aiResult.newTagSuggestions
+            .filter((tag) => promotedTagSuggestionNames.includes(tag.name))
+            .map((tag) => {
+              const existing = findExistingTagByName(tag.name);
+
+              return {
+                id: existing?.id,
+                name: tag.name,
+                level: tag.level,
+                reason: tag.reason,
+              };
+            }),
+        ].filter(
+          (tag, index, array) =>
+            array.findIndex((item) => item.name.trim().toLowerCase() === tag.name.trim().toLowerCase()) ===
+            index,
+        ),
         betterCategorySuggestion:
           aiResult.betterCategorySuggestion &&
           !dismissedCategorySuggestionNames.includes(aiResult.betterCategorySuggestion.name)
@@ -332,6 +388,7 @@ export function PostForm({
   const filteredTaxonomyAiState = taxonomyAiState
     ? {
         ...taxonomyAiState,
+        selectedCategory: promotedTaxonomyCategory || taxonomyAiState.selectedCategory,
         selectedTags: [
           ...taxonomyAiState.selectedTags,
           ...taxonomyAiState.newTagSuggestions
