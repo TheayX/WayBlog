@@ -67,6 +67,20 @@ export async function saveAdminResource<TPayload>({
 }
 
 /**
+ * 后台资源创建的轻量辅助函数。
+ *
+ * AI 新建议在编辑页内原地创建时只需要 POST，不需要编辑态分支，
+ * 单独抽出后可以避免页面层重复传 `editingId: null`。
+ */
+export async function createAdminResource<TPayload>(endpoint: string, body: TPayload) {
+  return saveAdminResource({
+    endpoint,
+    editingId: null,
+    body,
+  });
+}
+
+/**
  * 后台资源删除的客户端辅助函数。
  *
  * 删除接口普遍返回 204，因此这里只关心是否成功，不要求页面再重复拼接删除 URL。

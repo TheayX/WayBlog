@@ -24,6 +24,11 @@ interface AiSuggestionDrawerProps {
   onClose: () => void;
   onApplyField: (field: AiField) => void;
   onApplyAll: () => void;
+  onCreateCategoryAndApply: (suggestionName: string) => void;
+  onCreateTagAndSelect: (tagName: string) => void;
+  onCreateAllTagsAndSelect: (tagNames: string[]) => void;
+  creatingCategoryNames: string[];
+  creatingTagNames: string[];
 }
 
 export function AiSuggestionDrawer({
@@ -33,8 +38,17 @@ export function AiSuggestionDrawer({
   onClose,
   onApplyField,
   onApplyAll,
+  onCreateCategoryAndApply,
+  onCreateTagAndSelect,
+  onCreateAllTagsAndSelect,
+  creatingCategoryNames,
+  creatingTagNames,
 }: AiSuggestionDrawerProps) {
   if (!open || !result) return null;
+
+  const quickCreateTagNames = result.newTagSuggestions
+    .filter((tag) => tag.level !== 'weak')
+    .map((tag) => tag.name);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/35 backdrop-blur-sm">
@@ -131,13 +145,29 @@ export function AiSuggestionDrawer({
               <div>
                 <p className="mb-2 text-sm font-medium">更贴切的新分类建议</p>
                 {result.betterCategorySuggestion ? (
-                  <TaxonomyChip
-                    title={result.betterCategorySuggestion.name}
-                    level={result.betterCategorySuggestion.level}
-                    reason={result.betterCategorySuggestion.reason}
-                    tone="new"
-                    extraMeta="建议新增"
-                  />
+                  <div className="space-y-2">
+                    <TaxonomyChip
+                      title={result.betterCategorySuggestion.name}
+                      level={result.betterCategorySuggestion.level}
+                      reason={result.betterCategorySuggestion.reason}
+                      tone="new"
+                      extraMeta="建议新增"
+                    />
+                    {result.betterCategorySuggestion.level !== 'weak' ? (
+                      <button
+                        type="button"
+                        onClick={() => onCreateCategoryAndApply(result.betterCategorySuggestion!.name)}
+                        disabled={creatingCategoryNames.includes(result.betterCategorySuggestion.name)}
+                        className={adminCompactSecondaryActionClassName}
+                      >
+                        {creatingCategoryNames.includes(result.betterCategorySuggestion.name)
+                          ? '创建中...'
+                          : '创建并应用'}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">一般推荐的新分类建议需手动确认后再创建。</p>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">当前没有更贴切的新分类建议。</p>
                 )}
@@ -165,11 +195,31 @@ export function AiSuggestionDrawer({
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">建议新增的标签</p>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium">建议新增的标签</p>
+                  {quickCreateTagNames.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => onCreateAllTagsAndSelect(quickCreateTagNames)}
+                      disabled={quickCreateTagNames.every((name) => creatingTagNames.includes(name))}
+                      className={adminCompactSecondaryActionClassName}
+                    >
+                      全部创建并选中
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {result.newTagSuggestions.length > 0 ? (
                     result.newTagSuggestions.map((tag) => (
-                      <TagSuggestionChip key={`${tag.name}-new`} tag={tag} />
+                      <TagSuggestionChip
+                        key={`${tag.name}-new`}
+                        tag={tag}
+                        actionLabel={tag.level !== 'weak' ? '创建并选中' : undefined}
+                        actionPending={creatingTagNames.includes(tag.name)}
+                        onAction={
+                          tag.level !== 'weak' ? () => onCreateTagAndSelect(tag.name) : undefined
+                        }
+                      />
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground">当前没有新增标签建议。</p>
@@ -247,7 +297,17 @@ function TaxonomyChip({
   );
 }
 
-function TagSuggestionChip({ tag }: { tag: AiSelectedTagSuggestion | AiSuggestedTagCandidate }) {
+function TagSuggestionChip({
+  tag,
+  actionLabel,
+  actionPending,
+  onAction,
+}: {
+  tag: AiSelectedTagSuggestion | AiSuggestedTagCandidate;
+  actionLabel?: string;
+  actionPending?: boolean;
+  onAction?: () => void;
+}) {
   const isNew = 'isNew' in tag && Boolean(tag.isNew);
 
   return (
@@ -266,6 +326,16 @@ function TagSuggestionChip({ tag }: { tag: AiSelectedTagSuggestion | AiSuggested
         {getTaxonomyLevelLabel(tag.level)} · {getTaxonomyLevelHint(tag.level)}
       </div>
       {tag.reason && <div className="mt-1 text-[11px] opacity-80">{tag.reason}</div>}
+      {onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          disabled={actionPending}
+          className="mt-2 rounded-full border border-current/20 px-2 py-1 text-[11px] transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {actionPending ? '创建中...' : actionLabel}
+        </button>
+      )}
     </div>
   );
 }

@@ -28,6 +28,13 @@ interface AiTaxonomyDialogProps {
   onApplyCategory: () => void;
   onApplyTags: () => void;
   onApplyAll: () => void;
+  onCreateCategoryAndApply: () => void;
+  onCreateTagAndSelect: (tagName: string) => void;
+  onCreateAllTagsAndSelect: () => void;
+  creatingCategory: boolean;
+  creatingTagNames: string[];
+  canQuickCreateCategory: boolean;
+  canQuickCreateTagNames: string[];
 }
 
 /**
@@ -47,6 +54,13 @@ export function AiTaxonomyDialog({
   onApplyCategory,
   onApplyTags,
   onApplyAll,
+  onCreateCategoryAndApply,
+  onCreateTagAndSelect,
+  onCreateAllTagsAndSelect,
+  creatingCategory,
+  creatingTagNames,
+  canQuickCreateCategory,
+  canQuickCreateTagNames,
 }: AiTaxonomyDialogProps) {
   if (!open) return null;
 
@@ -111,13 +125,27 @@ export function AiTaxonomyDialog({
               <div>
                 <p className="text-sm font-medium text-foreground">更贴切的新分类建议</p>
                 {betterCategorySuggestion ? (
-                  <TaxonomyCard
-                    className="mt-2 border-amber-500/40 bg-amber-500/10 text-amber-700"
-                    title={betterCategorySuggestion.name}
-                    meta={[getTaxonomyLevelLabel(betterCategorySuggestion.level), '建议新增']}
-                    reason={betterCategorySuggestion.reason}
-                    footer={getTaxonomyLevelHint(betterCategorySuggestion.level)}
-                  />
+                  <div className="mt-2 space-y-2">
+                    <TaxonomyCard
+                      className="border-amber-500/40 bg-amber-500/10 text-amber-700"
+                      title={betterCategorySuggestion.name}
+                      meta={[getTaxonomyLevelLabel(betterCategorySuggestion.level), '建议新增']}
+                      reason={betterCategorySuggestion.reason}
+                      footer={getTaxonomyLevelHint(betterCategorySuggestion.level)}
+                    />
+                    {canQuickCreateCategory ? (
+                      <button
+                        type="button"
+                        onClick={onCreateCategoryAndApply}
+                        disabled={creatingCategory}
+                        className={adminCompactSecondaryActionClassName}
+                      >
+                        {creatingCategory ? '创建中...' : '创建并应用'}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">一般推荐的新分类建议需手动确认后再创建。</p>
+                    )}
+                  </div>
                 ) : (
                     <p className="mt-2 text-sm text-muted-foreground">当前没有更合适的新分类建议。</p>
                 )}
@@ -156,11 +184,34 @@ export function AiTaxonomyDialog({
               </div>
 
               <div>
-                <p className="text-sm font-medium text-foreground">建议新增的标签</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-foreground">建议新增的标签</p>
+                  {canQuickCreateTagNames.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={onCreateAllTagsAndSelect}
+                      disabled={canQuickCreateTagNames.every((name) => creatingTagNames.includes(name))}
+                      className={adminCompactSecondaryActionClassName}
+                    >
+                      全部创建并选中
+                    </button>
+                  )}
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {newTagSuggestions.length > 0 ? (
                     newTagSuggestions.map((tag) => (
-                      <TagSuggestionChip key={`${tag.name}-new`} tag={tag} matched={false} />
+                      <TagSuggestionChip
+                        key={`${tag.name}-new`}
+                        tag={tag}
+                        matched={false}
+                        actionLabel={canQuickCreateTagNames.includes(tag.name) ? '创建并选中' : undefined}
+                        actionPending={creatingTagNames.includes(tag.name)}
+                        onAction={
+                          canQuickCreateTagNames.includes(tag.name)
+                            ? () => onCreateTagAndSelect(tag.name)
+                            : undefined
+                        }
+                      />
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground">当前没有新增标签建议。</p>
@@ -214,9 +265,15 @@ function TaxonomyCard({
 function TagSuggestionChip({
   tag,
   matched,
+  actionLabel,
+  actionPending,
+  onAction,
 }: {
   tag: AiSelectedTagSuggestion | AiSuggestedTagCandidate;
   matched: boolean;
+  actionLabel?: string;
+  actionPending?: boolean;
+  onAction?: () => void;
 }) {
   const isNew = 'isNew' in tag && Boolean(tag.isNew);
 
@@ -241,6 +298,16 @@ function TagSuggestionChip({
         </div>
       )}
       {tag.reason && <div className="mt-1 text-[11px] opacity-80">{tag.reason}</div>}
+      {onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          disabled={actionPending}
+          className="mt-2 rounded-full border border-current/20 px-2 py-1 text-[11px] transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {actionPending ? '创建中...' : actionLabel}
+        </button>
+      )}
     </div>
   );
 }

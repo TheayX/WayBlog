@@ -17,7 +17,9 @@ import {
 import { usePostEditorMetadata } from '@/components/admin/use-post-editor-metadata';
 import { usePostFormState } from '@/components/admin/use-post-form-state';
 import { usePostAiAssistant } from '@/components/admin/use-post-ai-assistant';
+import { createAdminResource } from '@/lib/admin/client';
 import { savePost, uploadPostImage } from '@/lib/admin/post-client';
+import { slugify } from '@/lib/utils';
 import type { AdminPostEditorData } from '@/lib/posts/queries';
 
 interface PostFormProps {
@@ -45,7 +47,9 @@ export function PostForm({
 }: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const { categories, tags } = usePostEditorMetadata();
+  const [creatingCategoryNames, setCreatingCategoryNames] = useState<string[]>([]);
+  const [creatingTagNames, setCreatingTagNames] = useState<string[]>([]);
+  const { categories, tags, mergeCategory, mergeTag } = usePostEditorMetadata();
   const {
     title,
     slug,
@@ -186,6 +190,114 @@ export function PostForm({
     }
   }
 
+  /**
+   * 原地创建前先检查当前编辑页是否已有同名分类。
+   * 能直接复用时就不再发创建请求，避免把 taxonomy 弄脏。
+   */
+  function findExistingCategoryByName(name: string) {
+    const normalizedName = name.trim().toLowerCase();
+    return categories.find((item) => item.name.trim().toLowerCase() === normalizedName) || null;
+  }
+
+  /**
+   * 标签按名称做本地查重即可满足当前场景。
+   * 这样 AI 建议如果本来就存在，可以直接选中。
+   */
+  function findExistingTagByName(name: string) {
+    const normalizedName = name.trim().toLowerCase();
+    return tags.find((item) => item.name.trim().toLowerCase() === normalizedName) || null;
+  }
+
+  /**
+   * 创建分类后立刻写回当前编辑页选项并应用。
+   * 这样用户不需要跳去分类管理页单独补建。
+   */
+  async function createCategoryAndApply(name: string) {
+    const existing = findExistingCategoryByName(name);
+    if (existing) {
+      setCategoryId(existing.id);
+      toast.success(`已应用现有分类「${existing.name}」`);
+      return;
+    }
+
+    setCreatingCategoryNames((prev) => Array.from(new Set([...prev, name])));
+
+    try {
+      const slug = slugify(name).slice(0, 100) || 'category';
+      const result = await createAdminResource('/api/categories', {
+        name: name.trim(),
+        slug,
+        description: null,
+      });
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+
+      const created = result.data?.data as { id: string; name: string; slug?: string } | null;
+      if (!created?.id || !created?.name) {
+        toast.error('分类创建成功，但返回数据不完整');
+        return;
+      }
+
+      mergeCategory(created);
+      setCategoryId(created.id);
+      toast.success(`已创建并应用分类「${created.name}」`);
+    } finally {
+      setCreatingCategoryNames((prev) => prev.filter((item) => item !== name));
+    }
+  }
+
+  /**
+   * 创建标签后立刻加入候选列表并选中。
+   * 已存在时直接复用，减少重复创建。
+   */
+  async function createTagAndSelect(name: string) {
+    const existing = findExistingTagByName(name);
+    if (existing) {
+      setSelectedTagIds((prev) => Array.from(new Set([...prev, existing.id])));
+      toast.success(`已选中现有标签「${existing.name}」`);
+      return;
+    }
+
+    setCreatingTagNames((prev) => Array.from(new Set([...prev, name])));
+
+    try {
+      const slug = slugify(name).slice(0, 100) || 'tag';
+      const result = await createAdminResource('/api/tags', {
+        name: name.trim(),
+        slug,
+      });
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+
+      const created = result.data?.data as { id: string; name: string; slug?: string } | null;
+      if (!created?.id || !created?.name) {
+        toast.error('标签创建成功，但返回数据不完整');
+        return;
+      }
+
+      mergeTag(created);
+      setSelectedTagIds((prev) => Array.from(new Set([...prev, created.id])));
+      toast.success(`已创建并选中标签「${created.name}」`);
+    } finally {
+      setCreatingTagNames((prev) => prev.filter((item) => item !== name));
+    }
+  }
+
+  /**
+   * 批量创建时顺序执行，避免并发请求放大冲突概率。
+   */
+  async function createAllTagsAndSelect(names: string[]) {
+    for (const name of names) {
+      await createTagAndSelect(name);
+    }
+  }
+
   const publishButtonLabel = isEdit && status === 'PUBLISHED' ? '更新发布' : '发布文章';
   const matchedCategoryId = aiResult ? getMatchedCategoryId(aiResult) : '';
   const taxonomyMatchedCategoryId = taxonomyAiState ? getMatchedCategoryId(taxonomyAiState) : '';
@@ -259,12 +371,23 @@ export function PostForm({
         open={aiOpen}
         result={aiResult}
         matchedCategoryId={matchedCategoryId}
+        creatingCategoryNames={creatingCategoryNames}
+        creatingTagNames={creatingTagNames}
         onClose={() => setAiOpen(false)}
         onApplyField={(field) => {
           if (!aiResult) return;
           applyFieldSuggestion(field, aiResult);
         }}
         onApplyAll={applyAllAi}
+        onCreateCategoryAndApply={(name) => {
+          void createCategoryAndApply(name);
+        }}
+        onCreateTagAndSelect={(name) => {
+          void createTagAndSelect(name);
+        }}
+        onCreateAllTagsAndSelect={(names) => {
+          void createAllTagsAndSelect(names);
+        }}
       />
 
       <AiTaxonomyDialog
@@ -276,6 +399,18 @@ export function PostForm({
         matchedCategoryId={taxonomyMatchedCategoryId}
         matchedTagIds={taxonomyMatchedTagIds}
         warnings={taxonomyAiState?.warnings || []}
+        creatingCategory={Boolean(
+          taxonomyAiState?.betterCategorySuggestion &&
+            creatingCategoryNames.includes(taxonomyAiState.betterCategorySuggestion.name),
+        )}
+        creatingTagNames={creatingTagNames}
+        canQuickCreateCategory={Boolean(
+          taxonomyAiState?.betterCategorySuggestion &&
+            taxonomyAiState.betterCategorySuggestion.level !== 'weak',
+        )}
+        canQuickCreateTagNames={(taxonomyAiState?.newTagSuggestions || [])
+          .filter((tag) => tag.level !== 'weak')
+          .map((tag) => tag.name)}
         onClose={() => setTaxonomyAiOpen(false)}
         onApplyCategory={() => {
           if (!taxonomyAiState) return;
@@ -290,6 +425,21 @@ export function PostForm({
           applyFieldSuggestion('category', taxonomyAiState);
           applyFieldSuggestion('tags', taxonomyAiState);
           setTaxonomyAiOpen(false);
+        }}
+        onCreateCategoryAndApply={() => {
+          const suggestion = taxonomyAiState?.betterCategorySuggestion;
+          if (!suggestion) return;
+          void createCategoryAndApply(suggestion.name);
+        }}
+        onCreateTagAndSelect={(name) => {
+          void createTagAndSelect(name);
+        }}
+        onCreateAllTagsAndSelect={() => {
+          const names = (taxonomyAiState?.newTagSuggestions || [])
+            .filter((tag) => tag.level !== 'weak')
+            .map((tag) => tag.name);
+
+          void createAllTagsAndSelect(names);
         }}
       />
     </>
