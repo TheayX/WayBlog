@@ -42,10 +42,10 @@ export function AiSuggestionDrawer({
         <div className="border-b border-border px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="eyebrow">AI Review V2</p>
+              <p className="eyebrow">AI Review</p>
               <h2 className="mt-2 text-xl font-semibold text-foreground">AI 优化建议</h2>
               <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                taxonomy suggestion v2 会把可直接应用结果和新增建议分开展示，避免分类和标签只剩二元判断。
+                先看建议内容，再决定应用哪些修改。
               </p>
             </div>
             <button
@@ -124,7 +124,7 @@ export function AiSuggestionDrawer({
                     extraMeta={matchedCategoryId ? '已命中现有分类' : '需要人工确认映射'}
                   />
                 ) : (
-                  <p className="text-sm text-muted-foreground">这次没有可直接应用的现有分类。</p>
+                  <p className="text-sm text-muted-foreground">没有适合直接应用的现有分类。</p>
                 )}
               </div>
 
@@ -159,7 +159,7 @@ export function AiSuggestionDrawer({
                       <TagSuggestionChip key={`${tag.id || tag.name}-existing`} tag={tag} />
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">这次没有可直接应用的现有标签。</p>
+                  <p className="text-sm text-muted-foreground">没有适合直接应用的现有标签。</p>
                   )}
                 </div>
               </div>

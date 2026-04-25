@@ -40,7 +40,7 @@ type AiApplyPayload = Partial<
   >
 >;
 
-/** taxonomy suggestion v2 档位对应的中文文案。 */
+/** 第二版推荐档位对应的中文文案。 */
 export function getTaxonomyLevelLabel(level: AiTaxonomySuggestionLevel) {
   switch (level) {
     case 'strong':
@@ -52,7 +52,7 @@ export function getTaxonomyLevelLabel(level: AiTaxonomySuggestionLevel) {
   }
 }
 
-/** taxonomy suggestion v2 档位对应的简短说明。 */
+/** 第二版推荐档位对应的简短说明。 */
 export function getTaxonomyLevelHint(level: AiTaxonomySuggestionLevel) {
   switch (level) {
     case 'strong':
@@ -66,7 +66,7 @@ export function getTaxonomyLevelHint(level: AiTaxonomySuggestionLevel) {
 
 /**
  * 将 AI 推荐分类映射到当前已存在分类。
- * taxonomy suggestion v2 只允许 selectedCategory 参与直接应用。
+ * 只有 selectedCategory 参与直接应用。
  */
 export function getMatchedCategoryId(
   categories: NamedOption[],
@@ -86,7 +86,7 @@ export function getMatchedCategoryId(
 
 /**
  * 将 AI 推荐标签映射为当前可直接应用的标签 id 集合。
- * taxonomy suggestion v2 只把 selectedTags 视为可立即应用结果。
+ * 只有 selectedTags 视为可立即应用结果。
  */
 export function getMatchedTagIds(
   tags: NamedOption[],
@@ -127,7 +127,7 @@ export function getAiFieldLabel(field: AiField) {
 
 /**
  * 将单字段 AI 建议应用到表单状态。
- * taxonomy suggestion v2 下，新增建议会保留展示，但不会直接创建或应用。
+ * 新增建议会保留展示，但不会直接创建或应用。
  */
 export function applyAiFieldValue(
   field: AiField,

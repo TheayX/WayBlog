@@ -2,7 +2,7 @@ import type { AiOptimizeInput } from '@/lib/ai/types';
 
 /**
  * AI 提示词共享规则与构造工具。
- * taxonomy suggestion v2 在这里统一约束分类/标签的档位制输出。
+ * 第二版分类与标签建议在这里统一约束为档位制输出。
  */
 const JSON_ONLY_RULE = '输出必须是合法 JSON，不要使用 Markdown 代码围栏';
 const BRIEF_WARNING_RULE = 'warnings 仅用于输出简短提醒，没有则返回空数组';
@@ -37,10 +37,10 @@ export const FIELD_RULES = {
     '如果没有合适现有分类，不要硬选，直接给新增分类建议',
   ],
   tags: [
-    '标签可以推荐多个',
+    '标签可以推荐多个，但不要为了凑数量硬给',
     '优先复用现有标签，但没有合适标签时必须尽量给新增建议',
     '现有标签和新增标签建议可以同时存在',
-    '不要为了凑数量给过泛标签，也不要因为谨慎而完全不给建议',
+    '不要因为文章简单就硬凑标签，也不要因为谨慎而完全不给建议',
   ],
 } as const;
 

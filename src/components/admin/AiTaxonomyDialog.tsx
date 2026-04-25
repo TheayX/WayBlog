@@ -31,8 +31,8 @@ interface AiTaxonomyDialogProps {
 }
 
 /**
- * taxonomy suggestion v2 弹窗。
- * 分类与标签分别区分“可直接应用”结果和“新增建议”，避免继续沿用 v1 的二元表达。
+ * 分类与标签建议弹窗。
+ * 把可直接应用结果和新增建议分开展示，避免信息混在一起。
  */
 export function AiTaxonomyDialog({
   open,
@@ -55,10 +55,10 @@ export function AiTaxonomyDialog({
       <div className="page-frame w-full max-w-3xl px-5 py-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="eyebrow">AI Select V2</p>
+            <p className="eyebrow">AI Select</p>
             <h2 className="mt-2 text-xl font-semibold text-foreground">分类与标签建议</h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">
-              taxonomy suggestion v2 会区分可直接应用结果和新增建议，你可以先看判断，再决定应用哪部分。
+              先看建议，再决定应用哪些内容。
             </p>
           </div>
           <button
@@ -104,7 +104,7 @@ export function AiTaxonomyDialog({
                     footer={getTaxonomyLevelHint(selectedCategory.level)}
                   />
                 ) : (
-                  <p className="mt-2 text-sm text-muted-foreground">这次没有可直接应用的现有分类。</p>
+                    <p className="mt-2 text-sm text-muted-foreground">没有适合直接应用的现有分类。</p>
                 )}
               </div>
 
@@ -119,7 +119,7 @@ export function AiTaxonomyDialog({
                     footer={getTaxonomyLevelHint(betterCategorySuggestion.level)}
                   />
                 ) : (
-                  <p className="mt-2 text-sm text-muted-foreground">当前没有更贴切的新分类建议。</p>
+                    <p className="mt-2 text-sm text-muted-foreground">当前没有更合适的新分类建议。</p>
                 )}
               </div>
             </div>
@@ -150,7 +150,7 @@ export function AiTaxonomyDialog({
                       />
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">这次没有可直接应用的现有标签。</p>
+                    <p className="text-sm text-muted-foreground">没有适合直接应用的现有标签。</p>
                   )}
                 </div>
               </div>

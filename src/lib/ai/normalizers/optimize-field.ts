@@ -3,8 +3,6 @@ import {
   clampExcerpt,
   getString,
   normalizeBetterCategorySuggestion,
-  normalizeLegacyCategorySuggestionV1,
-  normalizeLegacyTagSuggestionsV1,
   normalizeMarkdown,
   normalizeNewTagSuggestions,
   normalizeSelectedCategory,
@@ -15,7 +13,7 @@ import { slugify } from '@/lib/utils';
 
 /**
  * 归一化字段级 AI 优化结果。
- * taxonomy 建议同样优先读取 v2 结构，同时保留 v1 兼容层。
+ * 第二版字段结果直接使用新的分类与标签结构。
  */
 export function normalizeOptimizeFieldResult(
   parsed: Record<string, unknown>,
@@ -29,18 +27,15 @@ export function normalizeOptimizeFieldResult(
   const selectedTags = normalizeSelectedTags(parsed.selectedTags, input);
   const newTagSuggestions = normalizeNewTagSuggestions(parsed.newTagSuggestions);
 
-  const legacyCategory = normalizeLegacyCategorySuggestionV1(parsed.categorySuggestion, input);
-  const legacyTags = normalizeLegacyTagSuggestionsV1(parsed.tagSuggestions, input);
-
   return {
     field: input.field,
     title: normalizedIdentity.title,
     slug: normalizedIdentity.slug,
     value: normalizedValue || undefined,
-    selectedCategory: selectedCategory || legacyCategory.selectedCategory,
-    betterCategorySuggestion: betterCategorySuggestion || legacyCategory.betterCategorySuggestion,
-    selectedTags: selectedTags.length > 0 ? selectedTags : legacyTags.selectedTags,
-    newTagSuggestions: newTagSuggestions.length > 0 ? newTagSuggestions : legacyTags.newTagSuggestions,
+    selectedCategory,
+    betterCategorySuggestion,
+    selectedTags,
+    newTagSuggestions,
     warnings: normalizeWarnings(parsed.warnings, input.content),
   };
 }

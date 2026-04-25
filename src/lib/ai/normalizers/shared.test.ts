@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  normalizeLegacyCategorySuggestionV1,
-  normalizeLegacyTagSuggestionsV1,
+  normalizeBetterCategorySuggestion,
+  normalizeSelectedCategory,
+  normalizeSelectedTags,
   normalizeSuggestionLevel,
   parseModelJsonObject,
 } from '@/lib/ai/normalizers/shared';
@@ -37,7 +38,7 @@ describe('parseModelJsonObject', () => {
 });
 
 describe('normalizeSuggestionLevel', () => {
-  it('keeps supported v2 levels', () => {
+  it('keeps supported levels', () => {
     assert.equal(normalizeSuggestionLevel('strong'), 'strong');
     assert.equal(normalizeSuggestionLevel('medium'), 'medium');
     assert.equal(normalizeSuggestionLevel('weak'), 'weak');
@@ -49,50 +50,59 @@ describe('normalizeSuggestionLevel', () => {
   });
 });
 
-describe('legacy v1 compatibility', () => {
-  it('maps legacy categorySuggestion with existing id into selectedCategory', () => {
-    const normalized = normalizeLegacyCategorySuggestionV1(
-      { name: '技术', reason: '最接近主题' },
+describe('taxonomy normalization', () => {
+  it('matches existing category by name', () => {
+    const normalized = normalizeSelectedCategory(
+      { name: '技术', level: 'strong', reason: '最接近主题' },
       input,
     );
 
     assert.deepEqual(normalized, {
-      selectedCategory: {
-        id: 'category-1',
-        name: '技术',
-        level: 'medium',
-        reason: '最接近主题',
-      },
-      betterCategorySuggestion: null,
+      id: 'category-1',
+      name: '技术',
+      level: 'strong',
+      reason: '最接近主题',
     });
   });
 
-  it('maps legacy new tag suggestions into newTagSuggestions', () => {
-    const normalized = normalizeLegacyTagSuggestionsV1(
+  it('normalizes better category suggestion as new candidate', () => {
+    const normalized = normalizeBetterCategorySuggestion({
+      name: '前端工程',
+      level: 'medium',
+      reason: '更贴近正文主题',
+    });
+
+    assert.deepEqual(normalized, {
+      name: '前端工程',
+      level: 'medium',
+      reason: '更贴近正文主题',
+      isNew: true,
+    });
+  });
+
+  it('sorts selected tags by level and deduplicates by name', () => {
+    const normalized = normalizeSelectedTags(
       [
-        { name: 'next.js', reason: '已有标签' },
-        { name: '组件设计', reason: '新增标签', isNew: true },
+        { name: 'prisma', level: 'medium', reason: '数据层' },
+        { name: 'Next.js', level: 'strong', reason: '主框架' },
+        { name: 'Prisma', level: 'weak', reason: '重复项' },
       ],
       input,
     );
 
-    assert.deepEqual(normalized, {
-      selectedTags: [
-        {
-          id: 'tag-1',
-          name: 'Next.js',
-          level: 'medium',
-          reason: '已有标签',
-        },
-      ],
-      newTagSuggestions: [
-        {
-          name: '组件设计',
-          level: 'medium',
-          reason: '新增标签',
-          isNew: true,
-        },
-      ],
-    });
+    assert.deepEqual(normalized, [
+      {
+        id: 'tag-1',
+        name: 'Next.js',
+        level: 'strong',
+        reason: '主框架',
+      },
+      {
+        id: 'tag-2',
+        name: 'Prisma',
+        level: 'medium',
+        reason: '数据层',
+      },
+    ]);
   });
 });

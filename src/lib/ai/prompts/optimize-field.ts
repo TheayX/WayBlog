@@ -3,7 +3,7 @@ import { buildJsonOnlyPrompt, FIELD_RULES } from '@/lib/ai/prompts/shared';
 
 /**
  * 字段级优化输出样例。
- * taxonomy suggestion v2 也在字段级接口中使用同一套结构。
+ * 第二版分类与标签建议在字段级接口中也使用同一套结构。
  */
 const FIELD_OUTPUTS = {
   identity: `{
@@ -70,8 +70,8 @@ const FIELD_INSTRUCTIONS = {
   slug: '请仅生成更合适的 slug。',
   content: '请仅优化正文内容。',
   excerpt: '请仅生成或优化文章摘要。',
-  category: '请仅给出 taxonomy suggestion v2 分类建议。',
-  tags: '请仅给出 taxonomy suggestion v2 标签建议。',
+  category: '请仅给出分类建议。',
+  tags: '请仅给出标签建议，数量按内容复杂度自然决定。',
 } as const;
 
 /**

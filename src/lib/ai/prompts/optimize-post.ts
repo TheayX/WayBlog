@@ -3,7 +3,7 @@ import { buildJsonOnlyPrompt, resolvePromptProfile } from '@/lib/ai/prompts/shar
 
 /**
  * 生成文章整体优化提示词。
- * taxonomy suggestion v2 改为档位制输出，并要求分类/标签显式区分“可直接应用”和“新增建议”。
+ * 第二版分类与标签建议改为档位制输出，并显式区分“可直接应用”和“新增建议”。
  */
 export function buildOptimizePostPrompt(input: AiOptimizeInput) {
   const profile = resolvePromptProfile(input);
@@ -15,11 +15,12 @@ export function buildOptimizePostPrompt(input: AiOptimizeInput) {
       '优化标题、slug、摘要、正文',
       '正文只做必要整理和表达优化',
       '保持原有信息边界，不扩写新事实',
-      'taxonomy suggestion v2 规则：分类使用 selectedCategory 和 betterCategorySuggestion；标签使用 selectedTags 和 newTagSuggestions',
+      '分类使用 selectedCategory 和 betterCategorySuggestion；标签使用 selectedTags 和 newTagSuggestions',
       'selectedCategory 仅在现有分类足够合适时返回，否则返回 null',
       'betterCategorySuggestion 仅在存在更贴切的新分类时返回，否则返回 null',
       'selectedTags 仅包含建议直接应用的现有标签',
       'newTagSuggestions 在没有合适现有标签时仍应尽量给出，不要直接留空',
+      '标签数量按内容复杂度自然决定，不要预设固定个数',
       ...profile.rules,
     ],
     `{

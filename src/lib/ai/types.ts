@@ -5,8 +5,8 @@ export interface AiOption {
 }
 
 /**
- * taxonomy suggestion v2 推荐档位。
- * 用档位而不是百分比，避免把模型的主观判断伪装成精确分数。
+ * 分类与标签建议第二版使用的推荐档位。
+ * 用档位而不是百分比，避免把模型判断包装成伪精确分数。
  */
 export type AiTaxonomySuggestionLevel = 'strong' | 'medium' | 'weak';
 
@@ -33,29 +33,29 @@ export interface AiFieldInput extends AiOptimizeInput {
   field: AiField;
 }
 
-/** taxonomy suggestion v2 基础结构。 */
+/** 分类与标签建议第二版的基础结构。 */
 interface AiTaxonomySuggestionBase {
   name: string;
   level: AiTaxonomySuggestionLevel;
   reason?: string;
 }
 
-/** taxonomy suggestion v2 中可直接应用的现有分类。 */
+/** 可直接应用的现有分类。 */
 export interface AiSelectedCategorySuggestion extends AiTaxonomySuggestionBase {
   id?: string;
 }
 
-/** taxonomy suggestion v2 中更贴切的新分类建议。 */
+/** 更贴切的新分类建议。 */
 export interface AiSuggestedCategoryCandidate extends AiTaxonomySuggestionBase {
   isNew?: boolean;
 }
 
-/** taxonomy suggestion v2 中可直接应用的现有标签。 */
+/** 可直接应用的现有标签。 */
 export interface AiSelectedTagSuggestion extends AiTaxonomySuggestionBase {
   id?: string;
 }
 
-/** taxonomy suggestion v2 中建议新增的标签。 */
+/** 建议新增的标签。 */
 export interface AiSuggestedTagCandidate extends AiTaxonomySuggestionBase {
   isNew?: boolean;
 }
@@ -84,22 +84,4 @@ export interface AiFieldResult {
   selectedTags?: AiSelectedTagSuggestion[];
   newTagSuggestions?: AiSuggestedTagCandidate[];
   warnings: string[];
-}
-
-/**
- * v1 旧版 taxonomy 建议结构，仅用于 normalizer 兼容映射。
- * 保留它是为了明确记录这是 taxonomy suggestion v2 的渐进式演进。
- */
-export interface AiSuggestionCategory {
-  id?: string;
-  name: string;
-  reason?: string;
-}
-
-/** v1 旧版标签建议结构，仅用于兼容映射。 */
-export interface AiSuggestionTag {
-  id?: string;
-  name: string;
-  reason?: string;
-  isNew?: boolean;
 }

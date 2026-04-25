@@ -15,7 +15,7 @@ import {
 
 /**
  * 管理后台文章 AI 助手 Hook。
- * taxonomy suggestion v2 在这里统一协调“直接应用结果”和“新增建议展示”。
+ * 第二版分类与标签建议在这里统一协调“直接应用结果”和“新增建议展示”。
  */
 interface CategoryOption {
   id: string;
