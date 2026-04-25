@@ -4,7 +4,11 @@ import { KeyRound, UserRound } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { AdminFormPanel, adminPrimarySubmitClassName } from '@/components/admin/AdminCrudLayout';
+import {
+  AdminComposerActions,
+  AdminFormPanel,
+  adminPrimarySubmitClassName,
+} from '@/components/admin/AdminCrudLayout';
 import { PageIntro } from '@/components/ui/PageIntro';
 
 interface AccountProfile {
@@ -44,6 +48,7 @@ export default function AdminSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordFormOpen, setPasswordFormOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/admin/account')
@@ -129,10 +134,15 @@ export default function AdminSettingsPage() {
       return;
     }
 
+    resetPasswordForm();
+    toast.success('密码已更新');
+  }
+
+  function resetPasswordForm() {
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    toast.success('密码已更新');
+    setPasswordFormOpen(false);
   }
 
   if (loading) {
@@ -206,48 +216,64 @@ export default function AdminSettingsPage() {
         </div>
       </AdminFormPanel>
 
-      <AdminFormPanel title="修改密码" description="密码修改成功后会立即清空输入框。">
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="space-y-2">
-            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-              <KeyRound className="h-4 w-4 text-accent" />
-              当前密码
-            </span>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">新密码</span>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">确认新密码</span>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-            />
-          </label>
-        </div>
-        <div className="mt-5 flex justify-end">
-          <button
-            type="button"
-            onClick={handlePasswordSave}
-            disabled={passwordSaving}
-            className={`${adminPrimarySubmitClassName} disabled:opacity-50`}
-          >
-            {passwordSaving ? '更新中...' : '更新密码'}
-          </button>
+      <AdminFormPanel
+        title="修改密码"
+        description="密码修改成功后会立即清空输入框。"
+        headerAction={
+          <AdminComposerActions
+            open={passwordFormOpen}
+            saving={passwordSaving}
+            itemLabel="密码"
+            openLabel="修改密码"
+            submitLabel="更新密码"
+            onOpen={() => setPasswordFormOpen(true)}
+            onSubmit={handlePasswordSave}
+            onCollapse={resetPasswordForm}
+          />
+        }
+      >
+        <div
+          className={`grid overflow-hidden transition-all duration-300 ease-out ${
+            passwordFormOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="min-h-0">
+            <div className="grid gap-4 pt-1 md:grid-cols-3">
+              <label className="space-y-2">
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                  <KeyRound className="h-4 w-4 text-accent" />
+                  当前密码
+                </span>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  placeholder="请输入当前密码"
+                  className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-foreground">新密码</span>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  placeholder="请输入至少 8 位的新密码"
+                  className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-foreground">确认新密码</span>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="请再次输入新密码"
+                  className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                />
+              </label>
+            </div>
+          </div>
         </div>
       </AdminFormPanel>
     </div>

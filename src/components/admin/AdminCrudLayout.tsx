@@ -22,6 +22,8 @@ interface AdminComposerActionsProps {
   open: boolean;
   saving: boolean;
   itemLabel: string;
+  openLabel?: string;
+  submitLabel?: string;
   onOpen: () => void;
   onSubmit: () => void;
   onCollapse: () => void;
@@ -146,6 +148,8 @@ export function AdminComposerActions({
   open,
   saving,
   itemLabel,
+  openLabel,
+  submitLabel,
   onOpen,
   onSubmit,
   onCollapse,
@@ -159,7 +163,7 @@ export function AdminComposerActions({
         className={`${adminPrimaryActionClassName} disabled:opacity-50`}
       >
         <Check className="h-4 w-4" />
-        {saving ? '提交中...' : `提交${itemLabel}`}
+        {saving ? '提交中...' : submitLabel || `提交${itemLabel}`}
       </button>
       <button
         type="button"
@@ -173,7 +177,7 @@ export function AdminComposerActions({
   ) : (
     <button type="button" onClick={onOpen} className={adminPrimaryActionClassName}>
       <FilePlus2 className="h-4 w-4" />
-      新建{itemLabel}
+      {openLabel || `新建${itemLabel}`}
     </button>
   );
 }
