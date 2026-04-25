@@ -36,17 +36,17 @@ export function EditorConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(22_21_20/0.32)] px-4 backdrop-blur-[6px]">
-      <div className="page-frame w-full max-w-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--background-elevated)_92%,white_8%),color-mix(in_srgb,var(--background-elevated)_98%,transparent))] px-5 py-5">
+      <div className="page-frame w-full max-w-3xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--background-elevated)_92%,white_8%),color-mix(in_srgb,var(--background-elevated)_98%,transparent))] px-5 py-5">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="eyebrow">{eyebrow}</p>
             <h2 className="mt-2 text-xl font-semibold text-foreground">{title}</h2>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{description}</p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="text-sm text-muted-foreground hover:text-foreground"
+            className="inline-flex shrink-0 whitespace-nowrap text-sm text-muted-foreground hover:text-foreground"
           >
             关闭
           </button>

@@ -52,6 +52,11 @@ interface TaxonomyAiState {
 
 interface OverwriteConfirmState {
   open: boolean;
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
+  skipLabel?: string;
   items: AiOverwritePreviewItem[];
 }
 
@@ -221,6 +226,18 @@ export function usePostAiAssistant({
       });
     }
 
+    if (fields.includes('excerpt')) {
+      items.push({
+        key: 'excerpt',
+        title: '摘要',
+        description: '确认后会用这次 AI 结果更新摘要。',
+        currentLabel: '当前摘要',
+        currentValue: buildPreviewText(excerpt.trim(), 160),
+        nextLabel: 'AI 摘要',
+        nextValue: buildPreviewText((result.excerpt || '').trim(), 160),
+      });
+    }
+
     return items;
   }
 
@@ -228,11 +245,17 @@ export function usePostAiAssistant({
     items: AiOverwritePreviewItem[],
     onConfirm: () => void,
     onSkipOverwrite: () => void,
+    options?: Omit<OverwriteConfirmState, 'open' | 'items'>,
   ) {
     overwriteConfirmActionRef.current = onConfirm;
     overwriteSkipActionRef.current = onSkipOverwrite;
     setOverwriteConfirmState({
       open: true,
+      eyebrow: options?.eyebrow,
+      title: options?.title,
+      description: options?.description,
+      confirmLabel: options?.confirmLabel,
+      skipLabel: options?.skipLabel,
       items,
     });
   }
@@ -242,6 +265,11 @@ export function usePostAiAssistant({
     overwriteSkipActionRef.current = null;
     setOverwriteConfirmState({
       open: false,
+      eyebrow: undefined,
+      title: undefined,
+      description: undefined,
+      confirmLabel: undefined,
+      skipLabel: undefined,
       items: [],
     });
   }
@@ -335,6 +363,25 @@ export function usePostAiAssistant({
     return options?.confirmed ? [] : getOverwritePreviewItems(fields, result);
   }
 
+  /**
+   * 字段级 AI 按钮先走“预览后采纳”，避免模型返回后直接落进表单，
+   * 让标题、正文、摘要这些高频内容区块都遵循同一套采纳节奏。
+   */
+  function resolveFieldPreviewItems(result: AiFieldResult) {
+    const normalized = normalizeFieldResult(result);
+
+    switch (result.field) {
+      case 'identity':
+        return getOverwritePreviewItems(['identity'], normalized);
+      case 'content':
+        return getOverwritePreviewItems(['content'], normalized);
+      case 'excerpt':
+        return getOverwritePreviewItems(['excerpt'], normalized);
+      default:
+        return [];
+    }
+  }
+
   function applyFieldSuggestion(
     field: AiField,
     result: Partial<
@@ -376,6 +423,26 @@ export function usePostAiAssistant({
   function applyFieldResult(result: AiFieldResult, options?: { confirmed?: boolean }) {
     showFieldWarnings(result.warnings);
     const normalized = normalizeFieldResult(result);
+    const fieldPreviewItems = options?.confirmed ? [] : resolveFieldPreviewItems(result);
+
+    if (fieldPreviewItems.length > 0) {
+      openOverwriteConfirmation(
+        fieldPreviewItems,
+        () => applyFieldResult(result, { confirmed: true }),
+        () => {
+          toast.message('已取消采纳这条 AI 建议');
+        },
+        {
+          eyebrow: 'AI Review',
+          title: '预览并采纳 AI 建议',
+          description: '确认后会把右侧 AI 建议写入当前编辑区；本次操作不会自动保存文章。',
+          confirmLabel: '采纳这条建议',
+          skipLabel: '暂不采纳',
+        },
+      );
+      return;
+    }
+
     const overwriteItems = resolveOverwriteItems([result.field], normalized, options);
 
     if (overwriteItems.length > 0) {

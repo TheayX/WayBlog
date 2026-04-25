@@ -746,6 +746,11 @@ export function PostForm({
       <AiOverwriteConfirmDialog
         open={overwriteConfirmState.open}
         items={overwriteConfirmState.items}
+        eyebrow={overwriteConfirmState.eyebrow}
+        title={overwriteConfirmState.title}
+        description={overwriteConfirmState.description}
+        confirmLabel={overwriteConfirmState.confirmLabel}
+        skipLabel={overwriteConfirmState.skipLabel}
         onConfirm={confirmOverwrite}
         onSkipOverwrite={skipOverwrite}
         onClose={closeOverwriteConfirmation}
