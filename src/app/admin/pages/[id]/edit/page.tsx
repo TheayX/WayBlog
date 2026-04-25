@@ -11,7 +11,7 @@ interface EditAdminPagePageProps {
  * 管理后台编辑单页页。
  *
  * 直接在服务端读取单页编辑数据后回填统一表单，
- * 避免客户端先渲染空壳再额外请求一次后台详情接口。
+ * 避免客户端先渲染空壳再额外请求一次后台详情接口，并确保排序值也能同步编辑。
  */
 export default async function EditAdminPagePage({ params }: EditAdminPagePageProps) {
   const { id } = await params;
@@ -26,7 +26,7 @@ export default async function EditAdminPagePage({ params }: EditAdminPagePagePro
       <PageIntro
         eyebrow="Pages"
         title="编辑单页"
-        description="编辑模式与新建页保持同一结构，但会直接回填现有标题、slug 和正文，方便长期维护固定内容。"
+        description="编辑模式与新建页保持同一结构，但会直接回填现有标题、slug、排序和正文，方便长期维护前台页面入口。"
       />
 
       <PageForm initialData={page} isEdit />

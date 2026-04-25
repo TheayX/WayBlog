@@ -1,4 +1,6 @@
 import type { MetadataRoute } from 'next';
+import { getPublicSitemapPages } from '@/lib/pages/queries';
+import { getPublicPageHref } from '@/lib/pages/shared';
 import { getPublishedSitemapPosts } from '@/lib/posts/queries';
 import { getSiteConfig } from '@/lib/site';
 import { getPublicCategorySlugs, getPublicTagSlugs } from '@/lib/taxonomies/queries';
@@ -28,12 +30,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/friends`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.5,
-    },
-    {
-      url: `${siteUrl}/about`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
       priority: 0.5,
     },
     { url: `${siteUrl}/search`, changeFrequency: 'monthly', priority: 0.4 },
@@ -67,5 +63,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticPages, ...postPages, ...categoryPages, ...tagPages];
+  const pages = await getPublicSitemapPages();
+
+  const singlePages: MetadataRoute.Sitemap = pages.map((page) => ({
+    url: `${siteUrl}${getPublicPageHref(page.slug)}`,
+    lastModified: page.updatedAt,
+    changeFrequency: 'monthly',
+    priority: 0.5,
+  }));
+
+  return [...staticPages, ...singlePages, ...postPages, ...categoryPages, ...tagPages];
 }

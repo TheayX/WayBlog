@@ -15,6 +15,7 @@ interface PageFormInitialData {
   slug: string;
   title: string;
   content: string;
+  sortOrder: number;
 }
 
 interface PageFormProps {
@@ -25,14 +26,15 @@ interface PageFormProps {
 /**
  * 后台单页表单。
  *
- * 单页当前只服务 about 这类少量固定入口，因此维持最小字段集合：
- * 标题、slug 和正文。表单保存后统一回到单页列表，避免分叉出额外的编辑流。
+ * 单页会自动进入前台“页面”下拉，因此表单除了标题、slug 和正文，
+ * 还需要维护排序值，让后台能直接控制前台菜单的展示顺序。
  */
 export function PageForm({ initialData, isEdit = false }: PageFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initialData?.title || '');
   const [slug, setSlug] = useState(initialData?.slug || '');
   const [content, setContent] = useState(initialData?.content || '');
+  const [sortOrder, setSortOrder] = useState(initialData?.sortOrder ?? 0);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit() {
@@ -50,6 +52,7 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
         title: title.trim(),
         slug: slug.trim(),
         content,
+        sortOrder,
       },
     });
 
@@ -98,6 +101,20 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
           />
         </label>
       </div>
+
+      <label className="mt-4 block max-w-xs space-y-2">
+        <span className="text-sm font-medium text-foreground">导航排序</span>
+        <input
+          type="number"
+          value={sortOrder}
+          onChange={(event) => setSortOrder(Number(event.target.value))}
+          placeholder="0"
+          className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+        />
+        <p className="text-xs leading-6 text-muted-foreground">
+          数字越小越靠前，所有单页都会自动显示在前台“页面”下拉中。
+        </p>
+      </label>
 
       <label className="mt-5 block space-y-2">
         <span className="text-sm font-medium text-foreground">正文</span>

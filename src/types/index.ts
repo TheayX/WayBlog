@@ -65,6 +65,7 @@ export interface AdminPageItem {
   id: string;
   slug: string;
   title: string;
+  sortOrder: number;
   updatedAt: string;
 }
 

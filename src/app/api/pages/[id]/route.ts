@@ -2,7 +2,7 @@
  * 单个单页路由处理器。
  *
  * 这里只承载管理后台的更新与删除写操作；
- * 前台关于页等公开单页继续按 slug 从查询层读取，避免后台编辑边界和公开访问边界混用。
+ * 前台公开单页继续按 slug 从查询层读取，避免后台编辑边界和公开访问边界混用。
  */
 import { revalidateTag } from 'next/cache';
 import { NextRequest } from 'next/server';

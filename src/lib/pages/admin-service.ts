@@ -10,13 +10,14 @@ export interface AdminPageEditorData {
   slug: string;
   title: string;
   content: string;
+  sortOrder: number;
 }
 
 /**
  * 获取后台单页列表。
  *
- * 当前项目的单页内容规模很小，直接返回标题、slug 与更新时间即可满足后台管理，
- * 不需要像文章列表那样引入分页和额外聚合信息。
+ * 单页现在会统一进入前台“页面”下拉，因此后台列表除了标题和 slug，
+ * 还要直接暴露排序值，方便维护前台显示顺序。
  */
 export async function getAdminPages() {
   return prisma.page.findMany({
@@ -24,9 +25,10 @@ export async function getAdminPages() {
       id: true,
       slug: true,
       title: true,
+      sortOrder: true,
       updatedAt: true,
     },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
   });
 }
 
@@ -43,6 +45,7 @@ export async function getAdminPageEditorData(id: string): Promise<AdminPageEdito
       slug: true,
       title: true,
       content: true,
+      sortOrder: true,
     },
   });
 }

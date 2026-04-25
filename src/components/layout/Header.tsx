@@ -1,11 +1,12 @@
 'use client';
 
-import { Menu, Search, X } from 'lucide-react';
+import { ChevronDown, Menu, Search, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
+import { getPublicPageHref, type PublicNavigationPage } from '@/lib/pages/shared';
 import { SITE_BRAND } from './site-config';
 import { cn } from '@/lib/utils';
 
@@ -21,12 +22,21 @@ const navItems = [
   { href: '/archives', label: '归档' },
   { href: '/tags', label: '标签' },
   { href: '/friends', label: '友链' },
-  { href: '/about', label: '关于' },
 ];
 
-export function Header() {
+interface HeaderProps {
+  pages: PublicNavigationPage[];
+}
+
+export function Header({ pages }: HeaderProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pagesMenuOpen, setPagesMenuOpen] = useState(false);
+  const pageItems = pages.map((page) => ({
+    ...page,
+    href: getPublicPageHref(page.slug),
+  }));
+  const pagesActive = pathname.startsWith('/pages/');
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-4 sm:px-6">
@@ -76,6 +86,75 @@ export function Header() {
                 </Link>
               );
             })}
+
+            {pageItems.length > 0 && (
+              <div
+                className="relative"
+                onMouseEnter={() => setPagesMenuOpen(true)}
+                onMouseLeave={() => setPagesMenuOpen(false)}
+              >
+                <button
+                  type="button"
+                  onClick={() => setPagesMenuOpen((open) => !open)}
+                  onFocus={() => setPagesMenuOpen(true)}
+                  className={cn(
+                    'inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200',
+                    pagesActive
+                      ? 'bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255_/_0.14)]'
+                      : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground',
+                  )}
+                  aria-expanded={pagesMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  页面
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 transition-transform duration-200',
+                      pagesMenuOpen ? 'rotate-180' : '',
+                    )}
+                  />
+                </button>
+
+                <div
+                  className={cn(
+                    'absolute right-0 top-full pt-3 transition-all duration-200',
+                    pagesMenuOpen
+                      ? 'pointer-events-auto translate-y-0 opacity-100'
+                      : 'pointer-events-none -translate-y-1 opacity-0',
+                  )}
+                >
+                  <div className="surface-panel min-w-[16rem] rounded-[1.75rem] border border-border/80 bg-background/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur">
+                    <p className="px-3 pb-2 pt-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                      Pages
+                    </p>
+                    <div className="space-y-1">
+                      {pageItems.map((page) => {
+                        const isActive = pathname === page.href;
+
+                        return (
+                          <Link
+                            key={page.slug}
+                            href={page.href}
+                            onClick={() => {
+                              setPagesMenuOpen(false);
+                              setMenuOpen(false);
+                            }}
+                            className={cn(
+                              'flex cursor-pointer items-center justify-between gap-4 rounded-[1.2rem] px-3 py-3 text-sm transition-colors duration-200',
+                              isActive
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-foreground hover:bg-muted/80',
+                            )}
+                          >
+                            <span className="truncate font-medium">{page.title}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">
@@ -122,6 +201,33 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            {pageItems.length > 0 && (
+              <div className="rounded-[1.6rem] border border-border/80 bg-background/80 p-2">
+                <div className="flex items-center justify-between gap-3 px-3 py-2">
+                  <span className="text-sm font-medium text-foreground">页面</span>
+                  <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    {pageItems.length}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {pageItems.map((page) => (
+                    <Link
+                      key={page.slug}
+                      href={page.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={cn(
+                        'block rounded-[1.2rem] px-4 py-3 text-sm font-medium',
+                        pathname === page.href
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                      )}
+                    >
+                      <span className="truncate">{page.title}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             <Link
               href="/search"
               onClick={() => setMenuOpen(false)}

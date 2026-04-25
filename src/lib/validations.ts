@@ -119,6 +119,7 @@ export const createPageSchema = z.object({
     .regex(slugRegex, 'Slug 只能包含小写字母、数字和连字符'),
   title: z.string().min(1, '标题不能为空').max(100),
   content: z.string().max(50000).default(''),
+  sortOrder: z.number().int().default(0),
 });
 
 /** 单页更新允许局部字段变更。 */
