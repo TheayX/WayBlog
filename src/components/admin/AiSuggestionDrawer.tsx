@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleHelp } from 'lucide-react';
 import {
   adminCompactSecondaryActionClassName,
   adminPrimarySubmitClassName,
@@ -284,15 +285,17 @@ function TaxonomyChip({
     tone === 'new'
       ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
       : 'border-primary/30 bg-primary/10 text-primary';
+  const detailText = [getTaxonomyLevelHint(level), reason].filter(Boolean).join('\n');
 
   return (
     <div className={`rounded-[1rem] border px-3 py-2 text-xs ${className}`}>
-      <div className="font-medium">{title}</div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="font-medium">{title}</div>
+        {detailText ? <InfoHint text={detailText} /> : null}
+      </div>
       <div className="mt-1 text-[11px] opacity-80">
         {getTaxonomyLevelLabel(level)} · {extraMeta}
       </div>
-      <div className="mt-1 text-[11px] opacity-80">{getTaxonomyLevelHint(level)}</div>
-      {reason && <div className="mt-1 text-[11px] opacity-80">{reason}</div>}
     </div>
   );
 }
@@ -309,6 +312,7 @@ function TagSuggestionChip({
   onAction?: () => void;
 }) {
   const isNew = 'isNew' in tag && Boolean(tag.isNew);
+  const detailText = [getTaxonomyLevelHint(tag.level), tag.reason].filter(Boolean).join('\n');
 
   return (
     <div
@@ -318,14 +322,14 @@ function TagSuggestionChip({
           : 'border-primary/30 bg-primary/10 text-primary'
       }`}
     >
-      <div className="font-medium">
-        {tag.name}
-        {isNew ? '（建议新增）' : ''}
+      <div className="flex items-start justify-between gap-2">
+        <div className="font-medium">
+          {tag.name}
+          {isNew ? '（建议新增）' : ''}
+        </div>
+        {detailText ? <InfoHint text={detailText} /> : null}
       </div>
-      <div className="mt-1 text-[11px] opacity-80">
-        {getTaxonomyLevelLabel(tag.level)} · {getTaxonomyLevelHint(tag.level)}
-      </div>
-      {tag.reason && <div className="mt-1 text-[11px] opacity-80">{tag.reason}</div>}
+      <div className="mt-1 text-[11px] opacity-80">{getTaxonomyLevelLabel(tag.level)}</div>
       {onAction && (
         <button
           type="button"
@@ -337,5 +341,17 @@ function TagSuggestionChip({
         </button>
       )}
     </div>
+  );
+}
+
+function InfoHint({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center text-muted-foreground opacity-70 transition hover:opacity-100"
+      aria-label="查看详情"
+    >
+      <CircleHelp className="h-3.5 w-3.5" />
+    </span>
   );
 }
