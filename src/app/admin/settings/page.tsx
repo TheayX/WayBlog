@@ -4,7 +4,7 @@ import { KeyRound, UserRound } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { AdminFormPanel } from '@/components/admin/AdminCrudLayout';
+import { AdminFormPanel, adminPrimarySubmitClassName } from '@/components/admin/AdminCrudLayout';
 import { PageIntro } from '@/components/ui/PageIntro';
 
 interface AccountProfile {
@@ -199,7 +199,7 @@ export default function AdminSettingsPage() {
             type="button"
             onClick={handleProfileSave}
             disabled={profileSaving}
-            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className={`${adminPrimarySubmitClassName} disabled:opacity-50`}
           >
             {profileSaving ? '保存中...' : '保存资料'}
           </button>
@@ -244,7 +244,7 @@ export default function AdminSettingsPage() {
             type="button"
             onClick={handlePasswordSave}
             disabled={passwordSaving}
-            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className={`${adminPrimarySubmitClassName} disabled:opacity-50`}
           >
             {passwordSaving ? '更新中...' : '更新密码'}
           </button>

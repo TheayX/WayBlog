@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  adminCompactSecondaryActionClassName,
+  adminPrimarySubmitClassName,
+  adminSecondaryActionClassName,
+} from '@/components/admin/AdminCrudLayout';
 import type { AiSuggestionCategory, AiSuggestionTag } from '@/lib/ai/types';
 
 interface AiTaxonomyDialogProps {
@@ -71,7 +76,7 @@ export function AiTaxonomyDialog({
               <button
                 type="button"
                 onClick={onApplyCategory}
-                className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                className={adminCompactSecondaryActionClassName}
               >
                 应用分类
               </button>
@@ -101,7 +106,7 @@ export function AiTaxonomyDialog({
               <button
                 type="button"
                 onClick={onApplyTags}
-                className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+                className={adminCompactSecondaryActionClassName}
               >
                 应用标签
               </button>
@@ -142,18 +147,10 @@ export function AiTaxonomyDialog({
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={onApplyAll}
-            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"
-          >
+          <button type="button" onClick={onApplyAll} className={adminPrimarySubmitClassName}>
             全部应用
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
-          >
+          <button type="button" onClick={onClose} className={adminSecondaryActionClassName}>
             稍后再说
           </button>
         </div>
@@ -162,13 +159,7 @@ export function AiTaxonomyDialog({
   );
 }
 
-function TagSuggestionChip({
-  tag,
-  matched,
-}: {
-  tag: AiSuggestionTag;
-  matched: boolean;
-}) {
+function TagSuggestionChip({ tag, matched }: { tag: AiSuggestionTag; matched: boolean }) {
   return (
     <div
       className={`rounded-[1rem] border px-3 py-2 text-xs ${

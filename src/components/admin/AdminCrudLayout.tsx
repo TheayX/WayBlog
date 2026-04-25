@@ -44,6 +44,24 @@ export const adminPrimaryActionClassName =
   'inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground';
 
 /**
+ * 管理端主要提交按钮样式。
+ *
+ * 表单保存、确认应用这类主操作大多使用更宽的横向留白，
+ * 单独拆出来，避免和头部紧凑型入口按钮混用。
+ */
+export const adminPrimarySubmitClassName =
+  'inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground';
+
+/**
+ * 管理端次级描边按钮样式。
+ *
+ * 返回、取消、稍后处理这类动作都保持同一套边框和文字反馈，
+ * 让主次操作关系在后台各个表单中稳定一致。
+ */
+export const adminSecondaryActionClassName =
+  'inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground';
+
+/**
  * 管理端列表常规操作按钮样式。
  *
  * 编辑、查看这类次级文字操作都沿用同一组字重和 hover 反馈，
@@ -59,6 +77,14 @@ export const adminInlineActionClassName =
  */
 export const adminInlineDangerActionClassName =
   'inline-flex items-center gap-1 text-sm text-destructive hover:underline';
+
+/**
+ * 管理端小号描边按钮样式。
+ *
+ * 用于区块内的局部应用动作，尺寸比常规底部操作更轻，避免抢占主操作层级。
+ */
+export const adminCompactSecondaryActionClassName =
+  'inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground';
 
 /**
  * 后台 CRUD 表单外壳。
@@ -97,15 +123,12 @@ export function AdminFormActions({ editing, saving, onSave, onCancel }: AdminFor
       <button
         onClick={onSave}
         disabled={saving}
-        className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        className={`${adminPrimarySubmitClassName} hover:opacity-90 disabled:opacity-50`}
       >
         {saving ? '处理中...' : editing ? '更新' : '创建'}
       </button>
       {editing && (
-        <button
-          onClick={onCancel}
-          className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
-        >
+        <button onClick={onCancel} className={adminSecondaryActionClassName}>
           取消
         </button>
       )}

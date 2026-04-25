@@ -3,6 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import {
+  adminPrimarySubmitClassName,
+  adminSecondaryActionClassName,
+} from '@/components/admin/AdminCrudLayout';
 import { saveAdminResource } from '@/lib/admin/client';
 import { slugify } from '@/lib/utils';
 
@@ -111,14 +115,14 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          className={`${adminPrimarySubmitClassName} disabled:opacity-50`}
         >
           {saving ? '保存中...' : isEdit ? '保存修改' : '创建单页'}
         </button>
         <button
           type="button"
           onClick={() => router.push('/admin/pages')}
-          className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
+          className={adminSecondaryActionClassName}
         >
           返回列表
         </button>

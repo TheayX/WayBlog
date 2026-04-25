@@ -3,6 +3,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Sparkles } from 'lucide-react';
+import {
+  adminPrimarySubmitClassName,
+  adminSecondaryActionClassName,
+} from '@/components/admin/AdminCrudLayout';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import type {
   PostCategoryOption,
@@ -99,12 +103,7 @@ function SectionAiButton({ label, loading, onClick }: FieldAiButtonProps) {
  * 展开面板通过 portal 挂到 body，避免被后台卡片的裁剪和层叠上下文截断；
  * 同时在展开期间同步触发器位置，保证滚动页面后下拉仍能贴着输入框。
  */
-function CategorySelect({
-  categories,
-  value,
-  onChange,
-  fullWidth = true,
-}: CategorySelectProps) {
+function CategorySelect({ categories, value, onChange, fullWidth = true }: CategorySelectProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -199,9 +198,7 @@ function CategorySelect({
                   setOpen(false);
                 }}
                 className={`flex w-full items-center px-4 py-3 text-left text-sm transition-colors ${
-                  value === ''
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-foreground hover:bg-muted/60'
+                  value === '' ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted/60'
                 }`}
               >
                 无分类
@@ -525,14 +522,14 @@ export function PostFormActionBar({
       <button
         onClick={onSaveDraft}
         disabled={saving}
-        className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground disabled:opacity-50"
+        className={`${adminSecondaryActionClassName} disabled:opacity-50`}
       >
         保存草稿
       </button>
       <button
         onClick={onPublish}
         disabled={saving}
-        className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className={`${adminPrimarySubmitClassName} disabled:opacity-50`}
       >
         {publishButtonLabel}
       </button>

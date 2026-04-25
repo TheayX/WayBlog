@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  adminCompactSecondaryActionClassName,
+  adminPrimarySubmitClassName,
+  adminSecondaryActionClassName,
+} from '@/components/admin/AdminCrudLayout';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
 import type { AiField, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
 
@@ -163,18 +168,10 @@ export function AiSuggestionDrawer({
         </div>
 
         <div className="flex items-center gap-3 border-t border-border px-6 py-4">
-          <button
-            type="button"
-            onClick={onApplyAll}
-            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"
-          >
+          <button type="button" onClick={onApplyAll} className={adminPrimarySubmitClassName}>
             全部应用
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
-          >
+          <button type="button" onClick={onClose} className={adminSecondaryActionClassName}>
             稍后再说
           </button>
         </div>
@@ -198,11 +195,7 @@ function SuggestionSection({
     <section className="page-frame px-4 py-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-base font-medium text-foreground">{title}</h3>
-        <button
-          type="button"
-          onClick={onApply}
-          className="inline-flex h-9 items-center rounded-full border border-border bg-background px-3 text-sm text-muted-foreground hover:border-border-strong hover:text-foreground"
-        >
+        <button type="button" onClick={onApply} className={adminCompactSecondaryActionClassName}>
           {actionLabel}
         </button>
       </div>
