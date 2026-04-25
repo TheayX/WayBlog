@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useSyncExternalStore, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useSyncExternalStore, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { AiSuggestionDrawer } from '@/components/admin/AiSuggestionDrawer';
 import { AiTaxonomyDialog } from '@/components/admin/AiTaxonomyDialog';
+import { AiOverwriteConfirmDialog } from '@/components/admin/AiOverwriteConfirmDialog';
+import { EditorConfirmDialog } from '@/components/admin/EditorConfirmDialog';
 import {
   ContentEditorSection,
   PostAiToolbar,
@@ -63,6 +65,15 @@ function buildSavedSnapshot(data: {
   };
 }
 
+interface PendingEditorActionDialogState {
+  open: boolean;
+  eyebrow: string;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel: string;
+}
+
 /**
  * 管理后台文章编辑表单。
  *
@@ -77,6 +88,9 @@ export function PostForm({
 }: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [pendingEditorActionDialog, setPendingEditorActionDialog] =
+    useState<PendingEditorActionDialogState | null>(null);
+  const pendingEditorActionRef = useRef<(() => void) | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(() =>
     buildSavedSnapshot({
       title: initialData?.title || '',
@@ -91,7 +105,9 @@ export function PostForm({
   );
   const [creatingCategoryNames, setCreatingCategoryNames] = useState<string[]>([]);
   const [creatingTagNames, setCreatingTagNames] = useState<string[]>([]);
-  const [dismissedCategorySuggestionNames, setDismissedCategorySuggestionNames] = useState<string[]>([]);
+  const [dismissedCategorySuggestionNames, setDismissedCategorySuggestionNames] = useState<
+    string[]
+  >([]);
   const [dismissedTagSuggestionNames, setDismissedTagSuggestionNames] = useState<string[]>([]);
   const [promotedCategorySuggestionName, setPromotedCategorySuggestionName] = useState('');
   const [promotedTagSuggestionNames, setPromotedTagSuggestionNames] = useState<string[]>([]);
@@ -129,6 +145,7 @@ export function PostForm({
     aiResult,
     taxonomyAiOpen,
     taxonomyAiState,
+    overwriteConfirmState,
     requestAiSuggestions,
     requestIdentityAi,
     requestContentSectionAi,
@@ -138,6 +155,9 @@ export function PostForm({
     applyAllAi,
     setAiOpen,
     setTaxonomyAiOpen,
+    confirmOverwrite,
+    skipOverwrite,
+    closeOverwriteConfirmation,
   } = usePostAiAssistant({
     title,
     slug,
@@ -190,7 +210,18 @@ export function PostForm({
     normalizeOptionalText(coverImage) !== savedSnapshot.coverImage ||
     pinned !== savedSnapshot.pinned ||
     categoryId !== savedSnapshot.categoryId ||
-    JSON.stringify(normalizeIdList(selectedTagIds)) !== JSON.stringify(savedSnapshot.selectedTagIds);
+    JSON.stringify(normalizeIdList(selectedTagIds)) !==
+      JSON.stringify(savedSnapshot.selectedTagIds);
+
+  const handleDocumentLeaveNavigation = useEffectEvent((targetHref: string, targetPathname: string) => {
+    runLeaveActionWithUnsavedPrompt(
+      `前往 ${targetPathname}`,
+      () => {
+        router.push(targetHref);
+      },
+      `如果继续前往 ${targetPathname}，当前编辑页里尚未保存的改动将会丢失。`,
+    );
+  });
 
   useEffect(() => {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -207,18 +238,37 @@ export function PostForm({
     };
   }, [hasUnsavedChanges, saving]);
 
-  function confirmLeaveWhenDirty() {
-    if (!hasUnsavedChanges || saving) return true;
+  useEffect(() => {
+    function handleDocumentNavigation(event: MouseEvent) {
+      if (!hasUnsavedChanges || saving || event.defaultPrevented) return;
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
 
-    return confirm('当前页面有未保存改动，确定要离开吗？');
-  }
+      const target = event.target;
+      if (!(target instanceof Node)) return;
 
-  function blockAiWhenDirty() {
-    if (!hasUnsavedChanges) return false;
+      const anchor = target.parentElement?.closest('a[href]') || (target instanceof Element ? target.closest('a[href]') : null);
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      if (anchor.target && anchor.target !== '_self') return;
 
-    toast.warning('当前有未保存改动，请先保存后再使用 AI。');
-    return true;
-  }
+      const url = new URL(anchor.href, window.location.href);
+      const currentUrl = new URL(window.location.href);
+      if (url.origin !== currentUrl.origin) return;
+      if (url.pathname === currentUrl.pathname && url.search === currentUrl.search && url.hash === currentUrl.hash) {
+        return;
+      }
+
+      event.preventDefault();
+
+      handleDocumentLeaveNavigation(`${url.pathname}${url.search}${url.hash}`, url.pathname);
+    }
+
+    document.addEventListener('click', handleDocumentNavigation, true);
+    return () => {
+      document.removeEventListener('click', handleDocumentNavigation, true);
+    };
+  }, [hasUnsavedChanges, saving]);
 
   async function handleUploadImage() {
     const input = document.createElement('input');
@@ -250,10 +300,7 @@ export function PostForm({
     input.click();
   }
 
-  async function handleSave(
-    saveStatus: 'DRAFT' | 'PUBLISHED',
-    options?: { stayOnPage?: boolean },
-  ) {
+  async function handleSave(saveStatus: 'DRAFT' | 'PUBLISHED', options?: { stayOnPage?: boolean }) {
     if (!title.trim()) {
       toast.error('标题不能为空');
       return;
@@ -466,7 +513,9 @@ export function PostForm({
     taxonomyAiState.betterCategorySuggestion.name.trim().toLowerCase() ===
       promotedCategorySuggestionName.trim().toLowerCase()
       ? (() => {
-          const existing = findExistingCategoryByName(taxonomyAiState.betterCategorySuggestion.name);
+          const existing = findExistingCategoryByName(
+            taxonomyAiState.betterCategorySuggestion.name,
+          );
 
           return {
             id: existing?.id,
@@ -496,8 +545,9 @@ export function PostForm({
             }),
         ].filter(
           (tag, index, array) =>
-            array.findIndex((item) => item.name.trim().toLowerCase() === tag.name.trim().toLowerCase()) ===
-            index,
+            array.findIndex(
+              (item) => item.name.trim().toLowerCase() === tag.name.trim().toLowerCase(),
+            ) === index,
         ),
         betterCategorySuggestion:
           aiResult.betterCategorySuggestion &&
@@ -529,8 +579,9 @@ export function PostForm({
             }),
         ].filter(
           (tag, index, array) =>
-            array.findIndex((item) => item.name.trim().toLowerCase() === tag.name.trim().toLowerCase()) ===
-            index,
+            array.findIndex(
+              (item) => item.name.trim().toLowerCase() === tag.name.trim().toLowerCase(),
+            ) === index,
         ),
         betterCategorySuggestion:
           taxonomyAiState.betterCategorySuggestion &&
@@ -542,21 +593,99 @@ export function PostForm({
         ),
       }
     : null;
-  const clientReady = useSyncExternalStore(subscribeClientReady, () => true, () => false);
+  const clientReady = useSyncExternalStore(
+    subscribeClientReady,
+    () => true,
+    () => false,
+  );
   const toolbarPortalTarget =
-    clientReady && toolbarPortalTargetId
-      ? document.getElementById(toolbarPortalTargetId)
-      : null;
+    clientReady && toolbarPortalTargetId ? document.getElementById(toolbarPortalTargetId) : null;
   const toolbarNode =
     showToolbar || toolbarPortalTarget ? (
       <PostAiToolbar
         aiLoading={aiLoading}
         onOptimizeAllAction={() => {
-          if (blockAiWhenDirty()) return;
-          void requestAiSuggestions();
+          void runAiActionWithUnsavedPrompt('整篇 AI 优化', requestAiSuggestions);
         }}
       />
     ) : null;
+
+  /**
+   * 当前编辑页既允许“未保存时继续用 AI”，也允许“确认后离开”；
+   * 因此把两类待执行动作都收口到同一套弹窗状态，避免重复维护多组确认 UI。
+   */
+  function openPendingEditorActionDialog(
+    dialog: PendingEditorActionDialogState,
+    onConfirm: () => void,
+  ) {
+    setPendingEditorActionDialog(dialog);
+    pendingEditorActionRef.current = onConfirm;
+  }
+
+  function closePendingEditorActionDialog() {
+    setPendingEditorActionDialog(null);
+    pendingEditorActionRef.current = null;
+  }
+
+  function confirmPendingEditorAction() {
+    const action = pendingEditorActionRef.current;
+    closePendingEditorActionDialog();
+    action?.();
+  }
+
+  function runAiActionWithUnsavedPrompt(actionLabel: string, action: () => void | Promise<void>) {
+    if (!hasUnsavedChanges) {
+      void action();
+      return;
+    }
+
+    openPendingEditorActionDialog(
+      {
+        open: true,
+        eyebrow: 'AI Draft',
+        title: '当前内容尚未保存',
+        description: `${
+          !initialData?.id
+            ? '当前是新建文章，部分必填项可能还没补全，因此暂时无法形成可保存版本。'
+            : '当前有未保存改动。'
+        }是否基于当前未保存的编辑状态继续执行${actionLabel}？AI 会读取你现在表单中的最新内容，而不是上次保存版本。`,
+        confirmLabel: '按当前状态继续',
+        cancelLabel: '暂不使用 AI',
+      },
+      () => {
+        void action();
+      },
+    );
+  }
+
+  /**
+   * 离开当前编辑页前统一走同一套确认弹窗，
+   * 避免取消按钮、侧边导航和页面内其他管理入口分别维护不同提示逻辑。
+   */
+  function runLeaveActionWithUnsavedPrompt(
+    actionLabel: string,
+    action: () => void,
+    description?: string,
+  ) {
+    if (!hasUnsavedChanges) {
+      action();
+      return;
+    }
+
+    openPendingEditorActionDialog(
+      {
+        open: true,
+        eyebrow: 'Unsaved Leave',
+        title: '当前页面有未保存改动',
+        description:
+          description ||
+          `如果继续${actionLabel}，当前编辑页里尚未保存的改动将会丢失。是否继续离开？`,
+        confirmLabel: '继续离开',
+        cancelLabel: '留在当前页',
+      },
+      action,
+    );
+  }
 
   return (
     <>
@@ -572,8 +701,7 @@ export function PostForm({
           onTitleChange={handleTitleChange}
           onSlugChange={handleSlugInputChange}
           onOpenAi={() => {
-            if (blockAiWhenDirty()) return;
-            void requestIdentityAi();
+            void runAiActionWithUnsavedPrompt('标题与链接 AI', requestIdentityAi);
           }}
         />
 
@@ -583,8 +711,7 @@ export function PostForm({
           onContentChange={setContent}
           onUploadImage={handleUploadImage}
           onOpenAi={() => {
-            if (blockAiWhenDirty()) return;
-            void requestContentSectionAi();
+            void runAiActionWithUnsavedPrompt('正文 AI', requestContentSectionAi);
           }}
         />
 
@@ -595,8 +722,7 @@ export function PostForm({
           onExcerptChange={setExcerpt}
           onCoverImageChange={setCoverImage}
           onOpenAi={() => {
-            if (blockAiWhenDirty()) return;
-            void requestSummarySectionAi();
+            void runAiActionWithUnsavedPrompt('摘要 AI', requestSummarySectionAi);
           }}
         />
 
@@ -611,8 +737,7 @@ export function PostForm({
           onPinnedChange={setPinned}
           onToggleTag={toggleTag}
           onOpenAi={() => {
-            if (blockAiWhenDirty()) return;
-            void requestTaxonomyAi();
+            void runAiActionWithUnsavedPrompt('分类与标签 AI', requestTaxonomyAi);
           }}
         />
 
@@ -624,8 +749,9 @@ export function PostForm({
           onSaveStay={() => handleSave(status, { stayOnPage: true })}
           onPublish={() => handleSave('PUBLISHED')}
           onCancel={() => {
-            if (!confirmLeaveWhenDirty()) return;
-            router.back();
+            runLeaveActionWithUnsavedPrompt('离开当前编辑页', () => {
+              router.back();
+            });
           }}
         />
       </div>
@@ -668,12 +794,12 @@ export function PostForm({
         warnings={filteredTaxonomyAiState?.warnings || []}
         creatingCategory={Boolean(
           filteredTaxonomyAiState?.betterCategorySuggestion &&
-            creatingCategoryNames.includes(filteredTaxonomyAiState.betterCategorySuggestion.name),
+          creatingCategoryNames.includes(filteredTaxonomyAiState.betterCategorySuggestion.name),
         )}
         creatingTagNames={creatingTagNames}
         canQuickCreateCategory={Boolean(
           filteredTaxonomyAiState?.betterCategorySuggestion &&
-            filteredTaxonomyAiState.betterCategorySuggestion.level !== 'weak',
+          filteredTaxonomyAiState.betterCategorySuggestion.level !== 'weak',
         )}
         canQuickCreateTagNames={(filteredTaxonomyAiState?.newTagSuggestions || [])
           .filter((tag) => tag.level !== 'weak')
@@ -701,6 +827,25 @@ export function PostForm({
 
           void createAllTagsAndSelect(names);
         }}
+      />
+
+      <AiOverwriteConfirmDialog
+        open={overwriteConfirmState.open}
+        items={overwriteConfirmState.items}
+        onConfirm={confirmOverwrite}
+        onSkipOverwrite={skipOverwrite}
+        onClose={closeOverwriteConfirmation}
+      />
+
+      <EditorConfirmDialog
+        open={Boolean(pendingEditorActionDialog?.open)}
+        eyebrow={pendingEditorActionDialog?.eyebrow || 'Editor Confirm'}
+        title={pendingEditorActionDialog?.title || ''}
+        description={pendingEditorActionDialog?.description || ''}
+        confirmLabel={pendingEditorActionDialog?.confirmLabel || '继续'}
+        cancelLabel={pendingEditorActionDialog?.cancelLabel || '取消'}
+        onConfirm={confirmPendingEditorAction}
+        onCancel={closePendingEditorActionDialog}
       />
     </>
   );

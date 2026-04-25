@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { Dispatch, SetStateAction } from 'react';
-import type { AiField, AiFieldResult, AiOptimizeResult } from '@/lib/ai/types';
+import type { AiOverwritePreviewItem } from '@/components/admin/AiOverwriteConfirmDialog';
 import {
   applyAiFields,
   applyAiFieldValue,
@@ -12,11 +12,8 @@ import {
   getMatchedTagIds,
   normalizeFieldResult,
 } from '@/components/admin/post-ai-helpers';
+import type { AiField, AiFieldResult, AiOptimizeResult } from '@/lib/ai/types';
 
-/**
- * 管理后台文章 AI 助手 Hook。
- * 第二版分类与标签建议在这里统一协调“直接应用结果”和“新增建议展示”。
- */
 interface CategoryOption {
   id: string;
   name: string;
@@ -53,6 +50,28 @@ interface TaxonomyAiState {
   warnings: string[];
 }
 
+interface OverwriteConfirmState {
+  open: boolean;
+  items: AiOverwritePreviewItem[];
+}
+
+interface AiOverwritePreviewPayload {
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  selectedCategory: AiOptimizeResult['selectedCategory'];
+  betterCategorySuggestion: AiOptimizeResult['betterCategorySuggestion'];
+  selectedTags: AiOptimizeResult['selectedTags'];
+  newTagSuggestions: AiOptimizeResult['newTagSuggestions'];
+}
+
+/**
+ * 管理后台文章 AI 助手 Hook。
+ *
+ * 统一收口字段级 AI、整篇 AI、taxonomy 建议和覆盖确认，
+ * 避免“抽屉应用”“区块按钮应用”“全部应用”逐渐分叉成多套行为。
+ */
 export function usePostAiAssistant({
   title,
   slug,
@@ -75,12 +94,20 @@ export function usePostAiAssistant({
   const [aiResult, setAiResult] = useState<AiOptimizeResult | null>(null);
   const [taxonomyAiOpen, setTaxonomyAiOpen] = useState(false);
   const [taxonomyAiState, setTaxonomyAiState] = useState<TaxonomyAiState | null>(null);
+  const [overwriteConfirmState, setOverwriteConfirmState] = useState<OverwriteConfirmState>({
+    open: false,
+    items: [],
+  });
   const abortControllerRef = useRef<AbortController | null>(null);
+  const overwriteConfirmActionRef = useRef<(() => void) | null>(null);
+  const overwriteSkipActionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
       abortControllerRef.current = null;
+      overwriteConfirmActionRef.current = null;
+      overwriteSkipActionRef.current = null;
     };
   }, []);
 
@@ -127,7 +154,138 @@ export function usePostAiAssistant({
     }
   }
 
-  function applyFieldSuggestion(
+  function buildPreviewText(value: string, maxLength = 120) {
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    if (!normalized) return '（空）';
+    return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
+  }
+
+  function resultSlugPreview(nextSlug?: string) {
+    return nextSlug?.trim() || '（空）';
+  }
+
+  function getOverwritePreviewItems(fields: AiField[], result: AiOverwritePreviewPayload) {
+    const items: AiOverwritePreviewItem[] = [];
+    const currentTitle = title.trim();
+    const nextTitle = (result.title || '').trim();
+    const currentSlug = slug.trim();
+    const nextSlug = (result.slug || '').trim();
+    const currentContent = content.trim();
+    const nextContent = (result.content || '').trim();
+    const shouldConfirmIdentity =
+      (fields.includes('identity') || (fields.includes('title') && fields.includes('slug'))) &&
+      ((currentTitle && nextTitle && currentTitle !== nextTitle) ||
+        (currentSlug && nextSlug && currentSlug !== nextSlug));
+
+    if (shouldConfirmIdentity) {
+      items.push({
+        key: 'identity',
+        title: '标题与 slug',
+        description: '继续后会覆盖当前标题，并同步更新 slug。',
+        currentLabel: '当前内容',
+        currentValue: `标题：${buildPreviewText(currentTitle, 80)}\nSlug：${currentSlug || '（空）'}`,
+        nextLabel: 'AI 建议',
+        nextValue: `标题：${buildPreviewText(nextTitle, 80)}\nSlug：${resultSlugPreview(nextSlug)}`,
+      });
+    } else if (fields.includes('title') && currentTitle && nextTitle && currentTitle !== nextTitle) {
+      items.push({
+        key: 'title',
+        title: '标题',
+        description: '继续后会覆盖当前标题。',
+        currentLabel: '当前标题',
+        currentValue: buildPreviewText(currentTitle, 80),
+        nextLabel: 'AI 标题',
+        nextValue: buildPreviewText(nextTitle, 80),
+      });
+    } else if (fields.includes('slug') && currentSlug && nextSlug && currentSlug !== nextSlug) {
+      items.push({
+        key: 'slug',
+        title: 'Slug',
+        description: '继续后会覆盖当前 Slug。',
+        currentLabel: '当前 Slug',
+        currentValue: currentSlug,
+        nextLabel: 'AI Slug',
+        nextValue: nextSlug,
+      });
+    }
+
+    if (fields.includes('content') && currentContent && nextContent && currentContent !== nextContent) {
+      items.push({
+        key: 'content',
+        title: '正文',
+        description: '继续后会覆盖当前正文内容。',
+        currentLabel: '当前正文',
+        currentValue: buildPreviewText(currentContent, 220),
+        nextLabel: 'AI 正文',
+        nextValue: buildPreviewText(nextContent, 220),
+      });
+    }
+
+    return items;
+  }
+
+  function openOverwriteConfirmation(
+    items: AiOverwritePreviewItem[],
+    onConfirm: () => void,
+    onSkipOverwrite: () => void,
+  ) {
+    overwriteConfirmActionRef.current = onConfirm;
+    overwriteSkipActionRef.current = onSkipOverwrite;
+    setOverwriteConfirmState({
+      open: true,
+      items,
+    });
+  }
+
+  function closeOverwriteConfirmation() {
+    overwriteConfirmActionRef.current = null;
+    overwriteSkipActionRef.current = null;
+    setOverwriteConfirmState({
+      open: false,
+      items: [],
+    });
+  }
+
+  function confirmOverwrite() {
+    const action = overwriteConfirmActionRef.current;
+    closeOverwriteConfirmation();
+    action?.();
+  }
+
+  function skipOverwrite() {
+    const action = overwriteSkipActionRef.current;
+    closeOverwriteConfirmation();
+    action?.();
+  }
+
+  function buildNormalizedResult(
+    result: Partial<
+      Pick<
+        AiOptimizeResult,
+        | 'title'
+        | 'slug'
+        | 'content'
+        | 'excerpt'
+        | 'selectedCategory'
+        | 'betterCategorySuggestion'
+        | 'selectedTags'
+        | 'newTagSuggestions'
+      >
+    >,
+  ) {
+    return {
+      title: result.title || '',
+      slug: result.slug || '',
+      content: result.content || '',
+      excerpt: result.excerpt || '',
+      selectedCategory: result.selectedCategory || null,
+      betterCategorySuggestion: result.betterCategorySuggestion || null,
+      selectedTags: result.selectedTags || [],
+      newTagSuggestions: result.newTagSuggestions || [],
+    };
+  }
+
+  function applySingleField(
     field: AiField,
     result: Partial<
       Pick<
@@ -159,16 +317,117 @@ export function usePostAiAssistant({
           ? 'AI 这次更偏向新增分类建议，当前没有可直接应用的现有分类。'
           : 'AI 这次没有可直接应用的现有标签，请查看新增标签建议。',
       );
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 统一判断当前 AI 结果是否需要先走覆盖确认弹窗。
+   * 只有在字段本身已有值且 AI 建议会改写它时，才进入二次确认。
+   */
+  function resolveOverwriteItems(
+    fields: AiField[],
+    result: AiOverwritePreviewPayload,
+    options?: { confirmed?: boolean },
+  ) {
+    return options?.confirmed ? [] : getOverwritePreviewItems(fields, result);
+  }
+
+  function applyFieldSuggestion(
+    field: AiField,
+    result: Partial<
+      Pick<
+        AiOptimizeResult,
+        | 'title'
+        | 'slug'
+        | 'content'
+        | 'excerpt'
+        | 'selectedCategory'
+        | 'betterCategorySuggestion'
+        | 'selectedTags'
+        | 'newTagSuggestions'
+      >
+    >,
+    options?: { confirmed?: boolean },
+  ) {
+    const normalized = buildNormalizedResult(result);
+    const overwriteFields: AiField[] = field === 'identity' ? ['identity'] : [field];
+    const overwriteItems = resolveOverwriteItems(overwriteFields, normalized, options);
+
+    if (overwriteItems.length > 0) {
+      openOverwriteConfirmation(
+        overwriteItems,
+        () => applyFieldSuggestion(field, result, { confirmed: true }),
+        () => {
+          toast.message('已跳过这次覆盖项');
+        },
+      );
       return;
     }
 
-    toast.success(`已应用${getAiFieldLabel(field)}建议`);
+    const targetField = field === 'identity' ? 'identity' : field;
+    if (!applySingleField(targetField, result)) return;
+
+    toast.success(`已应用 ${getAiFieldLabel(targetField)} 建议`);
   }
 
-  function applyFieldResult(result: AiFieldResult) {
+  function applyFieldResult(result: AiFieldResult, options?: { confirmed?: boolean }) {
     showFieldWarnings(result.warnings);
     const normalized = normalizeFieldResult(result);
-    const applyResult = applyAiFieldValue(result.field, normalized, categories, tags, {
+    const overwriteItems = resolveOverwriteItems([result.field], normalized, options);
+
+    if (overwriteItems.length > 0) {
+      openOverwriteConfirmation(
+        overwriteItems,
+        () => applyFieldResult(result, { confirmed: true }),
+        () => {
+          toast.message('已跳过这次覆盖项');
+        },
+      );
+      return;
+    }
+
+    if (!applySingleField(result.field, normalized)) return;
+
+    if (result.field === 'content') {
+      toast.success('已应用正文建议，当前正文已被覆盖');
+      return;
+    }
+
+    toast.success(`已应用 ${getAiFieldLabel(result.field)} 建议`);
+  }
+
+  function applyAllAi(options?: { confirmed?: boolean; skipOverwrite?: boolean }) {
+    if (!aiResult) return;
+
+    const allFields: AiField[] = ['title', 'slug', 'content', 'excerpt', 'category', 'tags'];
+    const overwriteItems =
+      options?.skipOverwrite ? [] : resolveOverwriteItems(allFields, aiResult, options);
+
+    if (overwriteItems.length > 0) {
+      openOverwriteConfirmation(
+        overwriteItems,
+        () => applyAllAi({ confirmed: true }),
+        () => applyAllAi({ skipOverwrite: true }),
+      );
+      return;
+    }
+
+    const fieldsToApply: AiField[] = options?.skipOverwrite
+      ? allFields.filter(
+          (field): field is AiField =>
+            field !== 'title' && field !== 'slug' && field !== 'content',
+        )
+      : allFields;
+
+    if (fieldsToApply.length === 0) {
+      toast.message('已跳过这次覆盖项');
+      return;
+    }
+
+    const applyResult = applyAiFields(fieldsToApply, aiResult, categories, tags, {
       setTitle,
       setSlug,
       setContent,
@@ -178,49 +437,15 @@ export function usePostAiAssistant({
       setSlugManuallyEdited,
     });
 
-    if (!applyResult.success) {
-      toast.warning(
-        applyResult.reason === 'category'
-          ? 'AI 这次更偏向新增分类建议，当前没有可直接应用的现有分类。'
-          : 'AI 这次没有可直接应用的现有标签，请查看新增标签建议。',
-      );
-      return;
-    }
-
-    if (result.field === 'content') {
-      toast.success('已应用正文建议，当前正文已被覆盖');
-      return;
-    }
-
-    toast.success(`已应用${getAiFieldLabel(result.field)}建议`);
-  }
-
-  function applyAllAi() {
-    if (!aiResult) return;
-
-    const applyResult = applyAiFields(
-      ['title', 'slug', 'content', 'excerpt', 'category', 'tags'],
-      aiResult,
-      categories,
-      tags,
-      {
-        setTitle,
-        setSlug,
-        setContent,
-        setExcerpt,
-        setCategoryId,
-        setSelectedTagIds,
-        setSlugManuallyEdited,
-      },
-    );
-
     showFieldWarnings(aiResult.warnings);
     if (!applyResult.success) {
       toast.success('主要 AI 建议已应用；无法直接应用的分类或标签请结合新增建议人工确认。');
       return;
     }
 
-    toast.success('已应用全部 AI 建议');
+    toast.success(
+      options?.skipOverwrite ? '已跳过覆盖项，并应用其他 AI 建议' : '已应用全部 AI 建议',
+    );
   }
 
   function canRunFieldAi(field: AiField) {
@@ -399,8 +624,12 @@ export function usePostAiAssistant({
     aiResult,
     taxonomyAiOpen,
     taxonomyAiState,
+    overwriteConfirmState,
     setAiOpen,
     setTaxonomyAiOpen,
+    confirmOverwrite,
+    skipOverwrite,
+    closeOverwriteConfirmation,
     buildAiPayload,
     showFieldWarnings,
     getMatchedCategoryId: (result: { selectedCategory?: AiOptimizeResult['selectedCategory'] }) =>
