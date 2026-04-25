@@ -33,6 +33,36 @@ function subscribeClientReady() {
   return () => {};
 }
 
+function normalizeOptionalText(value: string | null | undefined) {
+  return (value || '').trim();
+}
+
+function normalizeIdList(value: string[] | null | undefined) {
+  return [...(value || [])].sort();
+}
+
+function buildSavedSnapshot(data: {
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null | undefined;
+  coverImage: string | null | undefined;
+  pinned: boolean;
+  categoryId: string | null | undefined;
+  selectedTagIds: string[] | null | undefined;
+}) {
+  return {
+    title: data.title,
+    slug: data.slug,
+    content: data.content,
+    excerpt: normalizeOptionalText(data.excerpt),
+    coverImage: normalizeOptionalText(data.coverImage),
+    pinned: data.pinned,
+    categoryId: data.categoryId || '',
+    selectedTagIds: normalizeIdList(data.selectedTagIds),
+  };
+}
+
 /**
  * 管理后台文章编辑表单。
  *
@@ -47,6 +77,18 @@ export function PostForm({
 }: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    buildSavedSnapshot({
+      title: initialData?.title || '',
+      slug: initialData?.slug || '',
+      content: initialData?.content || '',
+      excerpt: initialData?.excerpt,
+      coverImage: initialData?.coverImage,
+      pinned: Boolean(initialData?.pinned),
+      categoryId: initialData?.categoryId,
+      selectedTagIds: initialData?.tagIds || [],
+    }),
+  );
   const [creatingCategoryNames, setCreatingCategoryNames] = useState<string[]>([]);
   const [creatingTagNames, setCreatingTagNames] = useState<string[]>([]);
   const [dismissedCategorySuggestionNames, setDismissedCategorySuggestionNames] = useState<string[]>([]);
@@ -125,6 +167,59 @@ export function PostForm({
     setPromotedTagSuggestionNames([]);
   }, [aiResult, taxonomyAiState]);
 
+  useEffect(() => {
+    setSavedSnapshot(
+      buildSavedSnapshot({
+        title: initialData?.title || '',
+        slug: initialData?.slug || '',
+        content: initialData?.content || '',
+        excerpt: initialData?.excerpt,
+        coverImage: initialData?.coverImage,
+        pinned: Boolean(initialData?.pinned),
+        categoryId: initialData?.categoryId,
+        selectedTagIds: initialData?.tagIds || [],
+      }),
+    );
+  }, [initialData]);
+
+  const hasUnsavedChanges =
+    title !== savedSnapshot.title ||
+    slug !== savedSnapshot.slug ||
+    content !== savedSnapshot.content ||
+    normalizeOptionalText(excerpt) !== savedSnapshot.excerpt ||
+    normalizeOptionalText(coverImage) !== savedSnapshot.coverImage ||
+    pinned !== savedSnapshot.pinned ||
+    categoryId !== savedSnapshot.categoryId ||
+    JSON.stringify(normalizeIdList(selectedTagIds)) !== JSON.stringify(savedSnapshot.selectedTagIds);
+
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (!hasUnsavedChanges || saving) return;
+
+      event.preventDefault();
+      event.returnValue = '';
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges, saving]);
+
+  function confirmLeaveWhenDirty() {
+    if (!hasUnsavedChanges || saving) return true;
+
+    return confirm('当前页面有未保存改动，确定要离开吗？');
+  }
+
+  function blockAiWhenDirty() {
+    if (!hasUnsavedChanges) return false;
+
+    toast.warning('当前有未保存改动，请先保存后再使用 AI。');
+    return true;
+  }
+
   async function handleUploadImage() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -155,7 +250,10 @@ export function PostForm({
     input.click();
   }
 
-  async function handleSave(saveStatus: 'DRAFT' | 'PUBLISHED') {
+  async function handleSave(
+    saveStatus: 'DRAFT' | 'PUBLISHED',
+    options?: { stayOnPage?: boolean },
+  ) {
     if (!title.trim()) {
       toast.error('标题不能为空');
       return;
@@ -187,6 +285,32 @@ export function PostForm({
 
     if (!result.ok) {
       toast.error(result.error);
+      return;
+    }
+
+    setSavedSnapshot(
+      buildSavedSnapshot({
+        title: title.trim(),
+        slug: slug.trim(),
+        content,
+        excerpt,
+        coverImage,
+        pinned,
+        categoryId,
+        selectedTagIds,
+      }),
+    );
+
+    if (options?.stayOnPage) {
+      const savedPost = result.data?.data as { id?: string } | null;
+
+      toast.success(saveStatus === 'PUBLISHED' ? '已保存发布内容' : '已保存当前内容');
+
+      if (!initialData?.id && savedPost?.id) {
+        router.replace(`/admin/posts/${savedPost.id}/edit`);
+      }
+
+      router.refresh();
       return;
     }
 
@@ -425,7 +549,13 @@ export function PostForm({
       : null;
   const toolbarNode =
     showToolbar || toolbarPortalTarget ? (
-      <PostAiToolbar aiLoading={aiLoading} onOptimizeAllAction={requestAiSuggestions} />
+      <PostAiToolbar
+        aiLoading={aiLoading}
+        onOptimizeAllAction={() => {
+          if (blockAiWhenDirty()) return;
+          void requestAiSuggestions();
+        }}
+      />
     ) : null;
 
   return (
@@ -441,7 +571,10 @@ export function PostForm({
           aiLoading={aiLoading}
           onTitleChange={handleTitleChange}
           onSlugChange={handleSlugInputChange}
-          onOpenAi={requestIdentityAi}
+          onOpenAi={() => {
+            if (blockAiWhenDirty()) return;
+            void requestIdentityAi();
+          }}
         />
 
         <ContentEditorSection
@@ -449,7 +582,10 @@ export function PostForm({
           aiLoading={aiLoading}
           onContentChange={setContent}
           onUploadImage={handleUploadImage}
-          onOpenAi={requestContentSectionAi}
+          onOpenAi={() => {
+            if (blockAiWhenDirty()) return;
+            void requestContentSectionAi();
+          }}
         />
 
         <SummaryCoverSection
@@ -458,7 +594,10 @@ export function PostForm({
           aiLoading={aiLoading}
           onExcerptChange={setExcerpt}
           onCoverImageChange={setCoverImage}
-          onOpenAi={requestSummarySectionAi}
+          onOpenAi={() => {
+            if (blockAiWhenDirty()) return;
+            void requestSummarySectionAi();
+          }}
         />
 
         <TaxonomySection
@@ -471,15 +610,23 @@ export function PostForm({
           onCategoryChange={setCategoryId}
           onPinnedChange={setPinned}
           onToggleTag={toggleTag}
-          onOpenAi={requestTaxonomyAi}
+          onOpenAi={() => {
+            if (blockAiWhenDirty()) return;
+            void requestTaxonomyAi();
+          }}
         />
 
         <PostFormActionBar
           saving={saving}
+          hasUnsavedChanges={hasUnsavedChanges}
           publishButtonLabel={publishButtonLabel}
           onSaveDraft={() => handleSave('DRAFT')}
+          onSaveStay={() => handleSave(status, { stayOnPage: true })}
           onPublish={() => handleSave('PUBLISHED')}
-          onCancel={() => router.back()}
+          onCancel={() => {
+            if (!confirmLeaveWhenDirty()) return;
+            router.back();
+          }}
         />
       </div>
 

@@ -60,8 +60,10 @@ interface TaxonomySectionProps {
 
 interface ActionBarProps {
   saving: boolean;
+  hasUnsavedChanges: boolean;
   publishButtonLabel: string;
   onSaveDraft: () => void;
+  onSaveStay: () => void;
   onPublish: () => void;
   onCancel: () => void;
 }
@@ -520,8 +522,10 @@ export function TaxonomySection({
  */
 export function PostFormActionBar({
   saving,
+  hasUnsavedChanges,
   publishButtonLabel,
   onSaveDraft,
+  onSaveStay,
   onPublish,
   onCancel,
 }: ActionBarProps) {
@@ -535,15 +539,31 @@ export function PostFormActionBar({
         保存草稿
       </button>
       <button
+        onClick={onSaveStay}
+        disabled={saving}
+        className={`${adminSecondaryActionClassName} disabled:opacity-50`}
+      >
+        只保存
+      </button>
+      <button
         onClick={onPublish}
         disabled={saving}
         className={`${adminPrimarySubmitClassName} disabled:opacity-50`}
       >
         {publishButtonLabel}
       </button>
+      <span
+        className={`ml-auto rounded-full border px-3 py-1 text-xs ${
+          hasUnsavedChanges
+            ? 'border-[color:color-mix(in_srgb,var(--accent)_26%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_8%,var(--background))] text-foreground'
+            : 'border-border bg-background text-muted-foreground'
+        }`}
+      >
+        {saving ? '保存中...' : hasUnsavedChanges ? '未保存' : '已保存'}
+      </span>
       <button
         onClick={onCancel}
-        className="ml-auto text-sm text-muted-foreground hover:text-foreground"
+        className="text-sm text-muted-foreground hover:text-foreground"
       >
         取消
       </button>
