@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getPublicPageHref } from '@/lib/pages/shared';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * 兼容旧的 `/about` 公开入口。
  *

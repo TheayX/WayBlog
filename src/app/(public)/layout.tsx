@@ -2,6 +2,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { getPublicNavigationPages } from '@/lib/pages/queries';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * 公开页布局。
  *
