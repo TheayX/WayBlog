@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useEffectEvent, useRef, useSyncExternalStore, useState } from 'react';
+import { useEffect, useRef, useSyncExternalStore, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ import {
 import { usePostEditorMetadata } from '@/components/admin/use-post-editor-metadata';
 import { usePostFormState } from '@/components/admin/use-post-form-state';
 import { usePostAiAssistant } from '@/components/admin/use-post-ai-assistant';
+import { useUnsavedChangesGuard } from '@/components/admin/use-unsaved-changes-guard';
 import { createAdminResource } from '@/lib/admin/client';
 import { savePost, uploadPostImage } from '@/lib/admin/post-client';
 import { slugify } from '@/lib/utils';
@@ -29,6 +30,14 @@ interface PostFormProps {
   isEdit?: boolean;
   showToolbar?: boolean;
   toolbarPortalTargetId?: string;
+}
+
+interface PendingAiActionDialogState {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel: string;
 }
 
 function subscribeClientReady() {
@@ -65,15 +74,6 @@ function buildSavedSnapshot(data: {
   };
 }
 
-interface PendingEditorActionDialogState {
-  open: boolean;
-  eyebrow: string;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  cancelLabel: string;
-}
-
 /**
  * 管理后台文章编辑表单。
  *
@@ -88,9 +88,9 @@ export function PostForm({
 }: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [pendingEditorActionDialog, setPendingEditorActionDialog] =
-    useState<PendingEditorActionDialogState | null>(null);
-  const pendingEditorActionRef = useRef<(() => void) | null>(null);
+  const [pendingAiActionDialog, setPendingAiActionDialog] =
+    useState<PendingAiActionDialogState | null>(null);
+  const pendingAiActionRef = useRef<(() => void) | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(() =>
     buildSavedSnapshot({
       title: initialData?.title || '',
@@ -212,63 +212,14 @@ export function PostForm({
     categoryId !== savedSnapshot.categoryId ||
     JSON.stringify(normalizeIdList(selectedTagIds)) !==
       JSON.stringify(savedSnapshot.selectedTagIds);
-
-  const handleDocumentLeaveNavigation = useEffectEvent((targetHref: string, targetPathname: string) => {
-    runLeaveActionWithUnsavedPrompt(
-      `前往 ${targetPathname}`,
-      () => {
-        router.push(targetHref);
-      },
-      `如果继续前往 ${targetPathname}，当前编辑页里尚未保存的改动将会丢失。`,
-    );
+  const {
+    dialogState: unsavedChangesDialog,
+    runGuardedNavigation,
+    confirmNavigation,
+    cancelNavigation,
+  } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges && !saving,
   });
-
-  useEffect(() => {
-    function handleBeforeUnload(event: BeforeUnloadEvent) {
-      if (!hasUnsavedChanges || saving) return;
-
-      event.preventDefault();
-      event.returnValue = '';
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [hasUnsavedChanges, saving]);
-
-  useEffect(() => {
-    function handleDocumentNavigation(event: MouseEvent) {
-      if (!hasUnsavedChanges || saving || event.defaultPrevented) return;
-      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-        return;
-      }
-
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-
-      const anchor = target.parentElement?.closest('a[href]') || (target instanceof Element ? target.closest('a[href]') : null);
-      if (!(anchor instanceof HTMLAnchorElement)) return;
-      if (anchor.target && anchor.target !== '_self') return;
-
-      const url = new URL(anchor.href, window.location.href);
-      const currentUrl = new URL(window.location.href);
-      if (url.origin !== currentUrl.origin) return;
-      if (url.pathname === currentUrl.pathname && url.search === currentUrl.search && url.hash === currentUrl.hash) {
-        return;
-      }
-
-      event.preventDefault();
-
-      handleDocumentLeaveNavigation(`${url.pathname}${url.search}${url.hash}`, url.pathname);
-    }
-
-    document.addEventListener('click', handleDocumentNavigation, true);
-    return () => {
-      document.removeEventListener('click', handleDocumentNavigation, true);
-    };
-  }, [hasUnsavedChanges, saving]);
 
   async function handleUploadImage() {
     const input = document.createElement('input');
@@ -611,80 +562,43 @@ export function PostForm({
     ) : null;
 
   /**
-   * 当前编辑页既允许“未保存时继续用 AI”，也允许“确认后离开”；
-   * 因此把两类待执行动作都收口到同一套弹窗状态，避免重复维护多组确认 UI。
+   * 新建文章场景下，用户往往还没补全可保存字段，但 AI 仍然应该能直接基于当前输入工作；
+   * 因此只做一次轻提示，不再额外要求确认。
    */
-  function openPendingEditorActionDialog(
-    dialog: PendingEditorActionDialogState,
-    onConfirm: () => void,
-  ) {
-    setPendingEditorActionDialog(dialog);
-    pendingEditorActionRef.current = onConfirm;
-  }
-
-  function closePendingEditorActionDialog() {
-    setPendingEditorActionDialog(null);
-    pendingEditorActionRef.current = null;
-  }
-
-  function confirmPendingEditorAction() {
-    const action = pendingEditorActionRef.current;
-    closePendingEditorActionDialog();
-    action?.();
-  }
-
   function runAiActionWithUnsavedPrompt(actionLabel: string, action: () => void | Promise<void>) {
     if (!hasUnsavedChanges) {
       void action();
       return;
     }
 
-    openPendingEditorActionDialog(
-      {
-        open: true,
-        eyebrow: 'AI Draft',
-        title: '当前内容尚未保存',
-        description: `${
-          !initialData?.id
-            ? '当前是新建文章，部分必填项可能还没补全，因此暂时无法形成可保存版本。'
-            : '当前有未保存改动。'
-        }是否基于当前未保存的编辑状态继续执行${actionLabel}？AI 会读取你现在表单中的最新内容，而不是上次保存版本。`,
-        confirmLabel: '按当前状态继续',
-        cancelLabel: '暂不使用 AI',
-      },
-      () => {
-        void action();
-      },
-    );
-  }
-
-  /**
-   * 离开当前编辑页前统一走同一套确认弹窗，
-   * 避免取消按钮、侧边导航和页面内其他管理入口分别维护不同提示逻辑。
-   */
-  function runLeaveActionWithUnsavedPrompt(
-    actionLabel: string,
-    action: () => void,
-    description?: string,
-  ) {
-    if (!hasUnsavedChanges) {
-      action();
+    if (!initialData?.id) {
+      toast.message(`检测到当前是新建文章，${actionLabel}将直接基于你当前填写的内容开始处理。`);
+      void action();
       return;
     }
 
-    openPendingEditorActionDialog(
-      {
-        open: true,
-        eyebrow: 'Unsaved Leave',
-        title: '当前页面有未保存改动',
-        description:
-          description ||
-          `如果继续${actionLabel}，当前编辑页里尚未保存的改动将会丢失。是否继续离开？`,
-        confirmLabel: '继续离开',
-        cancelLabel: '留在当前页',
-      },
-      action,
-    );
+    pendingAiActionRef.current = () => {
+      void action();
+    };
+    setPendingAiActionDialog({
+      open: true,
+      title: '当前内容尚未保存',
+      description: `继续执行${actionLabel}后，AI 会直接读取你正在编辑的最新内容，而不是上次保存版本；本次操作只生成或应用建议，不会自动保存文章。`,
+      confirmLabel: '按当前内容继续',
+      cancelLabel: '暂不使用 AI',
+    });
+  }
+
+  function confirmAiAction() {
+    const action = pendingAiActionRef.current;
+    pendingAiActionRef.current = null;
+    setPendingAiActionDialog(null);
+    action?.();
+  }
+
+  function cancelAiAction() {
+    pendingAiActionRef.current = null;
+    setPendingAiActionDialog(null);
   }
 
   return (
@@ -749,7 +663,7 @@ export function PostForm({
           onSaveStay={() => handleSave(status, { stayOnPage: true })}
           onPublish={() => handleSave('PUBLISHED')}
           onCancel={() => {
-            runLeaveActionWithUnsavedPrompt('离开当前编辑页', () => {
+            runGuardedNavigation(() => {
               router.back();
             });
           }}
@@ -838,14 +752,25 @@ export function PostForm({
       />
 
       <EditorConfirmDialog
-        open={Boolean(pendingEditorActionDialog?.open)}
-        eyebrow={pendingEditorActionDialog?.eyebrow || 'Editor Confirm'}
-        title={pendingEditorActionDialog?.title || ''}
-        description={pendingEditorActionDialog?.description || ''}
-        confirmLabel={pendingEditorActionDialog?.confirmLabel || '继续'}
-        cancelLabel={pendingEditorActionDialog?.cancelLabel || '取消'}
-        onConfirm={confirmPendingEditorAction}
-        onCancel={closePendingEditorActionDialog}
+        open={Boolean(unsavedChangesDialog?.open)}
+        eyebrow={unsavedChangesDialog?.eyebrow || 'Editor Confirm'}
+        title={unsavedChangesDialog?.title || ''}
+        description={unsavedChangesDialog?.description || ''}
+        confirmLabel={unsavedChangesDialog?.confirmLabel || '继续'}
+        cancelLabel={unsavedChangesDialog?.cancelLabel || '取消'}
+        onConfirm={confirmNavigation}
+        onCancel={cancelNavigation}
+      />
+
+      <EditorConfirmDialog
+        open={Boolean(pendingAiActionDialog?.open)}
+        eyebrow="AI Draft"
+        title={pendingAiActionDialog?.title || ''}
+        description={pendingAiActionDialog?.description || ''}
+        confirmLabel={pendingAiActionDialog?.confirmLabel || '继续'}
+        cancelLabel={pendingAiActionDialog?.cancelLabel || '取消'}
+        onConfirm={confirmAiAction}
+        onCancel={cancelAiAction}
       />
     </>
   );
