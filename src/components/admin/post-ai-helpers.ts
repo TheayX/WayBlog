@@ -1,5 +1,11 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { AiField, AiFieldResult, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
+import type {
+  AiField,
+  AiFieldResult,
+  AiOptimizeResult,
+  AiSelectedTagSuggestion,
+  AiTaxonomySuggestionLevel,
+} from '@/lib/ai/types';
 
 interface NamedOption {
   id: string;
@@ -23,21 +29,50 @@ type AiApplyResult =
 type AiApplyPayload = Partial<
   Pick<
     AiOptimizeResult,
-    'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
+    | 'title'
+    | 'slug'
+    | 'content'
+    | 'excerpt'
+    | 'selectedCategory'
+    | 'betterCategorySuggestion'
+    | 'selectedTags'
+    | 'newTagSuggestions'
   >
 >;
 
+/** taxonomy suggestion v2 档位对应的中文文案。 */
+export function getTaxonomyLevelLabel(level: AiTaxonomySuggestionLevel) {
+  switch (level) {
+    case 'strong':
+      return '十分推荐';
+    case 'medium':
+      return '推荐';
+    case 'weak':
+      return '一般推荐';
+  }
+}
+
+/** taxonomy suggestion v2 档位对应的简短说明。 */
+export function getTaxonomyLevelHint(level: AiTaxonomySuggestionLevel) {
+  switch (level) {
+    case 'strong':
+      return '可直接应用';
+    case 'medium':
+      return '可用，但建议人工确认';
+    case 'weak':
+      return '仅供参考';
+  }
+}
+
 /**
  * 将 AI 推荐分类映射到当前已存在分类。
- *
- * 模型返回的建议未必总带 `id`，因此这里优先使用明确 id，
- * 否则退回到基于名称的大小写不敏感匹配。
+ * taxonomy suggestion v2 只允许 selectedCategory 参与直接应用。
  */
 export function getMatchedCategoryId(
   categories: NamedOption[],
-  result: { categorySuggestion?: AiOptimizeResult['categorySuggestion'] },
+  result: { selectedCategory?: AiOptimizeResult['selectedCategory'] },
 ) {
-  const suggestion = result.categorySuggestion;
+  const suggestion = result.selectedCategory;
   if (!suggestion) return '';
 
   if (suggestion.id) return suggestion.id;
@@ -51,18 +86,15 @@ export function getMatchedCategoryId(
 
 /**
  * 将 AI 推荐标签映射为当前可直接应用的标签 id 集合。
- *
- * 这里只回填已存在标签；标记为 isNew 的建议保留给人工判断，
- * 避免前端直接伪造不存在的关联 id。
+ * taxonomy suggestion v2 只把 selectedTags 视为可立即应用结果。
  */
 export function getMatchedTagIds(
   tags: NamedOption[],
-  result: { tagSuggestions?: AiSuggestionTag[] },
+  result: { selectedTags?: AiSelectedTagSuggestion[] },
 ) {
-  const suggestions = result.tagSuggestions || [];
+  const suggestions = result.selectedTags || [];
 
   const ids = suggestions
-    .filter((item) => !item.isNew)
     .map((item) => {
       if (item.id) return item.id;
       const matched = tags.find((tag) => tag.name.toLowerCase() === item.name.toLowerCase());
@@ -73,9 +105,7 @@ export function getMatchedTagIds(
   return Array.from(new Set(ids));
 }
 
-/**
- * 获取 AI 字段名对应的中文标签。
- */
+/** 获取 AI 字段名对应的中文标签。 */
 export function getAiFieldLabel(field: AiField) {
   switch (field) {
     case 'identity':
@@ -97,9 +127,7 @@ export function getAiFieldLabel(field: AiField) {
 
 /**
  * 将单字段 AI 建议应用到表单状态。
- *
- * 返回值用于区分“已成功应用”和“因为未匹配到现有分类/标签而需要人工确认”两种情况，
- * 让 Hook 可以统一决定提示文案，而不是把分支写散。
+ * taxonomy suggestion v2 下，新增建议会保留展示，但不会直接创建或应用。
  */
 export function applyAiFieldValue(
   field: AiField,
@@ -113,44 +141,42 @@ export function applyAiFieldValue(
       setters.setTitle(result.title || '');
       setters.setSlug(result.slug || '');
       setters.setSlugManuallyEdited(true);
-      return { success: true as const };
+      return { success: true };
     case 'title':
       setters.setTitle(result.title || '');
-      return { success: true as const };
+      return { success: true };
     case 'slug':
       setters.setSlug(result.slug || '');
       setters.setSlugManuallyEdited(true);
-      return { success: true as const };
+      return { success: true };
     case 'content':
       setters.setContent(result.content || '');
-      return { success: true as const };
+      return { success: true };
     case 'excerpt':
       setters.setExcerpt(result.excerpt || '');
-      return { success: true as const };
+      return { success: true };
     case 'category': {
       const matchedCategoryId = getMatchedCategoryId(categories, result);
       if (!matchedCategoryId) {
-        return { success: false as const, reason: 'category' as const };
+        return { success: false, reason: 'category' };
       }
       setters.setCategoryId(matchedCategoryId);
-      return { success: true as const };
+      return { success: true };
     }
     case 'tags': {
       const matchedTagIds = getMatchedTagIds(tags, result);
       if (matchedTagIds.length === 0) {
-        return { success: false as const, reason: 'tags' as const };
+        return { success: false, reason: 'tags' };
       }
       setters.setSelectedTagIds(matchedTagIds);
-      return { success: true as const };
+      return { success: true };
     }
   }
 }
 
 /**
  * 将整篇优化结果按字段列表批量应用到表单。
- *
- * 总按钮仍然保持单次整篇 AI 请求，但具体回填动作复用字段级应用器，
- * 避免“全部应用”和单字段应用逐渐演化出两套不一致逻辑。
+ * 仍复用字段级应用器，避免“全部应用”和单字段应用逐渐演化出两套逻辑。
  */
 export function applyAiFields(
   fields: AiField[],
@@ -174,17 +200,17 @@ export function applyAiFields(
   };
 }
 
-/**
- * 将字段级 AI 接口返回值归一化为统一的可应用结构。
- */
+/** 将字段级 AI 接口返回值归一化为统一的可应用结构。 */
 export function normalizeFieldResult(result: AiFieldResult) {
   const emptyResult = {
     title: '',
     slug: '',
     content: '',
     excerpt: '',
-    categorySuggestion: null,
-    tagSuggestions: [],
+    selectedCategory: null,
+    betterCategorySuggestion: null,
+    selectedTags: [],
+    newTagSuggestions: [],
   };
 
   switch (result.field) {
@@ -217,12 +243,14 @@ export function normalizeFieldResult(result: AiFieldResult) {
     case 'category':
       return {
         ...emptyResult,
-        categorySuggestion: result.categorySuggestion || null,
+        selectedCategory: result.selectedCategory || null,
+        betterCategorySuggestion: result.betterCategorySuggestion || null,
       };
     case 'tags':
       return {
         ...emptyResult,
-        tagSuggestions: result.tagSuggestions || [],
+        selectedTags: result.selectedTags || [],
+        newTagSuggestions: result.newTagSuggestions || [],
       };
   }
 }

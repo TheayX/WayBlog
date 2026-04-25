@@ -5,16 +5,18 @@ import {
   adminPrimarySubmitClassName,
   adminSecondaryActionClassName,
 } from '@/components/admin/AdminCrudLayout';
+import {
+  getTaxonomyLevelHint,
+  getTaxonomyLevelLabel,
+} from '@/components/admin/post-ai-helpers';
 import { MarkdownRenderer } from '@/components/post/MarkdownRenderer';
-import type { AiField, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
+import type {
+  AiField,
+  AiOptimizeResult,
+  AiSelectedTagSuggestion,
+  AiSuggestedTagCandidate,
+} from '@/lib/ai/types';
 
-/**
- * AI 建议侧边抽屉。
- *
- * 负责把全文优化结果拆成可逐项审阅、逐项应用的界面结构，
- * 让管理后台在“整包接受”和“人工挑选”之间保留控制权。
- * `matchedCategoryId` 用来提示分类建议是否已经命中现有分类，避免编辑器把“推荐值”和“可直接应用值”混为一谈。
- */
 interface AiSuggestionDrawerProps {
   open: boolean;
   result: AiOptimizeResult | null;
@@ -34,19 +36,16 @@ export function AiSuggestionDrawer({
 }: AiSuggestionDrawerProps) {
   if (!open || !result) return null;
 
-  const existingTags = result.tagSuggestions.filter((tag) => !tag.isNew);
-  const newTags = result.tagSuggestions.filter((tag) => tag.isNew);
-
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/35 backdrop-blur-sm">
       <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-background shadow-2xl">
         <div className="border-b border-border px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="eyebrow">AI Review</p>
+              <p className="eyebrow">AI Review V2</p>
               <h2 className="mt-2 text-xl font-semibold text-foreground">AI 优化建议</h2>
               <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                先查看建议内容，再决定是否应用到表单。
+                taxonomy suggestion v2 会把可直接应用结果和新增建议分开展示，避免分类和标签只剩二元判断。
               </p>
             </div>
             <button
@@ -94,9 +93,7 @@ export function AiSuggestionDrawer({
           >
             <p className="text-sm leading-6">{result.excerpt || 'AI 未生成摘要建议'}</p>
             {result.excerpt && (
-              <p className="text-xs text-muted-foreground">
-                当前摘要长度：{result.excerpt.length} 字
-              </p>
+              <p className="text-xs text-muted-foreground">当前摘要长度：{result.excerpt.length} 字</p>
             )}
           </SuggestionSection>
 
@@ -115,23 +112,37 @@ export function AiSuggestionDrawer({
             actionLabel="应用分类"
             onApply={() => onApplyField('category')}
           >
-            {result.categorySuggestion ? (
-              <div className="space-y-2 text-sm leading-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                    {result.categorySuggestion.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {matchedCategoryId ? '已匹配到现有分类' : '未匹配到现有分类'}
-                  </span>
-                </div>
-                {result.categorySuggestion.reason && (
-                  <p className="text-muted-foreground">{result.categorySuggestion.reason}</p>
+            <div className="space-y-3">
+              <div>
+                <p className="mb-2 text-sm font-medium">可直接应用的现有分类</p>
+                {result.selectedCategory ? (
+                  <TaxonomyChip
+                    title={result.selectedCategory.name}
+                    level={result.selectedCategory.level}
+                    reason={result.selectedCategory.reason}
+                    tone="existing"
+                    extraMeta={matchedCategoryId ? '已命中现有分类' : '需要人工确认映射'}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">这次没有可直接应用的现有分类。</p>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">AI 暂未给出分类建议</p>
-            )}
+
+              <div>
+                <p className="mb-2 text-sm font-medium">更贴切的新分类建议</p>
+                {result.betterCategorySuggestion ? (
+                  <TaxonomyChip
+                    title={result.betterCategorySuggestion.name}
+                    level={result.betterCategorySuggestion.level}
+                    reason={result.betterCategorySuggestion.reason}
+                    tone="new"
+                    extraMeta="建议新增"
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">当前没有更贴切的新分类建议。</p>
+                )}
+              </div>
+            </div>
           </SuggestionSection>
 
           <SuggestionSection
@@ -141,25 +152,27 @@ export function AiSuggestionDrawer({
           >
             <div className="space-y-4">
               <div>
-                <p className="mb-2 text-sm font-medium">推荐现有标签</p>
+                <p className="mb-2 text-sm font-medium">推荐应用的现有标签</p>
                 <div className="flex flex-wrap gap-2">
-                  {existingTags.length > 0 ? (
-                    existingTags.map((tag) => (
+                  {result.selectedTags.length > 0 ? (
+                    result.selectedTags.map((tag) => (
                       <TagSuggestionChip key={`${tag.id || tag.name}-existing`} tag={tag} />
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">AI 暂未匹配到现有标签</p>
+                    <p className="text-sm text-muted-foreground">这次没有可直接应用的现有标签。</p>
                   )}
                 </div>
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">建议新增标签</p>
+                <p className="mb-2 text-sm font-medium">建议新增的标签</p>
                 <div className="flex flex-wrap gap-2">
-                  {newTags.length > 0 ? (
-                    newTags.map((tag) => <TagSuggestionChip key={`${tag.name}-new`} tag={tag} />)
+                  {result.newTagSuggestions.length > 0 ? (
+                    result.newTagSuggestions.map((tag) => (
+                      <TagSuggestionChip key={`${tag.name}-new`} tag={tag} />
+                    ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">当前没有新增标签建议</p>
+                    <p className="text-sm text-muted-foreground">当前没有新增标签建议。</p>
                   )}
                 </div>
               </div>
@@ -204,18 +217,53 @@ function SuggestionSection({
   );
 }
 
-function TagSuggestionChip({ tag }: { tag: AiSuggestionTag }) {
+function TaxonomyChip({
+  title,
+  level,
+  reason,
+  tone,
+  extraMeta,
+}: {
+  title: string;
+  level: AiSelectedTagSuggestion['level'] | AiSuggestedTagCandidate['level'];
+  reason?: string;
+  tone: 'existing' | 'new';
+  extraMeta: string;
+}) {
+  const className =
+    tone === 'new'
+      ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
+      : 'border-primary/30 bg-primary/10 text-primary';
+
+  return (
+    <div className={`rounded-[1rem] border px-3 py-2 text-xs ${className}`}>
+      <div className="font-medium">{title}</div>
+      <div className="mt-1 text-[11px] opacity-80">
+        {getTaxonomyLevelLabel(level)} · {extraMeta}
+      </div>
+      <div className="mt-1 text-[11px] opacity-80">{getTaxonomyLevelHint(level)}</div>
+      {reason && <div className="mt-1 text-[11px] opacity-80">{reason}</div>}
+    </div>
+  );
+}
+
+function TagSuggestionChip({ tag }: { tag: AiSelectedTagSuggestion | AiSuggestedTagCandidate }) {
+  const isNew = 'isNew' in tag && Boolean(tag.isNew);
+
   return (
     <div
       className={`rounded-[1rem] border px-3 py-2 text-xs ${
-        tag.isNew
+        isNew
           ? 'border-amber-500/40 bg-amber-500/10 text-amber-700'
           : 'border-primary/30 bg-primary/10 text-primary'
       }`}
     >
       <div className="font-medium">
         {tag.name}
-        {tag.isNew ? '（建议新增）' : ''}
+        {isNew ? '（建议新增）' : ''}
+      </div>
+      <div className="mt-1 text-[11px] opacity-80">
+        {getTaxonomyLevelLabel(tag.level)} · {getTaxonomyLevelHint(tag.level)}
       </div>
       {tag.reason && <div className="mt-1 text-[11px] opacity-80">{tag.reason}</div>}
     </div>

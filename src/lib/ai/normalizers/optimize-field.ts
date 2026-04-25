@@ -2,16 +2,20 @@ import type { AiFieldInput, AiFieldResult } from '@/lib/ai/types';
 import {
   clampExcerpt,
   getString,
-  normalizeCategory,
+  normalizeBetterCategorySuggestion,
+  normalizeLegacyCategorySuggestionV1,
+  normalizeLegacyTagSuggestionsV1,
   normalizeMarkdown,
-  normalizeTags,
+  normalizeNewTagSuggestions,
+  normalizeSelectedCategory,
+  normalizeSelectedTags,
   normalizeWarnings,
 } from '@/lib/ai/normalizers/shared';
 import { slugify } from '@/lib/utils';
 
 /**
  * 归一化字段级 AI 优化结果。
- * 会根据字段类型决定是直接返回文本，还是先执行 slug、Markdown、摘要等特定清洗逻辑。
+ * taxonomy 建议同样优先读取 v2 结构，同时保留 v1 兼容层。
  */
 export function normalizeOptimizeFieldResult(
   parsed: Record<string, unknown>,
@@ -20,13 +24,23 @@ export function normalizeOptimizeFieldResult(
   const normalizedIdentity = normalizeIdentityFields(parsed, input);
   const normalizedValue = normalizeFieldValue(parsed, input);
 
+  const selectedCategory = normalizeSelectedCategory(parsed.selectedCategory, input);
+  const betterCategorySuggestion = normalizeBetterCategorySuggestion(parsed.betterCategorySuggestion);
+  const selectedTags = normalizeSelectedTags(parsed.selectedTags, input);
+  const newTagSuggestions = normalizeNewTagSuggestions(parsed.newTagSuggestions);
+
+  const legacyCategory = normalizeLegacyCategorySuggestionV1(parsed.categorySuggestion, input);
+  const legacyTags = normalizeLegacyTagSuggestionsV1(parsed.tagSuggestions, input);
+
   return {
     field: input.field,
     title: normalizedIdentity.title,
     slug: normalizedIdentity.slug,
     value: normalizedValue || undefined,
-    categorySuggestion: normalizeCategory(parsed.categorySuggestion, input),
-    tagSuggestions: normalizeTags(parsed.tagSuggestions, input),
+    selectedCategory: selectedCategory || legacyCategory.selectedCategory,
+    betterCategorySuggestion: betterCategorySuggestion || legacyCategory.betterCategorySuggestion,
+    selectedTags: selectedTags.length > 0 ? selectedTags : legacyTags.selectedTags,
+    newTagSuggestions: newTagSuggestions.length > 0 ? newTagSuggestions : legacyTags.newTagSuggestions,
     warnings: normalizeWarnings(parsed.warnings, input.content),
   };
 }
@@ -49,7 +63,7 @@ function normalizeFieldValue(parsed: Record<string, unknown>, input: AiFieldInpu
 
 /**
  * 标题与 slug 合并按钮需要一次返回同一轮语义判断下的两个字段，
- * 这里统一做兜底归一化，避免前端再把两个旧字段请求拼在一起。
+ * 这里统一做兜底归一化，避免前端再把两个字段请求拼在一起。
  */
 function normalizeIdentityFields(parsed: Record<string, unknown>, input: AiFieldInput) {
   if (input.field !== 'identity') {

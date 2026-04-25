@@ -269,8 +269,10 @@ export function PostForm({
 
       <AiTaxonomyDialog
         open={taxonomyAiOpen}
-        categorySuggestion={taxonomyAiState?.categorySuggestion || null}
-        tagSuggestions={taxonomyAiState?.tagSuggestions || []}
+        selectedCategory={taxonomyAiState?.selectedCategory || null}
+        betterCategorySuggestion={taxonomyAiState?.betterCategorySuggestion || null}
+        selectedTags={taxonomyAiState?.selectedTags || []}
+        newTagSuggestions={taxonomyAiState?.newTagSuggestions || []}
         matchedCategoryId={taxonomyMatchedCategoryId}
         matchedTagIds={taxonomyMatchedTagIds}
         warnings={taxonomyAiState?.warnings || []}

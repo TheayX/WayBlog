@@ -3,7 +3,7 @@ import { buildJsonOnlyPrompt, FIELD_RULES } from '@/lib/ai/prompts/shared';
 
 /**
  * 字段级优化输出样例。
- * 根据目标字段不同，约束模型返回的 JSON 结构，方便后续归一化逻辑稳定解析。
+ * taxonomy suggestion v2 也在字段级接口中使用同一套结构。
  */
 const FIELD_OUTPUTS = {
   identity: `{
@@ -28,20 +28,35 @@ const FIELD_OUTPUTS = {
   "warnings": ["可选提醒"]
 }`,
   category: `{
-  "categorySuggestion": {
+  "selectedCategory": {
     "id": "候选分类 id，没有则省略",
-    "name": "分类名称",
+    "name": "现有分类名称",
+    "level": "strong",
     "reason": "推荐原因，简短"
+  },
+  "betterCategorySuggestion": {
+    "name": "更合适的新分类名称",
+    "level": "medium",
+    "reason": "为什么更贴切，简短",
+    "isNew": true
   },
   "warnings": ["可选提醒"]
 }`,
   tags: `{
-  "tagSuggestions": [
+  "selectedTags": [
     {
-      "id": "候选标签 id，新增标签可省略",
-      "name": "标签名称",
-      "reason": "推荐原因，简短",
-      "isNew": false
+      "id": "候选标签 id，没有则省略",
+      "name": "现有标签名称",
+      "level": "strong",
+      "reason": "推荐原因，简短"
+    }
+  ],
+  "newTagSuggestions": [
+    {
+      "name": "建议新增标签",
+      "level": "medium",
+      "reason": "为什么应该新增，简短",
+      "isNew": true
     }
   ],
   "warnings": ["可选提醒"]
@@ -55,8 +70,8 @@ const FIELD_INSTRUCTIONS = {
   slug: '请仅生成更合适的 slug。',
   content: '请仅优化正文内容。',
   excerpt: '请仅生成或优化文章摘要。',
-  category: '请仅推荐一个最合适的分类。',
-  tags: '请仅推荐标签。',
+  category: '请仅给出 taxonomy suggestion v2 分类建议。',
+  tags: '请仅给出 taxonomy suggestion v2 标签建议。',
 } as const;
 
 /**

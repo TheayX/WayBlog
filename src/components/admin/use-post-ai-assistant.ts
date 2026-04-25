@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { Dispatch, SetStateAction } from 'react';
-import type { AiField, AiFieldResult, AiOptimizeResult, AiSuggestionTag } from '@/lib/ai/types';
+import type { AiField, AiFieldResult, AiOptimizeResult } from '@/lib/ai/types';
 import {
   applyAiFields,
   applyAiFieldValue,
@@ -15,10 +15,7 @@ import {
 
 /**
  * 管理后台文章 AI 助手 Hook。
- *
- * 负责封装 AI 请求、字段级应用、分类/标签归一化匹配与交互提示，
- * 让 PostForm 只关心界面编排，不直接承载 AI 返回结构的解释细节。
- * 当前同时服务“整篇优化抽屉”“区块级直接回填”和“分类标签建议弹窗”三条交互链路。
+ * taxonomy suggestion v2 在这里统一协调“直接应用结果”和“新增建议展示”。
  */
 interface CategoryOption {
   id: string;
@@ -49,8 +46,10 @@ interface UsePostAiAssistantParams {
 }
 
 interface TaxonomyAiState {
-  categorySuggestion: AiOptimizeResult['categorySuggestion'];
-  tagSuggestions: AiSuggestionTag[];
+  selectedCategory: AiOptimizeResult['selectedCategory'];
+  betterCategorySuggestion: AiOptimizeResult['betterCategorySuggestion'];
+  selectedTags: AiOptimizeResult['selectedTags'];
+  newTagSuggestions: AiOptimizeResult['newTagSuggestions'];
   warnings: string[];
 }
 
@@ -86,7 +85,6 @@ export function usePostAiAssistant({
   }, []);
 
   function buildAiPayload() {
-    // 统一在 Hook 内收敛请求体形状，避免表单与不同 AI 入口各自拼装导致字段漂移。
     return {
       title: title.trim(),
       slug: slug.trim(),
@@ -134,7 +132,14 @@ export function usePostAiAssistant({
     result: Partial<
       Pick<
         AiOptimizeResult,
-        'title' | 'slug' | 'content' | 'excerpt' | 'categorySuggestion' | 'tagSuggestions'
+        | 'title'
+        | 'slug'
+        | 'content'
+        | 'excerpt'
+        | 'selectedCategory'
+        | 'betterCategorySuggestion'
+        | 'selectedTags'
+        | 'newTagSuggestions'
       >
     >,
   ) {
@@ -151,8 +156,8 @@ export function usePostAiAssistant({
     if (!applyResult.success) {
       toast.warning(
         applyResult.reason === 'category'
-          ? 'AI 暂未匹配到现有分类，请手动确认。'
-          : 'AI 暂未匹配到现有标签，请手动确认。',
+          ? 'AI 这次更偏向新增分类建议，当前没有可直接应用的现有分类。'
+          : 'AI 这次没有可直接应用的现有标签，请查看新增标签建议。',
       );
       return;
     }
@@ -176,8 +181,8 @@ export function usePostAiAssistant({
     if (!applyResult.success) {
       toast.warning(
         applyResult.reason === 'category'
-          ? 'AI 暂未匹配到现有分类，请手动确认。'
-          : 'AI 暂未匹配到现有标签，请手动确认。',
+          ? 'AI 这次更偏向新增分类建议，当前没有可直接应用的现有分类。'
+          : 'AI 这次没有可直接应用的现有标签，请查看新增标签建议。',
       );
       return;
     }
@@ -193,7 +198,6 @@ export function usePostAiAssistant({
   function applyAllAi() {
     if (!aiResult) return;
 
-    // 全量应用会覆盖当前表单内容，因此只在用户显式确认后从抽屉触发。
     const applyResult = applyAiFields(
       ['title', 'slug', 'content', 'excerpt', 'category', 'tags'],
       aiResult,
@@ -212,7 +216,7 @@ export function usePostAiAssistant({
 
     showFieldWarnings(aiResult.warnings);
     if (!applyResult.success) {
-      toast.success('已应用主要 AI 建议，未命中的分类或标签请手动确认。');
+      toast.success('主要 AI 建议已应用；无法直接应用的分类或标签请结合新增建议人工确认。');
       return;
     }
 
@@ -237,7 +241,6 @@ export function usePostAiAssistant({
       case 'excerpt':
       case 'category':
       case 'tags':
-        // 正文是这些能力的主要语义来源，前置拦截可以减少无意义调用与误导性建议。
         if (content.trim()) return true;
         toast.warning('请先填写正文后再使用这个 AI 功能。');
         return false;
@@ -371,8 +374,10 @@ export function usePostAiAssistant({
       const warnings = Array.from(new Set([...categoryResult.warnings, ...tagsResult.warnings]));
       showFieldWarnings(warnings);
       setTaxonomyAiState({
-        categorySuggestion: categoryResult.categorySuggestion || null,
-        tagSuggestions: tagsResult.tagSuggestions || [],
+        selectedCategory: categoryResult.selectedCategory || null,
+        betterCategorySuggestion: categoryResult.betterCategorySuggestion || null,
+        selectedTags: tagsResult.selectedTags || [],
+        newTagSuggestions: tagsResult.newTagSuggestions || [],
         warnings,
       });
       setTaxonomyAiOpen(true);
@@ -398,9 +403,9 @@ export function usePostAiAssistant({
     setTaxonomyAiOpen,
     buildAiPayload,
     showFieldWarnings,
-    getMatchedCategoryId: (result: { categorySuggestion?: AiOptimizeResult['categorySuggestion'] }) =>
+    getMatchedCategoryId: (result: { selectedCategory?: AiOptimizeResult['selectedCategory'] }) =>
       getMatchedCategoryId(categories, result),
-    getMatchedTagIds: (result: { tagSuggestions?: AiSuggestionTag[] }) =>
+    getMatchedTagIds: (result: { selectedTags?: AiOptimizeResult['selectedTags'] }) =>
       getMatchedTagIds(tags, result),
     applyFieldResult,
     applyFieldSuggestion,

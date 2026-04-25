@@ -5,6 +5,12 @@ export interface AiOption {
 }
 
 /**
+ * taxonomy suggestion v2 推荐档位。
+ * 用档位而不是百分比，避免把模型的主观判断伪装成精确分数。
+ */
+export type AiTaxonomySuggestionLevel = 'strong' | 'medium' | 'weak';
+
+/**
  * AI 全文优化输入。
  * 汇总文章主体内容以及现有分类/标签候选项，供提示词生成和结果归一化共同使用。
  */
@@ -27,18 +33,30 @@ export interface AiFieldInput extends AiOptimizeInput {
   field: AiField;
 }
 
-/** AI 推荐的单个分类结果。 */
-export interface AiSuggestionCategory {
-  id?: string;
+/** taxonomy suggestion v2 基础结构。 */
+interface AiTaxonomySuggestionBase {
   name: string;
+  level: AiTaxonomySuggestionLevel;
   reason?: string;
 }
 
-/** AI 推荐的单个标签结果。 */
-export interface AiSuggestionTag {
+/** taxonomy suggestion v2 中可直接应用的现有分类。 */
+export interface AiSelectedCategorySuggestion extends AiTaxonomySuggestionBase {
   id?: string;
-  name: string;
-  reason?: string;
+}
+
+/** taxonomy suggestion v2 中更贴切的新分类建议。 */
+export interface AiSuggestedCategoryCandidate extends AiTaxonomySuggestionBase {
+  isNew?: boolean;
+}
+
+/** taxonomy suggestion v2 中可直接应用的现有标签。 */
+export interface AiSelectedTagSuggestion extends AiTaxonomySuggestionBase {
+  id?: string;
+}
+
+/** taxonomy suggestion v2 中建议新增的标签。 */
+export interface AiSuggestedTagCandidate extends AiTaxonomySuggestionBase {
   isNew?: boolean;
 }
 
@@ -48,8 +66,10 @@ export interface AiOptimizeResult {
   slug: string;
   excerpt: string;
   content: string;
-  categorySuggestion: AiSuggestionCategory | null;
-  tagSuggestions: AiSuggestionTag[];
+  selectedCategory: AiSelectedCategorySuggestion | null;
+  betterCategorySuggestion: AiSuggestedCategoryCandidate | null;
+  selectedTags: AiSelectedTagSuggestion[];
+  newTagSuggestions: AiSuggestedTagCandidate[];
   warnings: string[];
 }
 
@@ -59,7 +79,27 @@ export interface AiFieldResult {
   value?: string;
   title?: string;
   slug?: string;
-  categorySuggestion?: AiSuggestionCategory | null;
-  tagSuggestions?: AiSuggestionTag[];
+  selectedCategory?: AiSelectedCategorySuggestion | null;
+  betterCategorySuggestion?: AiSuggestedCategoryCandidate | null;
+  selectedTags?: AiSelectedTagSuggestion[];
+  newTagSuggestions?: AiSuggestedTagCandidate[];
   warnings: string[];
+}
+
+/**
+ * v1 旧版 taxonomy 建议结构，仅用于 normalizer 兼容映射。
+ * 保留它是为了明确记录这是 taxonomy suggestion v2 的渐进式演进。
+ */
+export interface AiSuggestionCategory {
+  id?: string;
+  name: string;
+  reason?: string;
+}
+
+/** v1 旧版标签建议结构，仅用于兼容映射。 */
+export interface AiSuggestionTag {
+  id?: string;
+  name: string;
+  reason?: string;
+  isNew?: boolean;
 }

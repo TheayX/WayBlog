@@ -2,28 +2,34 @@ import { z } from 'zod';
 import type {
   AiFieldInput,
   AiOptimizeInput,
-  AiSuggestionCategory,
-  AiSuggestionTag,
+  AiSelectedCategorySuggestion,
+  AiSelectedTagSuggestion,
+  AiSuggestedCategoryCandidate,
+  AiSuggestedTagCandidate,
+  AiTaxonomySuggestionLevel,
 } from '@/lib/ai/types';
 
 /**
  * 归一化模块的共享工具集合。
- * 负责把模型返回的宽松 JSON 数据清洗成前端与路由处理器都能稳定消费的结构。
+ * 负责把模型返回的宽松 JSON 清洗成前端与路由处理器都能稳定消费的结构。
  */
 
 const modelJsonObjectSchema = z
   .record(z.string(), z.unknown())
   .refine((value) => !Array.isArray(value), 'Model JSON must be an object');
 
+const TAXONOMY_LEVEL_PRIORITY: Record<AiTaxonomySuggestionLevel, number> = {
+  strong: 0,
+  medium: 1,
+  weak: 2,
+};
+
 /** 安全读取字符串字段，并在缺失时回退到默认值。 */
 export function getString(value: unknown, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
 }
 
-/**
- * 从模型原始文本中提取首个 JSON 对象。
- * 用来兼容 provider 偶发附带说明文字的情况，确保后续 `JSON.parse` 可以稳定执行。
- */
+/** 从模型原始文本中提取首个 JSON 对象。 */
 export function extractJsonObject(raw: string) {
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
@@ -35,10 +41,7 @@ export function extractJsonObject(raw: string) {
   return raw.slice(start, end + 1);
 }
 
-/**
- * 解析并校验模型返回的 JSON 对象。
- * 只允许对象作为后续归一化入口，避免数组、字符串等异常结构被强转后继续流入业务逻辑。
- */
+/** 解析并校验模型返回的 JSON 对象。 */
 export function parseModelJsonObject(raw: string) {
   if (raw.trimStart().startsWith('[')) {
     throw new Error('Model JSON must be an object');
@@ -56,19 +59,13 @@ export function stripOuterCodeFence(text: string) {
     .trim();
 }
 
-/**
- * 归一化 Markdown 正文。
- * 主要处理换行格式、代码围栏包裹和空字符串回退逻辑。
- */
+/** 归一化 Markdown 正文。 */
 export function normalizeMarkdown(value: string, fallback: string) {
   const normalized = stripOuterCodeFence(value).replace(/\r\n/g, '\n').trim();
   return normalized || fallback.trim();
 }
 
-/**
- * 将摘要收敛到适合博客列表展示的长度范围。
- * 模型输出过长时优先尝试按句号截断，否则回退到固定长度裁剪。
- */
+/** 将摘要收敛到适合博客列表展示的长度范围。 */
 export function clampExcerpt(value: string, fallback: string) {
   const source = stripOuterCodeFence(value || fallback)
     .replace(/\s+/g, ' ')
@@ -77,20 +74,158 @@ export function clampExcerpt(value: string, fallback: string) {
   if (!source) return '';
   if (source.length <= 140) return source;
 
-  const sentence = source.match(/^.{60,140}?[。！？.!?]/)?.[0]?.trim();
+  const sentence = source.match(/^.{60,140}?[。！？?!]/)?.[0]?.trim();
   if (sentence && sentence.length >= 50) return sentence;
 
   return `${source.slice(0, 137).trim()}...`;
 }
 
+/** taxonomy suggestion v2 档位归一化。 */
+export function normalizeSuggestionLevel(value: unknown): AiTaxonomySuggestionLevel {
+  const normalized = getString(value).toLowerCase();
+
+  switch (normalized) {
+    case 'strong':
+    case 'medium':
+    case 'weak':
+      return normalized;
+    default:
+      return 'medium';
+  }
+}
+
+function sortByLevel<T extends { level: AiTaxonomySuggestionLevel; name: string }>(items: T[]) {
+  return items.sort(
+    (a, b) =>
+      TAXONOMY_LEVEL_PRIORITY[a.level] - TAXONOMY_LEVEL_PRIORITY[b.level] ||
+      a.name.localeCompare(b.name, 'zh-CN'),
+  );
+}
+
 /**
- * 归一化分类推荐结果。
- * 如果模型返回的名称能命中现有候选分类，则优先回填已有 id，避免前端把已有分类误判为新分类。
+ * taxonomy suggestion v1 -> v2 兼容映射。
+ * 保留这些函数是为了在代码层显式记录分类/标签建议的演进历史。
  */
-export function normalizeCategory(
+export function normalizeLegacyCategorySuggestionV1(
   value: unknown,
   input: AiOptimizeInput | AiFieldInput,
-): AiSuggestionCategory | null {
+) {
+  if (!value || typeof value !== 'object') {
+    return { selectedCategory: null, betterCategorySuggestion: null };
+  }
+
+  const record = value as Record<string, unknown>;
+  const suggestion = normalizeLegacyCategoryRecord(record, input);
+  if (!suggestion) {
+    return { selectedCategory: null, betterCategorySuggestion: null };
+  }
+
+  if (suggestion.id) {
+    return {
+      selectedCategory: suggestion,
+      betterCategorySuggestion: null,
+    };
+  }
+
+  return {
+    selectedCategory: null,
+    betterCategorySuggestion: {
+      name: suggestion.name,
+      level: suggestion.level,
+      reason: suggestion.reason,
+      isNew: true,
+    },
+  };
+}
+
+function normalizeLegacyCategoryRecord(
+  record: Record<string, unknown>,
+  input: AiOptimizeInput | AiFieldInput,
+): AiSelectedCategorySuggestion | null {
+  const name = getString(record.name);
+  if (!name) return null;
+
+  const matched = input.categories.find((item) => item.name.toLowerCase() === name.toLowerCase());
+
+  return {
+    id: getString(record.id) || matched?.id || undefined,
+    name: matched?.name || name,
+    level: normalizeSuggestionLevel(record.level),
+    reason: getString(record.reason) || undefined,
+  };
+}
+
+/** taxonomy suggestion v1 -> v2 标签兼容映射。 */
+export function normalizeLegacyTagSuggestionsV1(
+  value: unknown,
+  input: AiOptimizeInput | AiFieldInput,
+) {
+  if (!Array.isArray(value)) {
+    return { selectedTags: [], newTagSuggestions: [] };
+  }
+
+  const selectedTags: AiSelectedTagSuggestion[] = [];
+  const newTagSuggestions: AiSuggestedTagCandidate[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+
+    const record = item as Record<string, unknown>;
+    const normalized = normalizeLegacyTagRecord(record, input);
+    if (!normalized) continue;
+
+    const key = normalized.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    if (normalized.isNew) {
+      newTagSuggestions.push({
+        name: normalized.name,
+        level: normalized.level,
+        reason: normalized.reason,
+        isNew: true,
+      });
+      continue;
+    }
+
+    selectedTags.push({
+      id: normalized.id,
+      name: normalized.name,
+      level: normalized.level,
+      reason: normalized.reason,
+    });
+  }
+
+  return {
+    selectedTags: sortByLevel(selectedTags).slice(0, 5),
+    newTagSuggestions: sortByLevel(newTagSuggestions).slice(0, 5),
+  };
+}
+
+function normalizeLegacyTagRecord(
+  record: Record<string, unknown>,
+  input: AiOptimizeInput | AiFieldInput,
+) {
+  const rawName = getString(record.name);
+  if (!rawName) return null;
+
+  const matched = input.tags.find((tag) => tag.name.toLowerCase() === rawName.toLowerCase());
+
+  return {
+    id: getString(record.id) || matched?.id || undefined,
+    name: matched?.name || rawName,
+    level: normalizeSuggestionLevel(record.level),
+    reason: getString(record.reason) || undefined,
+    isNew: matched ? false : Boolean(record.isNew),
+  };
+}
+
+/** 归一化 taxonomy suggestion v2 分类直接应用结果。 */
+export function normalizeSelectedCategory(
+  value: unknown,
+  input: AiOptimizeInput | AiFieldInput,
+): AiSelectedCategorySuggestion | null {
   if (!value || typeof value !== 'object') return null;
 
   const record = value as Record<string, unknown>;
@@ -102,22 +237,36 @@ export function normalizeCategory(
   return {
     id: getString(record.id) || matched?.id || undefined,
     name: matched?.name || name,
+    level: normalizeSuggestionLevel(record.level),
     reason: getString(record.reason) || undefined,
   };
 }
 
-/**
- * 归一化标签推荐列表。
- * 会优先复用现有候选标签的 id，并按名称去重，同时把数量限制在后台可直接消费的范围内。
- */
-export function normalizeTags(
+/** 归一化 taxonomy suggestion v2 更佳分类建议。 */
+export function normalizeBetterCategorySuggestion(value: unknown): AiSuggestedCategoryCandidate | null {
+  if (!value || typeof value !== 'object') return null;
+
+  const record = value as Record<string, unknown>;
+  const name = getString(record.name);
+  if (!name) return null;
+
+  return {
+    name,
+    level: normalizeSuggestionLevel(record.level),
+    reason: getString(record.reason) || undefined,
+    isNew: true,
+  };
+}
+
+/** 归一化 taxonomy suggestion v2 现有标签列表。 */
+export function normalizeSelectedTags(
   value: unknown,
   input: AiOptimizeInput | AiFieldInput,
-): AiSuggestionTag[] {
+): AiSelectedTagSuggestion[] {
   if (!Array.isArray(value)) return [];
 
+  const normalized: AiSelectedTagSuggestion[] = [];
   const seen = new Set<string>();
-  const normalized: AiSuggestionTag[] = [];
 
   for (const item of value) {
     if (!item || typeof item !== 'object') continue;
@@ -129,26 +278,50 @@ export function normalizeTags(
     const matched = input.tags.find((tag) => tag.name.toLowerCase() === rawName.toLowerCase());
     const name = matched?.name || rawName;
     const key = name.toLowerCase();
-
-    // 用名称去重，避免模型给出大小写不同但语义相同的重复标签。
     if (seen.has(key)) continue;
     seen.add(key);
 
     normalized.push({
       id: getString(record.id) || matched?.id || undefined,
       name,
+      level: normalizeSuggestionLevel(record.level),
       reason: getString(record.reason) || undefined,
-      isNew: matched ? false : Boolean(record.isNew),
     });
   }
 
-  return normalized.slice(0, 5);
+  return sortByLevel(normalized).slice(0, 5);
 }
 
-/**
- * 归一化模型 warnings 列表，并按正文长度补充必要提醒。
- * 这样即便模型没有显式指出风险，前端仍能在内容过短时提示结果可能不稳定。
- */
+/** 归一化 taxonomy suggestion v2 新增标签建议。 */
+export function normalizeNewTagSuggestions(value: unknown): AiSuggestedTagCandidate[] {
+  if (!Array.isArray(value)) return [];
+
+  const normalized: AiSuggestedTagCandidate[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+
+    const record = item as Record<string, unknown>;
+    const name = getString(record.name);
+    if (!name) continue;
+
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    normalized.push({
+      name,
+      level: normalizeSuggestionLevel(record.level),
+      reason: getString(record.reason) || undefined,
+      isNew: true,
+    });
+  }
+
+  return sortByLevel(normalized).slice(0, 5);
+}
+
+/** 归一化模型 warnings 列表，并按正文长度补充必要提醒。 */
 export function normalizeWarnings(value: unknown, content: string) {
   const warnings = Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string').map((item) => item.trim())
