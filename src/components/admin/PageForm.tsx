@@ -122,7 +122,7 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
       <section className="page-frame px-5 py-5">
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
           <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">标题</span>
+            <span className="ml-4 block text-sm font-medium text-foreground">标题</span>
             <input
               value={title}
               onChange={(event) => {
@@ -135,7 +135,7 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
           </label>
 
           <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">Slug</span>
+            <span className="ml-4 block text-sm font-medium text-foreground">Slug</span>
             <input
               value={slug}
               onChange={(event) => {
@@ -146,14 +146,14 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
                   toast.warning('Slug 只能包含小写字母、数字和连字符');
                 }
               }}
-              placeholder="about"
+              placeholder="建议使用英文语义，如 about"
               className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
             />
           </label>
         </div>
 
         <label className="mt-4 block max-w-xs space-y-2">
-          <span className="text-sm font-medium text-foreground">导航排序</span>
+          <span className="ml-4 block text-sm font-medium text-foreground">导航排序</span>
           <input
             type="number"
             value={sortOrder}
@@ -167,7 +167,7 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
         </label>
 
         <label className="mt-5 block space-y-2">
-          <span className="text-sm font-medium text-foreground">正文</span>
+          <span className="ml-4 block text-sm font-medium text-foreground">正文</span>
           <textarea
             value={content}
             onChange={(event) => setContent(event.target.value)}
