@@ -4,7 +4,7 @@ import { ChevronDown, Menu, Search, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 import { getPublicPageHref, type PublicNavigationPage } from '@/lib/pages/shared';
 import { SITE_BRAND } from './site-config';
@@ -32,15 +32,115 @@ export function Header({ pages }: HeaderProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [pagesMenuOpen, setPagesMenuOpen] = useState(false);
+  const [pagesMenuPinned, setPagesMenuPinned] = useState(false);
+  const [pagesMenuStyle, setPagesMenuStyle] = useState({ top: 0, right: 0, width: 256 });
+  const closePagesMenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const headerShellRef = useRef<HTMLDivElement | null>(null);
+  const pagesTriggerRef = useRef<HTMLDivElement | null>(null);
   const pageItems = pages.map((page) => ({
     ...page,
     href: getPublicPageHref(page.slug),
   }));
   const pagesActive = pathname.startsWith('/pages/');
 
+  /**
+   * 鼠标从触发按钮移动到下拉面板时，给一个很短的缓冲时间，
+   * 避免用户只是经过按钮下边缘就触发“闪开闪关”的抖动体验。
+   */
+  function cancelClosePagesMenu() {
+    if (closePagesMenuTimerRef.current) {
+      clearTimeout(closePagesMenuTimerRef.current);
+      closePagesMenuTimerRef.current = null;
+    }
+  }
+
+  function openPagesMenu() {
+    cancelClosePagesMenu();
+    setPagesMenuOpen(true);
+  }
+
+  function scheduleClosePagesMenu() {
+    if (pagesMenuPinned) return;
+
+    cancelClosePagesMenu();
+    closePagesMenuTimerRef.current = setTimeout(() => {
+      setPagesMenuOpen(false);
+      closePagesMenuTimerRef.current = null;
+    }, 140);
+  }
+
+  /**
+   * 下拉面板脱离 page-frame 独立悬浮，避免被卡片裁剪；
+   * 位置仍以触发按钮为锚点，这样不会破坏当前 Header 的版心布局。
+   */
+  function syncPagesMenuPosition() {
+    const shell = headerShellRef.current;
+    const trigger = pagesTriggerRef.current;
+    if (!shell || !trigger) return;
+
+    const shellRect = shell.getBoundingClientRect();
+    const triggerRect = trigger.getBoundingClientRect();
+
+    setPagesMenuStyle({
+      top: triggerRect.bottom - shellRect.top + 4,
+      right: shellRect.right - triggerRect.right,
+      width: triggerRect.width,
+    });
+  }
+
+  function handlePagesMenuToggle() {
+    cancelClosePagesMenu();
+    syncPagesMenuPosition();
+    setPagesMenuPinned((pinned) => {
+      const nextPinned = !pinned;
+      setPagesMenuOpen(nextPinned);
+      return nextPinned;
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      cancelClosePagesMenu();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pagesMenuOpen) return;
+
+    syncPagesMenuPosition();
+
+    function handleWindowChange() {
+      syncPagesMenuPosition();
+    }
+
+    function handleDocumentPointerDown(event: MouseEvent) {
+      const target = event.target as Node | null;
+
+      if (
+        target &&
+        (pagesTriggerRef.current?.contains(target) || headerShellRef.current?.contains(target))
+      ) {
+        return;
+      }
+
+      setPagesMenuOpen(false);
+      setPagesMenuPinned(false);
+    }
+
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true);
+    document.addEventListener('mousedown', handleDocumentPointerDown);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+      document.removeEventListener('mousedown', handleDocumentPointerDown);
+    };
+  }, [pagesMenuOpen]);
+
   return (
-    <header className="sticky top-0 z-50 px-4 pt-4 sm:px-6">
-      <div className="page-shell">
+    <header className="sticky top-0 z-[70] px-4 pt-4 sm:px-6">
+      <div ref={headerShellRef} className="page-shell relative">
         <div className="page-frame flex min-h-[4.5rem] items-center justify-between px-4 py-3 sm:px-6">
           <Link
             href="/"
@@ -89,14 +189,16 @@ export function Header({ pages }: HeaderProps) {
 
             {pageItems.length > 0 && (
               <div
-                className="relative"
-                onMouseEnter={() => setPagesMenuOpen(true)}
-                onMouseLeave={() => setPagesMenuOpen(false)}
+                ref={pagesTriggerRef}
+                className="relative z-[80]"
+                onMouseEnter={openPagesMenu}
+                onMouseLeave={scheduleClosePagesMenu}
               >
                 <button
                   type="button"
-                  onClick={() => setPagesMenuOpen((open) => !open)}
-                  onFocus={() => setPagesMenuOpen(true)}
+                  onClick={handlePagesMenuToggle}
+                  onFocus={openPagesMenu}
+                  onBlur={scheduleClosePagesMenu}
                   className={cn(
                     'inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200',
                     pagesActive
@@ -114,45 +216,6 @@ export function Header({ pages }: HeaderProps) {
                     )}
                   />
                 </button>
-
-                <div
-                  className={cn(
-                    'absolute right-0 top-full pt-3 transition-all duration-200',
-                    pagesMenuOpen
-                      ? 'pointer-events-auto translate-y-0 opacity-100'
-                      : 'pointer-events-none -translate-y-1 opacity-0',
-                  )}
-                >
-                  <div className="surface-panel min-w-[16rem] rounded-[1.75rem] border border-border/80 bg-background/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur">
-                    <p className="px-3 pb-2 pt-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Pages
-                    </p>
-                    <div className="space-y-1">
-                      {pageItems.map((page) => {
-                        const isActive = pathname === page.href;
-
-                        return (
-                          <Link
-                            key={page.slug}
-                            href={page.href}
-                            onClick={() => {
-                              setPagesMenuOpen(false);
-                              setMenuOpen(false);
-                            }}
-                            className={cn(
-                              'flex cursor-pointer items-center justify-between gap-4 rounded-[1.2rem] px-3 py-3 text-sm transition-colors duration-200',
-                              isActive
-                                ? 'bg-primary text-primary-foreground'
-                                : 'text-foreground hover:bg-muted/80',
-                            )}
-                          >
-                            <span className="truncate font-medium">{page.title}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
           </nav>
@@ -181,6 +244,53 @@ export function Header({ pages }: HeaderProps) {
             </button>
           </div>
         </div>
+
+        {pageItems.length > 0 && (
+          <div
+            className={cn(
+              'absolute z-[120] transition-all duration-200',
+              pagesMenuOpen
+                ? 'pointer-events-auto translate-y-0 opacity-100'
+                : 'pointer-events-none -translate-y-1 opacity-0',
+            )}
+            style={{
+              top: `${pagesMenuStyle.top}px`,
+              right: `${pagesMenuStyle.right}px`,
+              width: `${pagesMenuStyle.width}px`,
+            }}
+            onMouseEnter={openPagesMenu}
+            onMouseLeave={scheduleClosePagesMenu}
+          >
+            <div className="h-1" aria-hidden="true" />
+            <div className="surface-panel rounded-[1.75rem] border border-border/80 bg-background/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur">
+              <div className="space-y-1">
+                {pageItems.map((page) => {
+                  const isActive = pathname === page.href;
+
+                  return (
+                    <Link
+                      key={page.slug}
+                      href={page.href}
+                      onClick={() => {
+                        setPagesMenuOpen(false);
+                        setPagesMenuPinned(false);
+                        setMenuOpen(false);
+                      }}
+                      className={cn(
+                        'flex cursor-pointer items-center justify-between gap-4 rounded-[1.2rem] px-3 py-3 text-sm transition-colors duration-200',
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground hover:bg-muted/80',
+                      )}
+                    >
+                      <span className="truncate font-medium">{page.title}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {menuOpen && (
