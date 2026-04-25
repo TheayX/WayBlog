@@ -8,6 +8,8 @@ import {
   AdminFormActions,
   AdminFormPanel,
   AdminResourceListState,
+  adminInlineActionClassName,
+  adminInlineDangerActionClassName,
 } from '@/components/admin/AdminCrudLayout';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
@@ -182,16 +184,13 @@ export default function AdminCategoriesPage() {
                 </p>
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={() => startEdit(cat)}
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                >
+                <button onClick={() => startEdit(cat)} className={adminInlineActionClassName}>
                   <PencilLine className="h-4 w-4" />
                   编辑
                 </button>
                 <button
                   onClick={() => handleDelete(cat.id, cat.name)}
-                  className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
+                  className={adminInlineDangerActionClassName}
                 >
                   <Trash2 className="h-4 w-4" />
                   删除

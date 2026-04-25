@@ -4,6 +4,11 @@ import { FilePlus2, Flame, PencilLine, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  adminInlineActionClassName,
+  adminInlineDangerActionClassName,
+  adminPrimaryActionClassName,
+} from '@/components/admin/AdminCrudLayout';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { deleteAdminResource, fetchAdminCollection } from '@/lib/admin/client';
@@ -107,10 +112,7 @@ export default function AdminPostsPage() {
             <p className="text-sm text-muted-foreground">快速操作</p>
             <p className="mt-2 text-base font-medium text-foreground">创建一篇新文章</p>
           </div>
-          <Link
-            href="/admin/posts/new"
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
+          <Link href="/admin/posts/new" className={adminPrimaryActionClassName}>
             <FilePlus2 className="h-4 w-4" />
             新建文章
           </Link>
@@ -206,14 +208,14 @@ export default function AdminPostsPage() {
                 <div className="flex w-full items-center justify-center gap-3">
                   <Link
                     href={`/admin/posts/${post.id}/edit`}
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    className={adminInlineActionClassName}
                   >
                     <PencilLine className="h-4 w-4" />
                     编辑
                   </Link>
                   <button
                     onClick={() => handleDelete(post.id, post.title)}
-                    className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
+                    className={adminInlineDangerActionClassName}
                   >
                     <Trash2 className="h-4 w-4" />
                     删除

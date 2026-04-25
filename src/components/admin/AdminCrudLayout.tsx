@@ -35,6 +35,32 @@ interface AdminResourceListStateProps {
 }
 
 /**
+ * 管理端通用操作样式。
+ *
+ * 后台多个页面会复用“主按钮 / 行内编辑 / 行内删除”三类操作；
+ * 统一收口到这里，避免同一交互在不同页面逐渐长出细碎差异。
+ */
+export const adminPrimaryActionClassName =
+  'inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground';
+
+/**
+ * 管理端列表常规操作按钮样式。
+ *
+ * 编辑、查看这类次级文字操作都沿用同一组字重和 hover 反馈，
+ * 让资源列表的交互层级保持一致。
+ */
+export const adminInlineActionClassName =
+  'inline-flex items-center gap-1 text-sm text-primary hover:underline';
+
+/**
+ * 管理端危险操作按钮样式。
+ *
+ * 删除类动作统一用这套强调色和交互反馈，避免不同页面出现不同的风险语义。
+ */
+export const adminInlineDangerActionClassName =
+  'inline-flex items-center gap-1 text-sm text-destructive hover:underline';
+
+/**
  * 后台 CRUD 表单外壳。
  *
  * 分类、标签和友链管理页都使用同一套“标题 + 输入区 + 操作区”结构；
@@ -107,7 +133,7 @@ export function AdminComposerActions({
         type="button"
         onClick={onSubmit}
         disabled={saving}
-        className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className={`${adminPrimaryActionClassName} disabled:opacity-50`}
       >
         <Check className="h-4 w-4" />
         {saving ? '提交中...' : `提交${itemLabel}`}
@@ -122,11 +148,7 @@ export function AdminComposerActions({
       </button>
     </div>
   ) : (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-    >
+    <button type="button" onClick={onOpen} className={adminPrimaryActionClassName}>
       <FilePlus2 className="h-4 w-4" />
       新建{itemLabel}
     </button>

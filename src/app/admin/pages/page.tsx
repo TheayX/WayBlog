@@ -3,7 +3,12 @@
 import { FilePlus2, FileText, PencilLine, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { AdminResourceListState } from '@/components/admin/AdminCrudLayout';
+import {
+  AdminResourceListState,
+  adminInlineActionClassName,
+  adminInlineDangerActionClassName,
+  adminPrimaryActionClassName,
+} from '@/components/admin/AdminCrudLayout';
 import { useAdminResourceList } from '@/components/admin/use-admin-resource-list';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { deleteAdminResource } from '@/lib/admin/client';
@@ -63,10 +68,7 @@ export default function AdminPagesPage() {
             <p className="text-sm text-muted-foreground">快速操作</p>
             <p className="mt-2 text-base font-medium text-foreground">创建一页新内容</p>
           </div>
-          <Link
-            href="/admin/pages/new"
-            className="shrink-0 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
+          <Link href="/admin/pages/new" className={`shrink-0 ${adminPrimaryActionClassName}`}>
             <FilePlus2 className="h-4 w-4" />
             新建单页
           </Link>
@@ -95,23 +97,21 @@ export default function AdminPagesPage() {
                     </span>
                   </div>
                 </div>
-                <div className="w-full text-center text-sm text-muted-foreground">
-                  /{page.slug}
-                </div>
+                <div className="w-full text-center text-sm text-muted-foreground">/{page.slug}</div>
                 <div className="w-full text-center text-sm text-muted-foreground">
                   {formatDateShort(page.updatedAt)}
                 </div>
                 <div className="flex w-full items-center justify-center gap-3">
                   <Link
                     href={`/admin/pages/${page.id}/edit`}
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    className={adminInlineActionClassName}
                   >
                     <PencilLine className="h-4 w-4" />
                     编辑
                   </Link>
                   <button
                     onClick={() => handleDelete(page.id, page.title)}
-                    className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
+                    className={adminInlineDangerActionClassName}
                   >
                     <Trash2 className="h-4 w-4" />
                     删除
