@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore, useState } from 'react';
+import { useEffect, useSyncExternalStore, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -49,6 +49,8 @@ export function PostForm({
   const [saving, setSaving] = useState(false);
   const [creatingCategoryNames, setCreatingCategoryNames] = useState<string[]>([]);
   const [creatingTagNames, setCreatingTagNames] = useState<string[]>([]);
+  const [dismissedCategorySuggestionNames, setDismissedCategorySuggestionNames] = useState<string[]>([]);
+  const [dismissedTagSuggestionNames, setDismissedTagSuggestionNames] = useState<string[]>([]);
   const { categories, tags, mergeCategory, mergeTag } = usePostEditorMetadata();
   const {
     title,
@@ -111,6 +113,15 @@ export function PostForm({
     setSelectedTagIds,
     setSlugManuallyEdited,
   });
+
+  /**
+   * 每次拿到新一轮 AI 结果后，重置本轮已处理建议的本地隐藏状态。
+   * 这样旧建议的关闭行为不会污染下一轮结果展示。
+   */
+  useEffect(() => {
+    setDismissedCategorySuggestionNames([]);
+    setDismissedTagSuggestionNames([]);
+  }, [aiResult, taxonomyAiState]);
 
   async function handleUploadImage() {
     const input = document.createElement('input');
@@ -243,6 +254,7 @@ export function PostForm({
 
       mergeCategory(created);
       setCategoryId(created.id);
+      setDismissedCategorySuggestionNames((prev) => Array.from(new Set([...prev, name])));
       toast.success(`已创建并应用分类「${created.name}」`);
     } finally {
       setCreatingCategoryNames((prev) => prev.filter((item) => item !== name));
@@ -283,6 +295,7 @@ export function PostForm({
 
       mergeTag(created);
       setSelectedTagIds((prev) => Array.from(new Set([...prev, created.id])));
+      setDismissedTagSuggestionNames((prev) => Array.from(new Set([...prev, name])));
       toast.success(`已创建并选中标签「${created.name}」`);
     } finally {
       setCreatingTagNames((prev) => prev.filter((item) => item !== name));
@@ -299,9 +312,37 @@ export function PostForm({
   }
 
   const publishButtonLabel = isEdit && status === 'PUBLISHED' ? '更新发布' : '发布文章';
-  const matchedCategoryId = aiResult ? getMatchedCategoryId(aiResult) : '';
-  const taxonomyMatchedCategoryId = taxonomyAiState ? getMatchedCategoryId(taxonomyAiState) : '';
-  const taxonomyMatchedTagIds = taxonomyAiState ? getMatchedTagIds(taxonomyAiState) : [];
+  const filteredAiResult = aiResult
+    ? {
+        ...aiResult,
+        betterCategorySuggestion:
+          aiResult.betterCategorySuggestion &&
+          !dismissedCategorySuggestionNames.includes(aiResult.betterCategorySuggestion.name)
+            ? aiResult.betterCategorySuggestion
+            : null,
+        newTagSuggestions: aiResult.newTagSuggestions.filter(
+          (tag) => !dismissedTagSuggestionNames.includes(tag.name),
+        ),
+      }
+    : null;
+  const filteredTaxonomyAiState = taxonomyAiState
+    ? {
+        ...taxonomyAiState,
+        betterCategorySuggestion:
+          taxonomyAiState.betterCategorySuggestion &&
+          !dismissedCategorySuggestionNames.includes(taxonomyAiState.betterCategorySuggestion.name)
+            ? taxonomyAiState.betterCategorySuggestion
+            : null,
+        newTagSuggestions: taxonomyAiState.newTagSuggestions.filter(
+          (tag) => !dismissedTagSuggestionNames.includes(tag.name),
+        ),
+      }
+    : null;
+  const matchedCategoryId = filteredAiResult ? getMatchedCategoryId(filteredAiResult) : '';
+  const taxonomyMatchedCategoryId = filteredTaxonomyAiState
+    ? getMatchedCategoryId(filteredTaxonomyAiState)
+    : '';
+  const taxonomyMatchedTagIds = filteredTaxonomyAiState ? getMatchedTagIds(filteredTaxonomyAiState) : [];
   const clientReady = useSyncExternalStore(subscribeClientReady, () => true, () => false);
   const toolbarPortalTarget =
     clientReady && toolbarPortalTargetId
@@ -311,6 +352,32 @@ export function PostForm({
     showToolbar || toolbarPortalTarget ? (
       <PostAiToolbar aiLoading={aiLoading} onOptimizeAll={requestAiSuggestions} />
     ) : null;
+
+  /**
+   * taxonomy 弹窗里的新增建议处理完后自动关闭，避免用户继续面对已清空的建议区块。
+   */
+  useEffect(() => {
+    if (!taxonomyAiOpen || !taxonomyAiState) return;
+
+    const remainingCategorySuggestion =
+      taxonomyAiState.betterCategorySuggestion &&
+      !dismissedCategorySuggestionNames.includes(taxonomyAiState.betterCategorySuggestion.name)
+        ? taxonomyAiState.betterCategorySuggestion
+        : null;
+    const remainingNewTags = taxonomyAiState.newTagSuggestions.filter(
+      (tag) => !dismissedTagSuggestionNames.includes(tag.name),
+    );
+
+    if (!remainingCategorySuggestion && remainingNewTags.length === 0) {
+      setTaxonomyAiOpen(false);
+    }
+  }, [
+    dismissedCategorySuggestionNames,
+    dismissedTagSuggestionNames,
+    setTaxonomyAiOpen,
+    taxonomyAiOpen,
+    taxonomyAiState,
+  ]);
 
   return (
     <>
@@ -369,14 +436,14 @@ export function PostForm({
 
       <AiSuggestionDrawer
         open={aiOpen}
-        result={aiResult}
+        result={filteredAiResult}
         matchedCategoryId={matchedCategoryId}
         creatingCategoryNames={creatingCategoryNames}
         creatingTagNames={creatingTagNames}
         onClose={() => setAiOpen(false)}
         onApplyField={(field) => {
-          if (!aiResult) return;
-          applyFieldSuggestion(field, aiResult);
+          if (!filteredAiResult) return;
+          applyFieldSuggestion(field, filteredAiResult);
         }}
         onApplyAll={applyAllAi}
         onCreateCategoryAndApply={(name) => {
@@ -392,42 +459,42 @@ export function PostForm({
 
       <AiTaxonomyDialog
         open={taxonomyAiOpen}
-        selectedCategory={taxonomyAiState?.selectedCategory || null}
-        betterCategorySuggestion={taxonomyAiState?.betterCategorySuggestion || null}
-        selectedTags={taxonomyAiState?.selectedTags || []}
-        newTagSuggestions={taxonomyAiState?.newTagSuggestions || []}
+        selectedCategory={filteredTaxonomyAiState?.selectedCategory || null}
+        betterCategorySuggestion={filteredTaxonomyAiState?.betterCategorySuggestion || null}
+        selectedTags={filteredTaxonomyAiState?.selectedTags || []}
+        newTagSuggestions={filteredTaxonomyAiState?.newTagSuggestions || []}
         matchedCategoryId={taxonomyMatchedCategoryId}
         matchedTagIds={taxonomyMatchedTagIds}
-        warnings={taxonomyAiState?.warnings || []}
+        warnings={filteredTaxonomyAiState?.warnings || []}
         creatingCategory={Boolean(
-          taxonomyAiState?.betterCategorySuggestion &&
-            creatingCategoryNames.includes(taxonomyAiState.betterCategorySuggestion.name),
+          filteredTaxonomyAiState?.betterCategorySuggestion &&
+            creatingCategoryNames.includes(filteredTaxonomyAiState.betterCategorySuggestion.name),
         )}
         creatingTagNames={creatingTagNames}
         canQuickCreateCategory={Boolean(
-          taxonomyAiState?.betterCategorySuggestion &&
-            taxonomyAiState.betterCategorySuggestion.level !== 'weak',
+          filteredTaxonomyAiState?.betterCategorySuggestion &&
+            filteredTaxonomyAiState.betterCategorySuggestion.level !== 'weak',
         )}
-        canQuickCreateTagNames={(taxonomyAiState?.newTagSuggestions || [])
+        canQuickCreateTagNames={(filteredTaxonomyAiState?.newTagSuggestions || [])
           .filter((tag) => tag.level !== 'weak')
           .map((tag) => tag.name)}
         onClose={() => setTaxonomyAiOpen(false)}
         onApplyCategory={() => {
-          if (!taxonomyAiState) return;
-          applyFieldSuggestion('category', taxonomyAiState);
+          if (!filteredTaxonomyAiState) return;
+          applyFieldSuggestion('category', filteredTaxonomyAiState);
         }}
         onApplyTags={() => {
-          if (!taxonomyAiState) return;
-          applyFieldSuggestion('tags', taxonomyAiState);
+          if (!filteredTaxonomyAiState) return;
+          applyFieldSuggestion('tags', filteredTaxonomyAiState);
         }}
         onApplyAll={() => {
-          if (!taxonomyAiState) return;
-          applyFieldSuggestion('category', taxonomyAiState);
-          applyFieldSuggestion('tags', taxonomyAiState);
+          if (!filteredTaxonomyAiState) return;
+          applyFieldSuggestion('category', filteredTaxonomyAiState);
+          applyFieldSuggestion('tags', filteredTaxonomyAiState);
           setTaxonomyAiOpen(false);
         }}
         onCreateCategoryAndApply={() => {
-          const suggestion = taxonomyAiState?.betterCategorySuggestion;
+          const suggestion = filteredTaxonomyAiState?.betterCategorySuggestion;
           if (!suggestion) return;
           void createCategoryAndApply(suggestion.name);
         }}
@@ -435,7 +502,7 @@ export function PostForm({
           void createTagAndSelect(name);
         }}
         onCreateAllTagsAndSelect={() => {
-          const names = (taxonomyAiState?.newTagSuggestions || [])
+          const names = (filteredTaxonomyAiState?.newTagSuggestions || [])
             .filter((tag) => tag.level !== 'weak')
             .map((tag) => tag.name);
 
