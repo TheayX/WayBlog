@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return ok(await updateTag(id, parsed.data));
   } catch (error) {
-    return serverError('PUT /api/tags/[id]', error);
+    return serverError('PUT /api/admin/tags/[id]', error);
   }
 }
 
@@ -69,6 +69,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     await deleteTag(id);
     return noContent();
   } catch (error) {
-    return serverError('DELETE /api/tags/[id]', error);
+    return serverError('DELETE /api/admin/tags/[id]', error);
   }
 }

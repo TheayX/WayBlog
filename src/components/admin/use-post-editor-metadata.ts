@@ -58,8 +58,8 @@ export function usePostEditorMetadata() {
 
   const refresh = useCallback(() => {
     Promise.all([
-      fetchAdminCollection<{ data?: PostCategoryOption[] }>('/api/categories'),
-      fetchAdminCollection<{ data?: PostTagOption[] }>('/api/tags'),
+      fetchAdminCollection<{ data?: PostCategoryOption[] }>('/api/admin/categories'),
+      fetchAdminCollection<{ data?: PostTagOption[] }>('/api/admin/tags'),
     ]).then(([categoryResult, tagResult]) => {
       if (categoryResult.ok) setCategories(categoryResult.data.data || []);
       if (tagResult.ok) setTags(tagResult.data.data || []);

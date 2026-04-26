@@ -28,7 +28,7 @@ export default function AdminTagsPage() {
     items: tags,
     loading,
     refresh: fetchTags,
-  } = useAdminResourceList<AdminTagItem>('/api/tags');
+  } = useAdminResourceList<AdminTagItem>('/api/admin/tags');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function AdminTagsPage() {
 
     const body = { name: name.trim(), slug: slug.trim() };
     const result = await saveAdminResource({
-      endpoint: '/api/tags',
+      endpoint: '/api/admin/tags',
       editingId,
       body,
     });
@@ -77,7 +77,7 @@ export default function AdminTagsPage() {
 
   async function handleDelete(id: string, tagName: string) {
     if (!confirm(`确定删除标签「${tagName}」？`)) return;
-    const deleted = await deleteAdminResource('/api/tags', id);
+    const deleted = await deleteAdminResource('/api/admin/tags', id);
     if (deleted) {
       toast.success('标签已删除');
       if (editingId === id) resetForm();

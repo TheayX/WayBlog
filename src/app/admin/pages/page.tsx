@@ -22,12 +22,14 @@ import type { AdminPageItem } from '@/types';
  * 列表页重点是快速识别标题、slug 与排序值，便于直接维护公开入口。
  */
 export default function AdminPagesPage() {
-  const { items: pages, loading, refresh } = useAdminResourceList<AdminPageItem>('/api/pages');
+  const { items: pages, loading, refresh } = useAdminResourceList<AdminPageItem>(
+    '/api/admin/pages',
+  );
 
   async function handleDelete(id: string, title: string) {
     if (!confirm(`确定删除单页「${title}」？`)) return;
 
-    const deleted = await deleteAdminResource('/api/pages', id);
+    const deleted = await deleteAdminResource('/api/admin/pages', id);
     if (deleted) {
       toast.success('单页已删除');
       refresh();

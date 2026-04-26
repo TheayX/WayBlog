@@ -45,7 +45,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return ok(await updateCategory(id, parsed.data));
   } catch (error) {
-    return serverError('PUT /api/categories/[id]', error);
+    return serverError('PUT /api/admin/categories/[id]', error);
   }
 }
 
@@ -69,6 +69,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     await deleteCategory(id);
     return noContent();
   } catch (error) {
-    return serverError('DELETE /api/categories/[id]', error);
+    return serverError('DELETE /api/admin/categories/[id]', error);
   }
 }

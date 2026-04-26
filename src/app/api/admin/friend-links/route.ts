@@ -1,9 +1,9 @@
 /**
  * 友情链接集合路由处理器。
  *
- * - GET 可供公开页/前台页面直接读取展示数据，也可供管理后台列表复用。
- * - POST 仅允许管理后台创建友情链接，先完成鉴权与请求校验，再返回新建结果。
- * - 友情链接当前没有名称或 URL 的唯一性约束；该路由只负责结构校验与持久化。
+ * 该接口只服务管理后台：列表读取与创建都要求先通过鉴权；
+ * 前台展示数据统一从查询层读取，不再借用后台接口路径。
+ * 友情链接当前没有名称或 URL 的唯一性约束；该路由只负责结构校验与持久化。
  */
 import { NextRequest } from 'next/server';
 import { ok, serverError } from '@/lib/response';
@@ -12,17 +12,19 @@ import { createFriendLink, getAdminFriendLinks } from '@/lib/friend-links/admin-
 import { createFriendLinkSchema } from '@/lib/validations';
 
 /**
- * 获取友情链接列表。
+ * 获取后台友情链接列表。
  *
- * 该接口没有请求体验证，因为输入为空，只负责返回展示顺序稳定的链接集合。
- * 先按 sortOrder 升序，再按创建时间倒序，保证前台页面展示顺序稳定；
- * 当多个链接拥有相同排序值时，管理后台最近创建的记录会优先暴露，便于确认调整结果。
+ * 请求体为空，但仍要求先鉴权，
+ * 避免后台管理数据继续以“公开可读”的路径形式暴露。
  */
 export async function GET() {
   try {
+    const authResult = await requireAdminAccess();
+    if (!authResult.authorized) return authResult.response;
+
     return ok(await getAdminFriendLinks());
   } catch (error) {
-    return serverError('GET /api/friend-links', error);
+    return serverError('GET /api/admin/friend-links', error);
   }
 }
 
@@ -42,6 +44,6 @@ export async function POST(request: NextRequest) {
 
     return ok(await createFriendLink(parsed.data), { status: 201 });
   } catch (error) {
-    return serverError('POST /api/friend-links', error);
+    return serverError('POST /api/admin/friend-links', error);
   }
 }

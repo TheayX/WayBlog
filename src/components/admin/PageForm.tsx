@@ -86,7 +86,7 @@ export function PageForm({ initialData, isEdit = false }: PageFormProps) {
     setSaving(true);
 
     const result = await saveAdminResource({
-      endpoint: '/api/pages',
+      endpoint: '/api/admin/pages',
       editingId: initialData?.id || null,
       body: {
         title: title.trim(),

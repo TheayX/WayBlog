@@ -1,8 +1,8 @@
 /**
  * 标签集合路由处理器。
  *
- * - GET 同时供公开页/前台页面与管理后台读取标签列表，并返回已发布文章数。
- * - POST 仅供管理后台创建标签，依次执行鉴权、请求校验与名称/slug 唯一性检查。
+ * 该接口只服务管理后台：读取列表与创建标签都需要先完成鉴权；
+ * 公开页需要的标签数据统一走查询层，避免继续暴露历史遗留的后台专用路径。
  */
 import { NextRequest } from 'next/server';
 import { conflict, ok, serverError } from '@/lib/response';
@@ -15,17 +15,19 @@ import {
 import { createTagSchema } from '@/lib/validations';
 
 /**
- * 获取标签列表。
+ * 获取后台标签列表。
  *
- * 该接口没有请求体验证，因为输入为空，仅返回当前标签集合。
- * 统计口径只包含已发布帖子，原因是标签常直接用于公开页聚合页或筛选器，
- * 返回草稿数量会让前台页面看到与实际可访问内容不一致的计数。
+ * 请求体为空，但仍要求先鉴权，
+ * 这样后台数据入口不会再和公开接口混在同一路径语义下。
  */
 export async function GET() {
   try {
+    const authResult = await requireAdminAccess();
+    if (!authResult.authorized) return authResult.response;
+
     return ok(await getTagsWithPublishedPostCount());
   } catch (error) {
-    return serverError('GET /api/tags', error);
+    return serverError('GET /api/admin/tags', error);
   }
 }
 
@@ -49,6 +51,6 @@ export async function POST(request: NextRequest) {
 
     return ok(await createTag(parsed.data), { status: 201 });
   } catch (error) {
-    return serverError('POST /api/tags', error);
+    return serverError('POST /api/admin/tags', error);
   }
 }

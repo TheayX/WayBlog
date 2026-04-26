@@ -361,7 +361,7 @@ export function PostForm({
 
     try {
       const slug = slugify(name).slice(0, 100) || 'category';
-      const result = await createAdminResource('/api/categories', {
+      const result = await createAdminResource('/api/admin/categories', {
         name: name.trim(),
         slug,
         description: null,
@@ -406,7 +406,7 @@ export function PostForm({
 
     try {
       const slug = slugify(name).slice(0, 100) || 'tag';
-      const result = await createAdminResource('/api/tags', {
+      const result = await createAdminResource('/api/admin/tags', {
         name: name.trim(),
         slug,
       });

@@ -28,7 +28,7 @@ export default function AdminCategoriesPage() {
     items: categories,
     loading,
     refresh: fetchCategories,
-  } = useAdminResourceList<AdminCategoryItem>('/api/categories');
+  } = useAdminResourceList<AdminCategoryItem>('/api/admin/categories');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
@@ -61,7 +61,7 @@ export default function AdminCategoriesPage() {
 
     const body = { name: name.trim(), slug: slug.trim(), description: description.trim() || null };
     const result = await saveAdminResource({
-      endpoint: '/api/categories',
+      endpoint: '/api/admin/categories',
       editingId,
       body,
     });
@@ -80,7 +80,7 @@ export default function AdminCategoriesPage() {
 
   async function handleDelete(id: string, catName: string) {
     if (!confirm(`确定删除分类「${catName}」？文章将变为未分类。`)) return;
-    const deleted = await deleteAdminResource('/api/categories', id);
+    const deleted = await deleteAdminResource('/api/admin/categories', id);
     if (deleted) {
       toast.success('分类已删除');
       if (editingId === id) resetForm();

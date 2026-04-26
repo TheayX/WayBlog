@@ -27,7 +27,7 @@ export default function AdminFriendLinksPage() {
     items: links,
     loading,
     refresh: fetchLinks,
-  } = useAdminResourceList<AdminFriendLinkItem>('/api/friend-links');
+  } = useAdminResourceList<AdminFriendLinkItem>('/api/admin/friend-links');
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [avatar, setAvatar] = useState('');
@@ -73,7 +73,7 @@ export default function AdminFriendLinksPage() {
     };
 
     const result = await saveAdminResource({
-      endpoint: '/api/friend-links',
+      endpoint: '/api/admin/friend-links',
       editingId,
       body,
     });
@@ -92,7 +92,7 @@ export default function AdminFriendLinksPage() {
 
   async function handleDelete(id: string, linkName: string) {
     if (!confirm(`确定删除友链「${linkName}」？`)) return;
-    const deleted = await deleteAdminResource('/api/friend-links', id);
+    const deleted = await deleteAdminResource('/api/admin/friend-links', id);
     if (deleted) {
       toast.success('友链已删除');
       if (editingId === id) resetForm();

@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return ok(page);
   } catch (error) {
-    return serverError('PUT /api/pages/[id]', error);
+    return serverError('PUT /api/admin/pages/[id]', error);
   }
 }
 
@@ -57,6 +57,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     revalidateTag('public-pages', 'max');
     return noContent();
   } catch (error) {
-    return serverError('DELETE /api/pages/[id]', error);
+    return serverError('DELETE /api/admin/pages/[id]', error);
   }
 }

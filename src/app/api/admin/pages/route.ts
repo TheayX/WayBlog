@@ -19,7 +19,7 @@ export async function GET() {
 
     return ok(await getAdminPages());
   } catch (error) {
-    return serverError('GET /api/pages', error);
+    return serverError('GET /api/admin/pages', error);
   }
 }
 
@@ -47,6 +47,6 @@ export async function POST(request: NextRequest) {
 
     return ok(page, { status: 201 });
   } catch (error) {
-    return serverError('POST /api/pages', error);
+    return serverError('POST /api/admin/pages', error);
   }
 }

@@ -1,8 +1,8 @@
 /**
  * 分类集合路由处理器。
  *
- * - GET 对公开页/前台页面与管理后台通用，返回分类基础信息及已发布文章数。
- * - POST 仅供管理后台创建分类，必须先完成鉴权、请求校验与名称/slug 唯一性检查。
+ * 该接口只服务管理后台：读取列表与创建分类都需要先完成鉴权；
+ * 公开页需要的分类数据统一走查询层，避免把后台边界伪装成公开接口。
  */
 import { NextRequest } from 'next/server';
 import { conflict, ok, serverError } from '@/lib/response';
@@ -15,17 +15,19 @@ import {
 import { createCategorySchema } from '@/lib/validations';
 
 /**
- * 获取分类列表。
+ * 获取后台分类列表。
  *
- * 该接口没有请求体验证，因为输入为空，仅返回当前分类集合。
- * postCount 只统计已发布内容，保证公开页侧边栏、导航与管理后台概览看到的是一致的对外可见数量，
- * 不会把草稿误算进前台页面的内容规模。
+ * 请求体为空，但仍要求先做后台鉴权，
+ * 这样可以让接口路径语义、访问权限和文档说明保持一致，不再混入“看起来像公开接口”的历史残留。
  */
 export async function GET() {
   try {
+    const authResult = await requireAdminAccess();
+    if (!authResult.authorized) return authResult.response;
+
     return ok(await getCategoriesWithPublishedPostCount());
   } catch (error) {
-    return serverError('GET /api/categories', error);
+    return serverError('GET /api/admin/categories', error);
   }
 }
 
@@ -49,6 +51,6 @@ export async function POST(request: NextRequest) {
 
     return ok(await createCategory(parsed.data), { status: 201 });
   } catch (error) {
-    return serverError('POST /api/categories', error);
+    return serverError('POST /api/admin/categories', error);
   }
 }
