@@ -45,13 +45,18 @@ Browser
 - `/admin/posts`
 - `/admin/posts/new`
 - `/admin/posts/[id]/edit`
+- `/admin/pages`
+- `/admin/pages/new`
+- `/admin/pages/[id]/edit`
 - `/admin/categories`
 - `/admin/tags`
 - `/admin/friend-links`
+- `/admin/settings`
 
 ### API 路由
 
 - `/api/auth/[...nextauth]`
+- `/api/admin/account`
 - `/api/posts`
 - `/api/admin/posts`
 - `/api/admin/posts/[id]`
@@ -122,6 +127,8 @@ Browser
 - `src/lib/admin/post-client.ts`
 
 文章编辑页拆分为字段状态、元数据加载、AI 协调和 UI 区块，避免单个表单组件继续承担所有职责。
+
+设置页单独负责当前管理员的资料维护和密码修改，不承担多账号或复杂权限模型。
 
 ### API 与服务层
 

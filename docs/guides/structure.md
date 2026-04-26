@@ -80,10 +80,13 @@ src/app/
 
 文章编辑页允许在 Server Component 中读取后台编辑数据，但查询仍应放在 `src/lib/posts/queries.ts`。
 
+设置页当前仅服务单管理员资料与密码维护，因此相关接口和页面都按“当前登录管理员自维护”边界设计。
+
 ### API 路由
 
 API 位于 `src/app/api/`：
 
+- `api/admin/account`：当前管理员资料与密码维护
 - `api/posts`：公开文章读取
 - `api/posts/[id]/views`：公开浏览量记录
 - `api/admin/posts`：后台文章列表和创建
