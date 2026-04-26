@@ -27,7 +27,7 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
-    <article className="prose prose-neutral dark:prose-invert max-w-none prose-headings:scroll-mt-28 prose-a:no-underline prose-a:transition-colors prose-code:rounded prose-code:bg-muted/70 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.92em] prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-[1.5rem] prose-pre:border prose-pre:border-border prose-img:rounded-[1.5rem] prose-img:border prose-img:border-border prose-blockquote:border-l-[3px] prose-blockquote:not-italic prose-hr:my-10">
+    <article className="prose prose-neutral dark:prose-invert max-w-none prose-headings:scroll-mt-28 prose-a:no-underline prose-a:transition-colors prose-code:rounded prose-code:bg-muted/70 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.92em] prose-code:before:content-none prose-code:after:content-none prose-img:rounded-[1.5rem] prose-img:border prose-img:border-border prose-blockquote:border-l-[3px] prose-blockquote:not-italic prose-hr:my-10">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSlug, [rehypeSanitize, sanitizeSchema], rehypeHighlight]}
