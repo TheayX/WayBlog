@@ -179,10 +179,12 @@ button,
 }
 
 .prose :where(pre) {
+  position: relative;
   border: 1px solid var(--code-block-border);
   border-radius: calc(var(--radius) * 1.1);
   background: var(--code-block-bg);
   color: var(--code-block-text);
+  overflow: hidden;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
 }
 
