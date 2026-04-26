@@ -88,7 +88,7 @@ API 位于 `src/app/api/`：
 - `api/posts/[id]/views`：公开浏览量记录
 - `api/admin/posts`：后台文章列表和创建
 - `api/admin/posts/[id]`：后台文章更新和删除
-- `api/categories`、`api/tags`、`api/friend-links`、`api/pages`：分类、标签、友链和单页接口
+- `api/admin/categories`、`api/admin/tags`、`api/admin/friend-links`、`api/admin/pages`：分类、标签、友链和单页后台接口
 - `api/search`：公开搜索
 - `api/stats`：后台统计
 - `api/upload`：后台上传

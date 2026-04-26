@@ -72,7 +72,7 @@ pnpm dev
 
 - 运行环境和敏感信息放在 `.env` / `.env.example`，例如 `DATABASE_URL`、`REDIS_URL`、`NEXTAUTH_SECRET`、`SITE_URL`、AI Key。
 - 公开站点资料和文案放在 [src/config/site.ts](./src/config/site.ts)，例如品牌名、站点描述、公开邮箱、GitHub 链接、首页和页脚文案。
-- 数据库里的内容必须有对应后台入口维护，例如文章、分类、标签、友链和单页。
+- 数据库里的内容必须有对应后台入口维护，例如文章、分类、标签、友链和单页；其中公开单页统一通过 `/pages/[slug]` 访问，`/about` 仅保留兼容性重定向入口。
 - `SITE_URL` 继续保留在环境变量中，因为它会随本地、测试和正式部署地址变化。
 
 更详细的边界说明见 [docs/guides/configuration-boundary.md](./docs/guides/configuration-boundary.md)。
@@ -126,6 +126,7 @@ WayBlog/
 - Redis 默认映射到宿主机 `6381`。
 - 图片默认保存在 `public/uploads`，适合单机部署。
 - Prisma Client 输出到仓库根部 `generated/prisma`，该目录不提交。
+- 后台管理接口统一归入 `/api/admin/*`，公开读取接口仅保留真正需要对前台暴露的入口。
 
 ## License
 

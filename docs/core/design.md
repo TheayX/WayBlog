@@ -29,12 +29,13 @@ Browser
 
 - `/`
 - `/posts/[slug]`
+- `/pages/[slug]`
 - `/categories/[slug]`
 - `/tags`
 - `/tags/[slug]`
 - `/archives`
 - `/search`
-- `/about`
+- `/about`（兼容旧入口，重定向到 `/pages/about`）
 - `/friends`
 
 ### 后台路由
@@ -54,13 +55,15 @@ Browser
 - `/api/posts`
 - `/api/admin/posts`
 - `/api/admin/posts/[id]`
+- `/api/admin/pages`
+- `/api/admin/pages/[id]`
+- `/api/admin/categories`
+- `/api/admin/categories/[id]`
+- `/api/admin/tags`
+- `/api/admin/tags/[id]`
+- `/api/admin/friend-links`
+- `/api/admin/friend-links/[id]`
 - `/api/posts/[id]/views`
-- `/api/categories`
-- `/api/categories/[id]`
-- `/api/tags`
-- `/api/tags/[id]`
-- `/api/friend-links`
-- `/api/friend-links/[id]`
 - `/api/search`
 - `/api/stats`
 - `/api/upload`
@@ -104,13 +107,13 @@ Browser
 - `src/lib/posts/queries.ts`：公开文章列表、文章详情、归档、RSS、sitemap 所需文章数据
 - `src/lib/taxonomies/queries.ts`：公开分类/标签读取
 - `src/lib/friend-links/queries.ts`：公开友链读取
-- `src/lib/pages/queries.ts`：关于页等单页内容读取
+- `src/lib/pages/queries.ts`：公开单页内容读取与导航单页查询
 
 这样可以把“只读取已发布文章”“公开页排序规则”“SEO 所需字段”等边界固定在查询层，而不是散落在页面组件里。
 
 ### 后台页面
 
-后台页面通过 `fetch('/api/...')` 调用 Route Handlers，便于统一鉴权和输入校验。
+后台页面通过 `fetch('/api/admin/...')` 或受保护的后台接口调用 Route Handlers，便于统一鉴权和输入校验。
 
 后台页面的重复列表拉取、保存和删除逻辑集中在：
 

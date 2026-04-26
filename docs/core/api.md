@@ -45,6 +45,7 @@ Base URL：
 ## 鉴权
 
 - 登录由 NextAuth 处理
+- 后台管理接口统一使用 `/api/admin/*`
 - 后台写操作接口需要登录
 - 未登录时返回 `401`
 
@@ -128,19 +129,21 @@ Base URL：
 
 ## 分类接口
 
-### `GET /api/categories`
+### `GET /api/admin/categories`
 
 返回分类列表及每个分类下的已发布文章数量。
 
-### `POST /api/categories`
+需要登录。
+
+### `POST /api/admin/categories`
 
 需要登录。
 
-### `PUT /api/categories/[id]`
+### `PUT /api/admin/categories/[id]`
 
 需要登录。
 
-### `DELETE /api/categories/[id]`
+### `DELETE /api/admin/categories/[id]`
 
 需要登录。
 
@@ -148,19 +151,21 @@ Base URL：
 
 ## 标签接口
 
-### `GET /api/tags`
+### `GET /api/admin/tags`
 
 返回标签列表及每个标签下的已发布文章数量。
 
-### `POST /api/tags`
+需要登录。
+
+### `POST /api/admin/tags`
 
 需要登录。
 
-### `PUT /api/tags/[id]`
+### `PUT /api/admin/tags/[id]`
 
 需要登录。
 
-### `DELETE /api/tags/[id]`
+### `DELETE /api/admin/tags/[id]`
 
 需要登录。
 
@@ -168,19 +173,21 @@ Base URL：
 
 ## 友链接口
 
-### `GET /api/friend-links`
+### `GET /api/admin/friend-links`
 
 返回按 `sortOrder` 排序的友链列表。
 
-### `POST /api/friend-links`
+需要登录。
+
+### `POST /api/admin/friend-links`
 
 需要登录。
 
-### `PUT /api/friend-links/[id]`
+### `PUT /api/admin/friend-links/[id]`
 
 需要登录。
 
-### `DELETE /api/friend-links/[id]`
+### `DELETE /api/admin/friend-links/[id]`
 
 需要登录。
 
