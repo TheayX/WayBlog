@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # CI 只验证生成、类型和构建链路，这里使用占位连接串避免依赖真实数据库。
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/wayblog
+      # CI 只验证生成、类型和构建链路，这里沿用项目当前公开的本地数据库连接格式，避免环境约定漂移。
+      DATABASE_URL: postgresql://wayblog:wayblog_dev_password@localhost:6432/wayblog
       NEXT_TELEMETRY_DISABLED: "1"
 
     steps:
